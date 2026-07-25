@@ -1,0 +1,68 @@
+@import "tailwindcss";
+
+@theme {
+  --color-bone: #F9F9F7;
+  --color-obsidian: #111111;
+  --color-indigo-accent: #6366F1;
+  --color-indigo-light: #818CF8;
+  --color-indigo-dark: #4F46E5;
+  --color-surface: #FFFFFF;
+  --color-surface-hover: #F3F3F0;
+  --color-border: #E5E5E0;
+  --color-muted: #71717A;
+  --color-success: #22C55E;
+  --color-warning: #F59E0B;
+  --color-error: #EF4444;
+
+  --font-display: "Schibsted Grotesk", sans-serif;
+  --font-body: "Inter", sans-serif;
+  --font-mono: "JetBrains Mono", monospace;
+}
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    font-family: var(--font-body);
+    background-color: var(--color-bone);
+    color: var(--color-obsidian);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  h1, h2, h3, h4 {
+    font-family: var(--font-display);
+  }
+
+  ::selection {
+    background-color: var(--color-indigo-accent);
+    color: white;
+  }
+}
+
+@layer components {
+  .btn-primary {
+    @apply inline-flex items-center justify-center px-6 py-3 bg-indigo-accent text-white font-medium rounded-lg
+           hover:bg-indigo-dark transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-indigo-accent focus:ring-offset-2;
+  }
+
+  .btn-secondary {
+    @apply inline-flex items-center justify-center px-6 py-3 border border-border text-obsidian font-medium rounded-lg
+           hover:bg-surface-hover transition-colors duration-200;
+  }
+
+  .card {
+    @apply bg-surface rounded-2xl border border-border p-6 shadow-sm;
+  }
+
+  .input {
+    @apply w-full px-4 py-3 bg-surface border border-border rounded-lg text-obsidian placeholder:text-muted
+           focus:outline-none focus:ring-2 focus:ring-indigo-accent focus:border-transparent transition-all;
+  }
+
+  .badge {
+    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium;
+  }
+}
