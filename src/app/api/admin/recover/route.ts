@@ -1,6 +1,7 @@
 import { timingSafeEqual } from "node:crypto";
 import { NextRequest, NextResponse } from "next/server";
 import { setOwnerPassword } from "@/lib/admin-identity";
+import { requireBrowserSameOrigin } from "@/lib/admin-guard";
 
 function secureEqual(left: string, right: string) {
   const a = Buffer.from(left);
@@ -9,6 +10,9 @@ function secureEqual(left: string, right: string) {
 }
 
 export async function POST(req: NextRequest) {
+  const originGate = requireBrowserSameOrigin(req);
+  if (originGate) return originGate;
+
   if (process.env.NORVANA_ADMIN_RECOVERY_ENABLED !== "true") {
     return NextResponse.json(
       { error: "Owner recovery is disabled.", code: "NORVANA_ADMIN_RECOVERY_DISABLED" },
