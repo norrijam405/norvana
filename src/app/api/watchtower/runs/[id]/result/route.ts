@@ -3,6 +3,10 @@ import { and, eq } from "drizzle-orm";
 import { db } from "@/db";
 import { actionReceipts, watchCandidates, watchJobs, watchRuns } from "@/db/schema";
 import { requireWatchtowerWorker } from "@/lib/watchtower/worker-auth";
+import {
+  evaluateR0Job,
+  evaluateRunFinalizationState,
+} from "@/lib/watchtower/policy";
 
 const FINAL_STATUSES = new Set(["PASS", "NO_MATERIAL_CHANGE", "FAILED", "BLOCKED"]);
 
@@ -37,11 +41,12 @@ export async function POST(
     return NextResponse.json({ error: "Watch run not found." }, { status: 404 });
   }
 
-  if (run.status !== "RUNNING") {
+  const stateDecision = evaluateRunFinalizationState(run.status);
+  if (!stateDecision.ok) {
     return NextResponse.json(
       {
-        error: "Watch run is not in RUNNING state.",
-        code: "WATCH_RUN_INVALID_STATE",
+        error: stateDecision.reason,
+        code: stateDecision.code,
         currentStatus: run.status,
       },
       { status: 409 }
@@ -53,17 +58,12 @@ export async function POST(
     return NextResponse.json({ error: "Watch job not found." }, { status: 409 });
   }
 
-  if (
-    (job.authority !== "OBSERVE" && job.authority !== "RECOMMEND") ||
-    job.budgetCents !== 0
-  ) {
+  const policy = evaluateR0Job(job.authority, job.budgetCents);
+  if (!policy.ok) {
     return NextResponse.json(
       {
-        error: "Watch run violates Watchtower R0 execution limits.",
-        code:
-          job.budgetCents !== 0
-            ? "WATCHTOWER_NONZERO_BUDGET_LOCKED"
-            : "WATCHTOWER_AUTHORITY_CEILING_EXCEEDED",
+        error: policy.reason,
+        code: policy.code,
       },
       { status: 409 }
     );
