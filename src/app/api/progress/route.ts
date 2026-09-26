@@ -2,8 +2,12 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db";
 import { progressNotes } from "@/db/schema";
 import { desc } from "drizzle-orm";
+import { requireRecoveryAdmin } from "@/lib/admin-guard";
 
-export async function GET() {
+export async function GET(req: NextRequest) {
+  const gate = requireRecoveryAdmin(req);
+  if (gate) return gate;
+
   try {
     const all = await db.select().from(progressNotes).orderBy(desc(progressNotes.createdAt));
     return NextResponse.json(all);
@@ -14,6 +18,9 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
+  const gate = requireRecoveryAdmin(req);
+  if (gate) return gate;
+
   try {
     const body = await req.json();
     const [note] = await db.insert(progressNotes).values(body).returning();
