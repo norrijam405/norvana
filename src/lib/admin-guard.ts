@@ -11,6 +11,35 @@ function constantTimeEqual(left: string, right: string) {
   return timingSafeEqual(a, b);
 }
 
+export function requireBrowserSameOrigin(req: NextRequest): NextResponse | null {
+  const origin = req.headers.get("origin");
+  const host = req.headers.get("x-forwarded-host") || req.headers.get("host");
+
+  if (!origin || !host) {
+    return NextResponse.json(
+      { error: "Same-origin browser request required.", code: "NORVANA_SAME_ORIGIN_REQUIRED" },
+      { status: 403 }
+    );
+  }
+
+  try {
+    const originUrl = new URL(origin);
+    if (originUrl.host !== host) {
+      return NextResponse.json(
+        { error: "Cross-origin browser mutation rejected.", code: "NORVANA_CROSS_ORIGIN_REJECTED" },
+        { status: 403 }
+      );
+    }
+  } catch {
+    return NextResponse.json(
+      { error: "Invalid request origin.", code: "NORVANA_INVALID_ORIGIN" },
+      { status: 403 }
+    );
+  }
+
+  return null;
+}
+
 /**
  * Temporary recovery boundary for privileged server mutations.
  *
@@ -22,7 +51,7 @@ function constantTimeEqual(left: string, right: string) {
  */
 export function requireRecoveryAdmin(req: NextRequest): NextResponse | null {
   if (adminSessionFromRequest(req)) {
-    return null;
+    return requireBrowserSameOrigin(req);
   }
 
   const configured = process.env.NORVANA_ADMIN_API_TOKEN;
