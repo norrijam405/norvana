@@ -55,3 +55,16 @@ export function requireExternalFulfillmentEnabled(): NextResponse | null {
   }
   return null;
 }
+
+export function requireSupplierConnectorsEnabled(): NextResponse | null {
+  if (process.env.NORVANA_SUPPLIER_CONNECTORS_ENABLED !== "true") {
+    return NextResponse.json(
+      {
+        error: "Supplier connectors are disabled during recovery.",
+        code: "NORVANA_SUPPLIER_CONNECTORS_DISABLED",
+      },
+      { status: 503 }
+    );
+  }
+  return null;
+}
