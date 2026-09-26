@@ -14,6 +14,10 @@ The Archive preserves retired Drops instead of turning Norvana into an infinite 
 
 See [docs/NORVANA_PRODUCT_CHARTER_R0.md](docs/NORVANA_PRODUCT_CHARTER_R0.md).
 
+Founder-approved decisions are preserved in [docs/NORVANA_DECISION_LEDGER_R0.md](docs/NORVANA_DECISION_LEDGER_R0.md). Successor workers should reconcile that ledger before material Norvana work.
+
+Global, liquidation and resale sourcing rules are in [docs/NORVANA_GLOBAL_RESALE_SOURCING_R0.md](docs/NORVANA_GLOBAL_RESALE_SOURCING_R0.md).
+
 ## Closest-to-$0 Finance
 
 Norvana's finance objective is to help eligible customers minimize verified total financing cost. It is not a promise that financing will literally cost $0.
