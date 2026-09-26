@@ -16,6 +16,8 @@ See [docs/NORVANA_PRODUCT_CHARTER_R0.md](docs/NORVANA_PRODUCT_CHARTER_R0.md).
 
 Founder-approved decisions are preserved in [docs/NORVANA_DECISION_LEDGER_R0.md](docs/NORVANA_DECISION_LEDGER_R0.md). Successor workers should reconcile that ledger before material Norvana work.
 
+Norvana-owned recurring monitoring and the rebuilt admin control plane are defined in [docs/NORVANA_WATCHTOWER_R0.md](docs/NORVANA_WATCHTOWER_R0.md).
+
 Global, liquidation and resale sourcing rules are in [docs/NORVANA_GLOBAL_RESALE_SOURCING_R0.md](docs/NORVANA_GLOBAL_RESALE_SOURCING_R0.md).
 
 ## Closest-to-$0 Finance
