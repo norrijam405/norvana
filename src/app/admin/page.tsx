@@ -23,6 +23,7 @@ function cadenceLabel(minutes: number) {
 }
 
 export default async function AdminPage() {
+  const setupHelperAvailable = process.env.VERCEL_ENV !== "production";
   if (!adminSessionConfigured()) {
     return (
       <main className="min-h-screen bg-obsidian px-4 py-16 text-white">
@@ -38,9 +39,11 @@ export default async function AdminPage() {
             No default password exists in source code, and historical passwords are not accepted.
           </div>
           <div className="mt-6 flex flex-wrap gap-3">
-            <Link href="/admin/setup" className="inline-flex rounded-xl bg-indigo-accent px-4 py-3 text-sm font-semibold text-white">
-              Generate Preview setup values
-            </Link>
+            {setupHelperAvailable ? (
+              <Link href="/admin/setup" className="inline-flex rounded-xl bg-indigo-accent px-4 py-3 text-sm font-semibold text-white">
+                Generate Preview setup values
+              </Link>
+            ) : null}
             <Link href="/" className="inline-flex rounded-xl border border-white/10 px-4 py-3 text-sm text-white/70">
               Return to storefront
             </Link>

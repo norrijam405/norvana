@@ -3,6 +3,12 @@ import { sql } from "drizzle-orm";
 import { db } from "@/db";
 
 export async function GET() {
+  if (process.env.VERCEL_ENV === "production") {
+    return NextResponse.json(
+      { error: "Not found." },
+      { status: 404, headers: { "Cache-Control": "no-store, max-age=0" } }
+    );
+  }
   let databaseReachable = false;
   let ownerIdentityPresent = false;
 
