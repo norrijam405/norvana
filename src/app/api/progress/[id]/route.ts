@@ -2,11 +2,15 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db";
 import { progressNotes } from "@/db/schema";
 import { eq } from "drizzle-orm";
+import { requireRecoveryAdmin } from "@/lib/admin-guard";
 
 export async function PATCH(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const gate = requireRecoveryAdmin(req);
+  if (gate) return gate;
+
   try {
     const { id } = await params;
     const body = await req.json();
@@ -26,9 +30,12 @@ export async function PATCH(
 }
 
 export async function DELETE(
-  _req: NextRequest,
+  req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const gate = requireRecoveryAdmin(req);
+  if (gate) return gate;
+
   try {
     const { id } = await params;
     await db.delete(progressNotes).where(eq(progressNotes.id, parseInt(id)));
