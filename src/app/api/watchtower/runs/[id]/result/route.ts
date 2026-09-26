@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { db } from "@/db";
 import { actionReceipts, watchCandidates, watchJobs, watchRuns } from "@/db/schema";
 import { requireWatchtowerWorker } from "@/lib/watchtower/worker-auth";
@@ -83,7 +83,7 @@ export async function POST(
   const findings = Array.isArray(body.findings) ? body.findings : [];
   const evidenceRefs = Array.isArray(body.evidenceRefs) ? body.evidenceRefs : [];
 
-  await db
+  const [finalizedRun] = await db
     .update(watchRuns)
     .set({
       status,
@@ -99,7 +99,18 @@ export async function POST(
           : null,
       completedAt,
     })
-    .where(eq(watchRuns.id, run.id));
+    .where(and(eq(watchRuns.id, run.id), eq(watchRuns.status, "RUNNING")))
+    .returning();
+
+  if (!finalizedRun) {
+    return NextResponse.json(
+      {
+        error: "Watch run was already finalized by another worker response.",
+        code: "WATCH_RUN_ALREADY_FINALIZED",
+      },
+      { status: 409 }
+    );
+  }
 
   const candidates = Array.isArray(body.candidates) ? (body.candidates as CandidateInput[]) : [];
 
