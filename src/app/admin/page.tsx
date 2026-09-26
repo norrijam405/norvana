@@ -12,6 +12,7 @@ import {
 } from "@/lib/admin-session";
 import { WATCHTOWER_JOB_TEMPLATES } from "@/lib/watchtower/default-jobs";
 import { JobToggle, WatchtowerControls } from "@/components/admin/watchtower-controls";
+import { WatchtowerSelfTest } from "@/components/admin/watchtower-self-test";
 
 export const dynamic = "force-dynamic";
 
