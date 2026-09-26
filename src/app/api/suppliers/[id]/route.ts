@@ -43,6 +43,9 @@ export async function PATCH(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const gate = requireRecoveryAdmin(req);
+  if (gate) return gate;
+
   try {
     const { id } = await params;
     const body = await req.json();
@@ -76,9 +79,12 @@ export async function PATCH(
 }
 
 export async function DELETE(
-  _req: NextRequest,
+  req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const gate = requireRecoveryAdmin(req);
+  if (gate) return gate;
+
   try {
     const { id } = await params;
     
