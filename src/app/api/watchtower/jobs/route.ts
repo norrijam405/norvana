@@ -47,6 +47,17 @@ export async function POST(req: NextRequest) {
   }
 
   const cadenceMinutes = Math.max(60, Number(body.cadenceMinutes) || 1440);
+  const requestedBudgetCents = Math.max(0, Number(body.budgetCents) || 0);
+
+  if (requestedBudgetCents !== 0) {
+    return NextResponse.json(
+      {
+        error: "R0 watchers must start with a $0 automation budget.",
+        code: "WATCHTOWER_NONZERO_BUDGET_LOCKED",
+      },
+      { status: 400 }
+    );
+  }
 
   try {
     const [job] = await db
@@ -60,7 +71,7 @@ export async function POST(req: NextRequest) {
         authority,
         status: "PAUSED",
         cadenceMinutes,
-        budgetCents: Math.max(0, Number(body.budgetCents) || 0),
+        budgetCents: 0,
         sourcePolicy:
           body.sourcePolicy && typeof body.sourcePolicy === "object" ? body.sourcePolicy : {},
       })
