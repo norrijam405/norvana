@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 const ITERATIONS = 310000;
 
@@ -47,11 +47,37 @@ async function derivePasswordHash(password: string, saltHex: string) {
   return bytesToHex(new Uint8Array(bits));
 }
 
+type SetupStatus = {
+  environment: string;
+  databaseReachable: boolean;
+  ownerIdentityPresent: boolean;
+  sessionSecretConfigured: boolean;
+  bootstrapCredentialConfigured: boolean;
+  recoverySecretConfigured: boolean;
+  recoveryEnabled: boolean;
+  schedulerSecretConfigured: boolean;
+  workerSecretConfigured: boolean;
+  queueEnabled: boolean;
+  executorEnabled: boolean;
+  externalFulfillmentEnabled: boolean;
+  supplierConnectorsEnabled: boolean;
+  igniaquaFederationEnabled: boolean;
+  safeToBootstrap: boolean;
+};
+
 export default function AdminSetupPage() {
   const [bundle, setBundle] = useState("");
   const [bootstrapPassword, setBootstrapPassword] = useState("");
   const [pending, setPending] = useState(false);
   const [copied, setCopied] = useState("");
+  const [status, setStatus] = useState<SetupStatus | null>(null);
+
+  useEffect(() => {
+    fetch("/api/admin/setup-status", { cache: "no-store" })
+      .then((response) => (response.ok ? response.json() : null))
+      .then((body) => setStatus(body))
+      .catch(() => setStatus(null));
+  }, []);
 
   async function generate() {
     setPending(true);
@@ -101,6 +127,30 @@ export default function AdminSetupPage() {
           Use these values for the Vercel <strong>Preview</strong> environment first. Do not add them
           to GitHub or paste them into chat.
         </div>
+        {status ? (
+          <section className="mt-6 rounded-2xl border border-white/10 bg-white/[0.04] p-5">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <p className="text-xs uppercase tracking-[0.18em] text-white/35">Preview preflight</p>
+                <p className="mt-2 text-sm text-white/60">Environment: {status.environment}</p>
+              </div>
+              <span className={status.safeToBootstrap ? "rounded-full bg-emerald-400/10 px-3 py-1 text-xs text-emerald-200" : "rounded-full bg-amber-300/10 px-3 py-1 text-xs text-amber-100"}>
+                {status.safeToBootstrap ? "READY TO BOOTSTRAP" : "SETUP REQUIRED"}
+              </span>
+            </div>
+            <div className="mt-4 grid gap-2 sm:grid-cols-2">
+              <Check label="Database" ok={status.databaseReachable} />
+              <Check label="Owner identity" ok={status.ownerIdentityPresent} optional />
+              <Check label="Session secret" ok={status.sessionSecretConfigured} />
+              <Check label="Bootstrap credential" ok={status.bootstrapCredentialConfigured || status.ownerIdentityPresent} />
+              <Check label="Recovery secret" ok={status.recoverySecretConfigured} />
+              <Check label="Scheduler secret" ok={status.schedulerSecretConfigured} />
+              <Check label="Worker secret" ok={status.workerSecretConfigured} />
+              <Check label="ACT/execution locked" ok={!status.queueEnabled && !status.executorEnabled && !status.externalFulfillmentEnabled && !status.supplierConnectorsEnabled && !status.igniaquaFederationEnabled} />
+            </div>
+          </section>
+        ) : null}
+
 
         {!bundle ? (
           <button
@@ -173,5 +223,25 @@ export default function AdminSetupPage() {
         </div>
       </div>
     </main>
+  );
+}
+
+
+function Check({
+  label,
+  ok,
+  optional = false,
+}: {
+  label: string;
+  ok: boolean;
+  optional?: boolean;
+}) {
+  return (
+    <div className="flex items-center justify-between rounded-xl border border-white/5 bg-black/20 px-3 py-2 text-xs">
+      <span className="text-white/55">{label}{optional ? " (after first login)" : ""}</span>
+      <span className={ok ? "text-emerald-200" : optional ? "text-white/30" : "text-amber-100"}>
+        {ok ? "READY" : optional ? "PENDING" : "MISSING"}
+      </span>
+    </div>
   );
 }
