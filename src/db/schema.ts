@@ -296,3 +296,18 @@ export const actionReceipts = pgTable("action_receipts", {
   details: json("details").$type<Record<string, unknown>>().notNull().default({}),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
+
+
+export const adminUsers = pgTable(
+  "admin_users",
+  {
+    id: serial("id").primaryKey(),
+    username: varchar("username", { length: 120 }).notNull().default("owner"),
+    role: varchar("role", { length: 30 }).notNull().default("owner"),
+    passwordSalt: varchar("password_salt", { length: 255 }).notNull(),
+    passwordHash: varchar("password_hash", { length: 255 }).notNull(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  },
+  (table) => [uniqueIndex("admin_users_username_idx").on(table.username)]
+);
