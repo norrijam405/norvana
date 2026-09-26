@@ -2,8 +2,12 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db";
 import { reviews, products } from "@/db/schema";
 import { eq, sql } from "drizzle-orm";
+import { requireRecoveryAdmin } from "@/lib/admin-guard";
 
 export async function POST(req: NextRequest) {
+  const gate = requireRecoveryAdmin(req);
+  if (gate) return gate;
+
   try {
     const body = await req.json();
     const [review] = await db.insert(reviews).values(body).returning();
