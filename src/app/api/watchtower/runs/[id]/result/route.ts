@@ -9,6 +9,26 @@ import {
 } from "@/lib/watchtower/policy";
 
 const FINAL_STATUSES = new Set(["PASS", "NO_MATERIAL_CHANGE", "FAILED", "BLOCKED"]);
+const MAX_RESULT_BODY_BYTES = 512_000;
+const MAX_FINDINGS = 100;
+const MAX_EVIDENCE_REFS = 100;
+
+function objectRecords(value: unknown, limit: number) {
+  if (!Array.isArray(value)) return [];
+  return value
+    .filter(
+      (item): item is Record<string, unknown> =>
+        Boolean(item) && typeof item === "object" && !Array.isArray(item)
+    )
+    .slice(0, limit);
+}
+
+function safeSourceUrl(value: unknown) {
+  const raw = String(value || "").trim();
+  if (!raw) return "";
+  if (!/^https?:\/\//i.test(raw)) return "";
+  return raw.slice(0, 1000);
+}
 
 type CandidateInput = {
   title?: unknown;
@@ -69,7 +89,31 @@ export async function POST(
     );
   }
 
-  const body = await req.json().catch(() => ({}));
+  const contentLength = Number(req.headers.get("content-length") || 0);
+  if (contentLength > MAX_RESULT_BODY_BYTES) {
+    return NextResponse.json(
+      { error: "Watch result payload is too large.", code: "WATCH_RESULT_TOO_LARGE" },
+      { status: 413 }
+    );
+  }
+
+  const rawBody = await req.text();
+  if (Buffer.byteLength(rawBody, "utf8") > MAX_RESULT_BODY_BYTES) {
+    return NextResponse.json(
+      { error: "Watch result payload is too large.", code: "WATCH_RESULT_TOO_LARGE" },
+      { status: 413 }
+    );
+  }
+
+  let body: Record<string, unknown> = {};
+  try {
+    body = rawBody ? (JSON.parse(rawBody) as Record<string, unknown>) : {};
+  } catch {
+    return NextResponse.json(
+      { error: "Watch result payload must be valid JSON.", code: "WATCH_RESULT_INVALID_JSON" },
+      { status: 400 }
+    );
+  }
   const requestedStatus = String(body.status || "").toUpperCase();
   if (!FINAL_STATUSES.has(requestedStatus)) {
     return NextResponse.json({ error: "Invalid final run status." }, { status: 400 });
@@ -80,22 +124,22 @@ export async function POST(
   const status = budgetExceeded ? "FAILED" : requestedStatus;
   const completedAt = new Date();
 
-  const findings = Array.isArray(body.findings) ? body.findings : [];
-  const evidenceRefs = Array.isArray(body.evidenceRefs) ? body.evidenceRefs : [];
+  const findings = objectRecords(body.findings, MAX_FINDINGS);
+  const evidenceRefs = objectRecords(body.evidenceRefs, MAX_EVIDENCE_REFS);
 
   const [finalizedRun] = await db
     .update(watchRuns)
     .set({
       status,
-      summary: String(body.summary || ""),
+      summary: String(body.summary || "").slice(0, 10_000),
       findings,
       evidenceRefs,
-      modelProvider: body.modelProvider ? String(body.modelProvider) : null,
+      modelProvider: body.modelProvider ? String(body.modelProvider).slice(0, 100) : null,
       estimatedCostCents,
       errorMessage: budgetExceeded
         ? `Reported execution cost ${estimatedCostCents} exceeded job budget ${job.budgetCents}.`
         : body.errorMessage
-          ? String(body.errorMessage)
+          ? String(body.errorMessage).slice(0, 5_000)
           : null,
       completedAt,
     })
@@ -125,7 +169,7 @@ export async function POST(
         title: title.slice(0, 255),
         lane: String(candidate.lane || "general").slice(0, 60),
         sourceName: String(candidate.sourceName || "").slice(0, 255),
-        sourceUrl: String(candidate.sourceUrl || "").slice(0, 1000),
+        sourceUrl: safeSourceUrl(candidate.sourceUrl),
         sourceCountry: candidate.sourceCountry
           ? String(candidate.sourceCountry).slice(0, 100)
           : null,
@@ -137,9 +181,7 @@ export async function POST(
         riskFlags: Array.isArray(candidate.riskFlags)
           ? candidate.riskFlags.map(String).slice(0, 50)
           : [],
-        evidence: Array.isArray(candidate.evidence)
-          ? (candidate.evidence as Record<string, unknown>[]).slice(0, 50)
-          : [],
+        evidence: objectRecords(candidate.evidence, 50),
         recommendation: String(candidate.recommendation || "").slice(0, 5000),
         status: "NEW",
       });
