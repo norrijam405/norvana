@@ -216,6 +216,43 @@ A cheap purchase price alone is not a profitable sourcing decision.
 
 Condition, authenticity, demand velocity and return risk must be considered.
 
+---
+
+### NV-DEC-2026-09-26-013 — Norvana owns recurring operational watchers
+
+**Status:** ACCEPTED / IMPLEMENTING
+
+Norvana recurring monitoring should live in Norvana-owned backend state rather than depending on ChatGPT task limits.
+
+Watchtower owns job definitions, cadence, run history, candidates, evidence, costs and receipts.
+
+ChatGPT, IgniAqua, external models, search providers and connectors may be execution dependencies but are not the canonical home of Norvana's automation state.
+
+---
+
+### NV-DEC-2026-09-26-014 — Rebuild Admin as Watchtower Control Panel
+
+**Status:** ACCEPTED / IMPLEMENTING
+
+The historical Engine Room/browser-password admin is retired.
+
+`/admin` is rebuilt as the Norvana Watchtower Control Panel for sourcing, operations, candidates, run history, evidence, authority and future internal controls.
+
+Owner access uses server-side password verification and a signed HttpOnly session rather than a password literal shipped to the browser.
+
+---
+
+### NV-DEC-2026-09-26-015 — Watchtower R0 is Observe/Recommend only
+
+**Status:** ACCEPTED / IMPLEMENTING
+
+Watchtower R0 may autonomously observe public/authorized sources and create recommendations.
+
+ACT authority is locked.
+
+No Watchtower job may autonomously spend money, bid, publish products, activate suppliers/producers, change prices, place fulfillment orders, enroll financing, refund customers, or deploy production changes until a later founder-approved authority design is independently verified.
+
+
 ## Change discipline
 
 Future workers must preserve this ledger as an append-only decision history. Corrections are allowed, but material earlier decisions should remain visible with an explicit SUPERSEDED marker rather than being erased.
