@@ -306,6 +306,7 @@ export const adminUsers = pgTable(
     role: varchar("role", { length: 30 }).notNull().default("owner"),
     passwordSalt: varchar("password_salt", { length: 255 }).notNull(),
     passwordHash: varchar("password_hash", { length: 255 }).notNull(),
+    bootstrapDerived: boolean("bootstrap_derived").notNull().default(true),
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at").defaultNow().notNull(),
   },
