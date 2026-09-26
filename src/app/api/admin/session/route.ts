@@ -6,6 +6,7 @@ import {
   adminSessionFromRequest,
   createAdminSessionToken,
 } from "@/lib/admin-session";
+import { requireBrowserSameOrigin } from "@/lib/admin-guard";
 import {
   bootstrapAdminConfigured,
   ownerCredentialState,
@@ -31,6 +32,9 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
+  const originGate = requireBrowserSameOrigin(req);
+  if (originGate) return originGate;
+
   if (!adminSessionConfigured()) {
     return NextResponse.json(
       {
@@ -82,7 +86,10 @@ export async function POST(req: NextRequest) {
   return response;
 }
 
-export async function DELETE() {
+export async function DELETE(req: NextRequest) {
+  const originGate = requireBrowserSameOrigin(req);
+  if (originGate) return originGate;
+
   const response = NextResponse.json({ authenticated: false });
   response.cookies.set({
     name: ADMIN_SESSION_COOKIE,
