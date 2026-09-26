@@ -225,3 +225,74 @@ export const payments = pgTable("payments", {
   metadata: json("metadata").$type<Record<string, string>>().default({}),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
+
+
+export const watchJobs = pgTable(
+  "watch_jobs",
+  {
+    id: serial("id").primaryKey(),
+    slug: varchar("slug", { length: 120 }).notNull(),
+    name: varchar("name", { length: 255 }).notNull(),
+    category: varchar("category", { length: 80 }).notNull().default("general"),
+    description: text("description").notNull().default(""),
+    instructions: text("instructions").notNull().default(""),
+    authority: varchar("authority", { length: 30 }).notNull().default("OBSERVE"),
+    status: varchar("status", { length: 30 }).notNull().default("PAUSED"),
+    cadenceMinutes: integer("cadence_minutes").notNull().default(1440),
+    budgetCents: integer("budget_cents").notNull().default(0),
+    notifyOnMaterialOnly: boolean("notify_on_material_only").notNull().default(true),
+    sourcePolicy: json("source_policy").$type<Record<string, unknown>>().notNull().default({}),
+    nextRunAt: timestamp("next_run_at"),
+    lastRunAt: timestamp("last_run_at"),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  },
+  (table) => [uniqueIndex("watch_jobs_slug_idx").on(table.slug)]
+);
+
+export const watchRuns = pgTable("watch_runs", {
+  id: serial("id").primaryKey(),
+  jobId: integer("job_id").notNull(),
+  status: varchar("status", { length: 30 }).notNull().default("QUEUED"),
+  trigger: varchar("trigger", { length: 30 }).notNull().default("SCHEDULE"),
+  summary: text("summary").notNull().default(""),
+  findings: json("findings").$type<Record<string, unknown>[]>().notNull().default([]),
+  evidenceRefs: json("evidence_refs").$type<Record<string, unknown>[]>().notNull().default([]),
+  modelProvider: varchar("model_provider", { length: 100 }),
+  estimatedCostCents: integer("estimated_cost_cents").notNull().default(0),
+  errorMessage: text("error_message"),
+  startedAt: timestamp("started_at"),
+  completedAt: timestamp("completed_at"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const watchCandidates = pgTable("watch_candidates", {
+  id: serial("id").primaryKey(),
+  jobId: integer("job_id").notNull(),
+  runId: integer("run_id"),
+  title: varchar("title", { length: 255 }).notNull(),
+  lane: varchar("lane", { length: 60 }).notNull().default("general"),
+  sourceName: varchar("source_name", { length: 255 }).notNull().default(""),
+  sourceUrl: varchar("source_url", { length: 1000 }).notNull().default(""),
+  sourceCountry: varchar("source_country", { length: 100 }),
+  truthState: varchar("truth_state", { length: 60 }).notNull().default("DISCOVERED"),
+  economics: json("economics").$type<Record<string, unknown>>().notNull().default({}),
+  riskFlags: json("risk_flags").$type<string[]>().notNull().default([]),
+  evidence: json("evidence").$type<Record<string, unknown>[]>().notNull().default([]),
+  recommendation: text("recommendation").notNull().default(""),
+  status: varchar("status", { length: 30 }).notNull().default("NEW"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const actionReceipts = pgTable("action_receipts", {
+  id: serial("id").primaryKey(),
+  actionType: varchar("action_type", { length: 100 }).notNull(),
+  authorityClass: varchar("authority_class", { length: 30 }).notNull().default("OBSERVE"),
+  subjectType: varchar("subject_type", { length: 80 }).notNull().default("watchtower"),
+  subjectId: varchar("subject_id", { length: 255 }).notNull().default(""),
+  status: varchar("status", { length: 30 }).notNull(),
+  actor: varchar("actor", { length: 120 }).notNull().default("norvana"),
+  details: json("details").$type<Record<string, unknown>>().notNull().default({}),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
