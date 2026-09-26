@@ -37,9 +37,36 @@ export async function POST(
     return NextResponse.json({ error: "Watch run not found." }, { status: 404 });
   }
 
+  if (run.status !== "RUNNING") {
+    return NextResponse.json(
+      {
+        error: "Watch run is not in RUNNING state.",
+        code: "WATCH_RUN_INVALID_STATE",
+        currentStatus: run.status,
+      },
+      { status: 409 }
+    );
+  }
+
   const [job] = await db.select().from(watchJobs).where(eq(watchJobs.id, run.jobId)).limit(1);
   if (!job) {
     return NextResponse.json({ error: "Watch job not found." }, { status: 409 });
+  }
+
+  if (
+    (job.authority !== "OBSERVE" && job.authority !== "RECOMMEND") ||
+    job.budgetCents !== 0
+  ) {
+    return NextResponse.json(
+      {
+        error: "Watch run violates Watchtower R0 execution limits.",
+        code:
+          job.budgetCents !== 0
+            ? "WATCHTOWER_NONZERO_BUDGET_LOCKED"
+            : "WATCHTOWER_AUTHORITY_CEILING_EXCEEDED",
+      },
+      { status: 409 }
+    );
   }
 
   const body = await req.json().catch(() => ({}));
