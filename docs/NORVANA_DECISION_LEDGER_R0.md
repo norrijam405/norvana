@@ -253,6 +253,19 @@ ACT authority is locked.
 No Watchtower job may autonomously spend money, bid, publish products, activate suppliers/producers, change prices, place fulfillment orders, enroll financing, refund customers, or deploy production changes until a later founder-approved authority design is independently verified.
 
 
+---
+
+### NV-DEC-2026-09-26-016 — Closest-to-$0 scheduler and replaceable worker
+
+**Status:** ACCEPTED / IMPLEMENTING
+
+Norvana may use GitHub Actions as the initial low-fixed-cost scheduler while keeping schedule truth and run history in Norvana's database.
+
+The execution worker is replaceable. IgniAqua, a Norvana worker, a low-cost model provider, or deterministic connector may claim jobs through the same bounded protocol.
+
+Changing the execution provider must not move or erase Norvana's canonical job, evidence, cost, candidate, authority, or receipt state.
+
+
 ## Change discipline
 
 Future workers must preserve this ledger as an append-only decision history. Corrections are allowed, but material earlier decisions should remain visible with an explicit SUPERSEDED marker rather than being erased.
