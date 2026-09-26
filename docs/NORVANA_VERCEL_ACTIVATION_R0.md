@@ -97,3 +97,8 @@ Never place secret values in:
 - customer-facing pages.
 
 Receipts should record secret **presence/configuration state and safe fingerprints where useful**, not secret values.
+
+
+## Preview environment reload checkpoint — 2026-09-26
+
+A fresh recovery-branch deployment is intentionally triggered after founder-side Preview environment configuration so the runtime can reload server-side Watchtower authentication settings. This checkpoint does not promote to production or change Watchtower authority.
