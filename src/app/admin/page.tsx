@@ -88,25 +88,31 @@ export default async function AdminPage() {
   return (
     <main className="min-h-screen bg-bone text-obsidian">
       <header className="sticky top-0 z-40 border-b border-border bg-bone/85 backdrop-blur-md">
-        <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center gap-5">
-            <Link href="/" className="font-display text-xl font-bold tracking-wider text-obsidian">
-              NORVANA
+        <nav className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
+          <Link href="/" className="font-display text-xl font-bold tracking-wider text-obsidian">
+            NORVANA
+          </Link>
+
+          <div className="hidden items-center gap-7 md:flex">
+            <Link href="/" className="text-sm font-medium text-muted transition-colors hover:text-obsidian">
+              Home
             </Link>
-            <span className="hidden h-5 w-px bg-border sm:block" />
-            <span className="hidden text-sm font-medium text-muted sm:block">Watchtower</span>
+            <Link href="/shop" className="text-sm font-medium text-muted transition-colors hover:text-obsidian">
+              Shop
+            </Link>
+            <Link href="/archive" className="text-sm font-medium text-muted transition-colors hover:text-obsidian">
+              Archive
+            </Link>
+            <span className="text-sm font-semibold text-indigo-accent">Watchtower</span>
           </div>
 
           <div className="flex items-center gap-2">
-            <Link href="/" className="hidden rounded-lg px-3 py-2 text-sm font-medium text-muted transition-colors hover:bg-surface-hover hover:text-obsidian sm:inline-flex">
-              Storefront
-            </Link>
             <Link href="/admin/account" className="rounded-lg px-3 py-2 text-sm font-medium text-muted transition-colors hover:bg-surface-hover hover:text-obsidian">
               Account
             </Link>
             <WatchtowerControls initialized={initialized} />
           </div>
-        </div>
+        </nav>
       </header>
 
       <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
@@ -180,7 +186,7 @@ export default async function AdminPage() {
             <div>
               <p className="text-xs font-medium uppercase tracking-[0.2em] text-indigo-accent">Automation</p>
               <h2 className="mt-2 font-display text-2xl font-bold">Watchers</h2>
-              <p className="mt-2 max-w-2xl text-sm text-muted">
+              <p className="mt-2 max-w-2xl text-[15px] leading-6 text-muted">
                 These lanes watch Norvana&apos;s market and operating surface. They begin paused and stay bounded by the authority ceiling.
               </p>
             </div>
@@ -213,8 +219,8 @@ export default async function AdminPage() {
                           {job.category}
                         </span>
                       </div>
-                      <p className="mt-3 text-sm leading-6 text-muted">{job.description}</p>
-                      <p className="mt-4 text-xs text-muted">
+                      <p className="mt-3 text-[15px] leading-6 text-muted">{job.description}</p>
+                      <p className="mt-4 text-sm text-muted">
                         {cadenceLabel(job.cadenceMinutes)} · budget ceiling {"$"}{(job.budgetCents / 100).toFixed(2)}
                       </p>
                     </div>
