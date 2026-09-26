@@ -54,9 +54,15 @@ export async function ensureAdminIdentityTable() {
       role varchar(30) NOT NULL DEFAULT 'owner',
       password_salt varchar(255) NOT NULL,
       password_hash varchar(255) NOT NULL,
+      bootstrap_derived boolean NOT NULL DEFAULT true,
       created_at timestamp NOT NULL DEFAULT now(),
       updated_at timestamp NOT NULL DEFAULT now()
     );
+  `));
+
+  await db.execute(sql.raw(`
+    ALTER TABLE admin_users
+      ADD COLUMN IF NOT EXISTS bootstrap_derived boolean NOT NULL DEFAULT true;
   `));
 }
 
@@ -71,6 +77,32 @@ export async function ownerIdentityExists() {
     return Boolean(owner);
   } catch {
     return false;
+  }
+}
+
+export async function ownerCredentialState() {
+  try {
+    await ensureAdminIdentityTable();
+    const [owner] = await db
+      .select({
+        id: adminUsers.id,
+        bootstrapDerived: adminUsers.bootstrapDerived,
+      })
+      .from(adminUsers)
+      .where(eq(adminUsers.username, "owner"))
+      .limit(1);
+
+    return {
+      exists: Boolean(owner),
+      rotated: Boolean(owner && !owner.bootstrapDerived),
+      bootstrapDerived: Boolean(owner?.bootstrapDerived),
+    };
+  } catch {
+    return {
+      exists: false,
+      rotated: false,
+      bootstrapDerived: false,
+    };
   }
 }
 
@@ -104,6 +136,7 @@ export async function verifyOwnerPassword(password: string) {
     role: "owner",
     passwordSalt: salt,
     passwordHash: expectedHex,
+    bootstrapDerived: true,
   });
 
   return true;
@@ -127,12 +160,14 @@ export async function setOwnerPassword(newPassword: string) {
       role: "owner",
       passwordSalt: salt,
       passwordHash: hash,
+      bootstrapDerived: false,
     })
     .onConflictDoUpdate({
       target: adminUsers.username,
       set: {
         passwordSalt: salt,
         passwordHash: hash,
+        bootstrapDerived: false,
         updatedAt: new Date(),
       },
     });
