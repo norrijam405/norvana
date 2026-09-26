@@ -1,10 +1,14 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db";
 import { products, reviews, suppliers, nicheVolumes, subscribers } from "@/db/schema";
 import { SAMPLE_PRODUCTS, SAMPLE_VOLUMES, SAMPLE_SUPPLIERS, SAMPLE_REVIEWS } from "@/lib/constants";
 import { sql } from "drizzle-orm";
+import { requireRecoveryAdmin } from "@/lib/admin-guard";
 
-export async function POST() {
+export async function POST(req: NextRequest) {
+  const gate = requireRecoveryAdmin(req);
+  if (gate) return gate;
+
   try {
     // Clear existing data
     await db.execute(sql`TRUNCATE products, reviews, suppliers, niche_volumes, subscribers RESTART IDENTITY CASCADE`);
