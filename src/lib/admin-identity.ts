@@ -1,4 +1,4 @@
-import { randomBytes, scryptSync, timingSafeEqual } from "node:crypto";
+import { pbkdf2Sync, randomBytes, scryptSync, timingSafeEqual } from "node:crypto";
 import { eq, sql } from "drizzle-orm";
 import { db } from "@/db";
 import { adminUsers } from "@/db/schema";
@@ -7,9 +7,24 @@ function safeEqual(left: Buffer, right: Buffer) {
   return left.length === right.length && timingSafeEqual(left, right);
 }
 
-function verifyHash(password: string, salt: string, expectedHex: string) {
+const PBKDF2_ITERATIONS = 310_000;
+
+function derivePbkdf2(password: string, salt: string, iterations = PBKDF2_ITERATIONS) {
+  return pbkdf2Sync(password, salt, iterations, 64, "sha256");
+}
+
+function verifyHash(password: string, salt: string, stored: string) {
+  if (stored.startsWith("pbkdf2:")) {
+    const [, iterationsRaw, digest, expectedHex] = stored.split(":");
+    const iterations = Number(iterationsRaw);
+    if (!iterations || digest !== "sha256" || !expectedHex) return false;
+    const actual = pbkdf2Sync(password, salt, iterations, 64, "sha256");
+    return safeEqual(actual, Buffer.from(expectedHex, "hex"));
+  }
+
+  // Backward-compatible recovery for credentials generated before the PBKDF2 browser helper.
   const actual = scryptSync(password, salt, 64);
-  const expected = Buffer.from(expectedHex, "hex");
+  const expected = Buffer.from(stored, "hex");
   return safeEqual(actual, expected);
 }
 
@@ -91,7 +106,8 @@ export async function setOwnerPassword(newPassword: string) {
   await ensureAdminIdentityTable();
 
   const salt = randomBytes(24).toString("hex");
-  const hash = scryptSync(newPassword, salt, 64).toString("hex");
+  const digest = derivePbkdf2(newPassword, salt).toString("hex");
+  const hash = `pbkdf2:${PBKDF2_ITERATIONS}:sha256:${digest}`;
 
   await db
     .insert(adminUsers)
