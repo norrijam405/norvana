@@ -281,6 +281,19 @@ The owner can rotate the password from the Watchtower account-security page. Onc
 The session-signing secret remains server-side deployment configuration.
 
 
+---
+
+### NV-DEC-2026-09-26-018 — Admin recovery is separate, temporary, and fail-closed
+
+**Status:** ACCEPTED / IMPLEMENTING
+
+Norvana must provide an owner password-recovery path so a forgotten password does not require restoring an insecure historical browser credential.
+
+Recovery uses a separate server-side recovery credential and is disabled by default. Enabling recovery does not grant ordinary Watchtower authority; it only permits resetting the owner password.
+
+After a successful recovery, the recovery gate should be disabled again. The recovery credential must never be shipped in browser source.
+
+
 ## Change discipline
 
 Future workers must preserve this ledger as an append-only decision history. Corrections are allowed, but material earlier decisions should remain visible with an explicit SUPERSEDED marker rather than being erased.
