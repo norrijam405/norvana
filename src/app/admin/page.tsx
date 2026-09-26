@@ -31,7 +31,7 @@ export default async function AdminPage() {
           <h1 className="mt-4 font-display text-4xl font-bold">Owner login needs configuration</h1>
           <p className="mt-5 max-w-2xl leading-7 text-white/65">
             The old browser password has been retired. Generate a new server-side password hash
-            and session secret with <code className="text-indigo-light">npm run admin:credentials -- "your-new-password"</code>,
+            and session secret with <code className="text-indigo-light">npm run admin:credentials -- &quot;your-new-password&quot;</code>,
             then store the generated values as server environment secrets.
           </p>
           <div className="mt-8 rounded-2xl border border-amber-300/20 bg-amber-300/10 p-5 text-sm text-amber-100">
