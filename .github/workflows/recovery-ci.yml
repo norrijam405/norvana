@@ -18,15 +18,14 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-          cache: npm
       - name: Install dependencies
         run: npm install --ignore-scripts
       - name: Reject obvious current-tree secret regressions
         shell: bash
         run: |
           set -euo pipefail
-          if grep -RInE --exclude-dir=.git --exclude='*.md' 'postgres(ql)?://[^[:space:]"'\''`]+:[^[:space:]@"'\''`]+@' .; then
-            echo "Potential credential-bearing database URL found in executable/config tree."
+          if grep -RInE --exclude-dir=.git --exclude='*.md' 'postgres(ql)?://' .; then
+            echo "Potential database URL literal found in executable/config tree."
             exit 1
           fi
           if grep -RInE --exclude-dir=.git 'ADMIN_PASSWORD[[:space:]]*=' src; then
