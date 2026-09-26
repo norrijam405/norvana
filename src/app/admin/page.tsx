@@ -13,6 +13,7 @@ import {
 import { WATCHTOWER_JOB_TEMPLATES } from "@/lib/watchtower/default-jobs";
 import { JobToggle, WatchtowerControls } from "@/components/admin/watchtower-controls";
 import { WatchtowerSelfTest } from "@/components/admin/watchtower-self-test";
+import { ownerCredentialState } from "@/lib/admin-identity";
 
 export const dynamic = "force-dynamic";
 
@@ -78,6 +79,7 @@ export default async function AdminPage() {
     initialized = false;
   }
 
+  const ownerCredential = await ownerCredentialState();
   const enabledJobs = jobs.filter((job) => job.status === "ENABLED").length;
   const unresolvedCandidates = candidates.filter((candidate) => candidate.status === "NEW").length;
   const schedulerConfigured = Boolean(process.env.NORVANA_WATCHTOWER_CRON_SECRET);
@@ -157,6 +159,20 @@ export default async function AdminPage() {
             <StatusRow label="Executor" value={executorEnabled ? "CONFIGURED" : "DISABLED"} good={!executorEnabled} />
             <StatusRow label="External actions" value="DISABLED" good />
             <StatusRow label="IgniAqua federation" value={federationConfigured ? "CONFIGURED" : "PLANNED"} good={!federationConfigured} />
+            <StatusRow
+              label="Owner credential"
+              value={ownerCredential.rotated ? "PERMANENT" : "ROTATION REQUIRED"}
+              good={ownerCredential.rotated}
+            />
+            {!ownerCredential.rotated ? (
+              <Link
+                href="/admin/account"
+                className="mt-4 inline-flex rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-semibold text-amber-700 hover:bg-amber-100"
+              >
+                Replace temporary owner password
+              </Link>
+            ) : null}
+            <WatchtowerSelfTest />
           </InfoCard>
 
           <InfoCard eyebrow="AUTHORITY" title="Bounded by design">
