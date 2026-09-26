@@ -266,6 +266,21 @@ The execution worker is replaceable. IgniAqua, a Norvana worker, a low-cost mode
 Changing the execution provider must not move or erase Norvana's canonical job, evidence, cost, candidate, authority, or receipt state.
 
 
+---
+
+### NV-DEC-2026-09-26-017 — Bootstrap admin once, then persist owner identity
+
+**Status:** ACCEPTED / IMPLEMENTING
+
+Norvana must not depend permanently on a browser password literal or a long-lived plaintext admin password stored in deployment configuration.
+
+A temporary server-side bootstrap credential may be used to establish the first owner login. After successful bootstrap, Norvana persists only the salted password hash in its own database.
+
+The owner can rotate the password from the Watchtower account-security page. Once a database owner identity exists, the old bootstrap credential is no longer authoritative even if its environment variables have not yet been removed.
+
+The session-signing secret remains server-side deployment configuration.
+
+
 ## Change discipline
 
 Future workers must preserve this ledger as an append-only decision history. Corrections are allowed, but material earlier decisions should remain visible with an explicit SUPERSEDED marker rather than being erased.
