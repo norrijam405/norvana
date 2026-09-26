@@ -3,14 +3,13 @@ import { NextRequest, NextResponse } from "next/server";
 import { and, eq, isNull, lte, or } from "drizzle-orm";
 import { db } from "@/db";
 import { actionReceipts, watchJobs, watchRuns } from "@/db/schema";
+import { evaluateR0Job } from "@/lib/watchtower/policy";
 
 function secureEqual(left: string, right: string) {
   const a = Buffer.from(left);
   const b = Buffer.from(right);
   return a.length === b.length && timingSafeEqual(a, b);
 }
-
-const SAFE_AUTHORITIES = new Set(["OBSERVE", "RECOMMEND"]);
 
 export async function POST(req: NextRequest) {
   const expected = process.env.NORVANA_WATCHTOWER_CRON_SECRET;
@@ -44,7 +43,8 @@ export async function POST(req: NextRequest) {
   const blocked: { jobId: number; reason: string }[] = [];
 
   for (const job of due) {
-    if (!SAFE_AUTHORITIES.has(job.authority)) {
+    const policy = evaluateR0Job(job.authority, job.budgetCents);
+    if (!policy.ok) {
       await db.insert(actionReceipts).values({
         actionType: "WATCH_RUN_QUEUE_BLOCKED",
         authorityClass: job.authority,
@@ -54,31 +54,13 @@ export async function POST(req: NextRequest) {
         actor: "watchtower-scheduler",
         details: {
           jobSlug: job.slug,
-          reason: "AUTHORITY_CEILING_EXCEEDED",
+          reason: policy.code,
           authority: job.authority,
-        },
-      });
-
-      blocked.push({ jobId: job.id, reason: "AUTHORITY_CEILING_EXCEEDED" });
-      continue;
-    }
-
-    if (job.budgetCents !== 0) {
-      await db.insert(actionReceipts).values({
-        actionType: "WATCH_RUN_QUEUE_BLOCKED",
-        authorityClass: job.authority,
-        subjectType: "watch_job",
-        subjectId: String(job.id),
-        status: "BLOCKED",
-        actor: "watchtower-scheduler",
-        details: {
-          jobSlug: job.slug,
-          reason: "NONZERO_R0_BUDGET",
           budgetCents: job.budgetCents,
         },
       });
 
-      blocked.push({ jobId: job.id, reason: "NONZERO_R0_BUDGET" });
+      blocked.push({ jobId: job.id, reason: policy.code });
       continue;
     }
     const [run] = await db
