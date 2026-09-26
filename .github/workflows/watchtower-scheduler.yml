@@ -1,0 +1,31 @@
+name: Norvana Watchtower Scheduler
+
+on:
+  schedule:
+    - cron: "17 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  tick:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      WATCHTOWER_SECRET: ${{ secrets.NORVANA_WATCHTOWER_CRON_SECRET }}
+    steps:
+      - name: Wake Norvana Watchtower
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          if [ -z "${WATCHTOWER_SECRET}" ]; then
+            echo "Watchtower cron secret is not configured; scheduler remains inert."
+            exit 0
+          fi
+
+          curl --fail --silent --show-error \
+            --request POST \
+            --header "x-norvana-watchtower-cron-secret: ${WATCHTOWER_SECRET}" \
+            https://www.norvana.shop/api/watchtower/tick
