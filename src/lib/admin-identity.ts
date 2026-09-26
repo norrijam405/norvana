@@ -83,6 +83,36 @@ export async function verifyOwnerPassword(password: string) {
   return true;
 }
 
+export async function setOwnerPassword(newPassword: string) {
+  if (newPassword.length < 12) {
+    return { ok: false as const, error: "New password must be at least 12 characters." };
+  }
+
+  await ensureAdminIdentityTable();
+
+  const salt = randomBytes(24).toString("hex");
+  const hash = scryptSync(newPassword, salt, 64).toString("hex");
+
+  await db
+    .insert(adminUsers)
+    .values({
+      username: "owner",
+      role: "owner",
+      passwordSalt: salt,
+      passwordHash: hash,
+    })
+    .onConflictDoUpdate({
+      target: adminUsers.username,
+      set: {
+        passwordSalt: salt,
+        passwordHash: hash,
+        updatedAt: new Date(),
+      },
+    });
+
+  return { ok: true as const };
+}
+
 export async function changeOwnerPassword(currentPassword: string, newPassword: string) {
   if (newPassword.length < 12) {
     return { ok: false as const, error: "New password must be at least 12 characters." };
@@ -93,17 +123,5 @@ export async function changeOwnerPassword(currentPassword: string, newPassword: 
     return { ok: false as const, error: "Current password is incorrect." };
   }
 
-  const salt = randomBytes(24).toString("hex");
-  const hash = scryptSync(newPassword, salt, 64).toString("hex");
-
-  await db
-    .update(adminUsers)
-    .set({
-      passwordSalt: salt,
-      passwordHash: hash,
-      updatedAt: new Date(),
-    })
-    .where(eq(adminUsers.username, "owner"));
-
-  return { ok: true as const };
+  return setOwnerPassword(newPassword);
 }
