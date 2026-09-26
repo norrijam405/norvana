@@ -1,9 +1,13 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db";
 import { products, orders, subscribers } from "@/db/schema";
 import { sql } from "drizzle-orm";
+import { requireRecoveryAdmin } from "@/lib/admin-guard";
 
-export async function GET() {
+export async function GET(req: NextRequest) {
+  const gate = requireRecoveryAdmin(req);
+  if (gate) return gate;
+
   try {
     const [productCount] = await db.select({ count: sql<number>`count(*)::int` }).from(products);
     const [orderCount] = await db.select({ count: sql<number>`count(*)::int` }).from(orders);
