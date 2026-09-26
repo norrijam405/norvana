@@ -2,11 +2,15 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db";
 import { supplierProducts, products } from "@/db/schema";
 import { eq, desc } from "drizzle-orm";
+import { requireRecoveryAdmin } from "@/lib/admin-guard";
 
 export async function GET(
-  _req: NextRequest,
+  req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const gate = requireRecoveryAdmin(req);
+  if (gate) return gate;
+
   try {
     const { id } = await params;
     const supplierId = parseInt(id);
