@@ -1,4 +1,4 @@
-# 🚀 Deploy NORVANA to Vercel (Free)
+> **Recovery notice (2026-09-26):** This is historical deployment lineage, not proof of a current live deployment. Historical credentials must not be reused. The browser-password Engine Room is disabled on the modernization branch.\n\n# 🚀 Deploy NORVANA to Vercel (Free)
 
 Vercel is the easiest way to deploy Next.js apps. Free tier includes:
 - Unlimited deployments
