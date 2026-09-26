@@ -24,30 +24,32 @@ function cadenceLabel(minutes: number) {
 
 export default async function AdminPage() {
   const setupHelperAvailable = process.env.VERCEL_ENV !== "production";
+
   if (!adminSessionConfigured()) {
     return (
-      <main className="min-h-screen bg-obsidian px-4 py-16 text-white">
+      <main className="min-h-screen bg-bone px-4 py-16 text-obsidian">
         <div className="mx-auto max-w-3xl">
-          <p className="text-xs tracking-[0.28em] text-indigo-light">NORVANA / WATCHTOWER</p>
-          <h1 className="mt-4 font-display text-4xl font-bold">Owner login needs configuration</h1>
-          <p className="mt-5 max-w-2xl leading-7 text-white/65">
-            The old browser password has been retired. Generate a new server-side password hash
-            and session secret with <code className="text-indigo-light">npm run admin:credentials -- &quot;your-new-password&quot;</code>,
-            then store the generated values as server environment secrets.
-          </p>
-          <div className="mt-8 rounded-2xl border border-amber-300/20 bg-amber-300/10 p-5 text-sm text-amber-100">
-            No default password exists in source code, and historical passwords are not accepted.
-          </div>
-          <div className="mt-6 flex flex-wrap gap-3">
-            {setupHelperAvailable ? (
-              <Link href="/admin/setup" className="inline-flex rounded-xl bg-indigo-accent px-4 py-3 text-sm font-semibold text-white">
-                Generate Preview setup values
+          <section className="overflow-hidden rounded-3xl bg-gradient-to-br from-obsidian via-gray-900 to-obsidian p-8 text-white shadow-xl md:p-12">
+            <p className="text-xs font-medium tracking-[0.28em] text-indigo-light">NORVANA / WATCHTOWER</p>
+            <h1 className="mt-4 font-display text-4xl font-bold">Owner login needs configuration</h1>
+            <p className="mt-5 max-w-2xl leading-7 text-white/60">
+              The historical browser password is retired. Watchtower now uses a server-side
+              owner credential and signed session.
+            </p>
+            <div className="mt-8 rounded-2xl border border-amber-300/20 bg-amber-300/10 p-5 text-sm text-amber-100">
+              No default password exists in source code, and historical passwords are not accepted.
+            </div>
+            <div className="mt-6 flex flex-wrap gap-3">
+              {setupHelperAvailable ? (
+                <Link href="/admin/setup" className="btn-primary">
+                  Generate Preview setup values
+                </Link>
+              ) : null}
+              <Link href="/" className="inline-flex items-center justify-center rounded-lg border border-white/20 px-6 py-3 font-medium text-white transition-colors hover:bg-white/10">
+                Return to storefront
               </Link>
-            ) : null}
-            <Link href="/" className="inline-flex rounded-xl border border-white/10 px-4 py-3 text-sm text-white/70">
-              Return to storefront
-            </Link>
-          </div>
+            </div>
+          </section>
         </div>
       </main>
     );
@@ -84,132 +86,180 @@ export default async function AdminPage() {
     Boolean(process.env.IGNIAQUA_FEDERATION_BASE_URL);
 
   return (
-    <main className="min-h-screen bg-obsidian text-white">
-      <header className="border-b border-white/10 bg-black/20">
-        <div className="mx-auto flex max-w-7xl items-center justify-between gap-6 px-4 py-5 sm:px-6 lg:px-8">
-          <div>
-            <p className="text-xs tracking-[0.28em] text-indigo-light">NORVANA</p>
-            <h1 className="mt-1 font-display text-2xl font-bold">Watchtower Control Panel</h1>
+    <main className="min-h-screen bg-bone text-obsidian">
+      <header className="sticky top-0 z-40 border-b border-border bg-bone/85 backdrop-blur-md">
+        <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center gap-5">
+            <Link href="/" className="font-display text-xl font-bold tracking-wider text-obsidian">
+              NORVANA
+            </Link>
+            <span className="hidden h-5 w-px bg-border sm:block" />
+            <span className="hidden text-sm font-medium text-muted sm:block">Watchtower</span>
           </div>
-          <div className="flex items-center gap-3"><Link href="/admin/account" className="rounded-xl border border-white/10 px-4 py-2.5 text-sm text-white/70 hover:bg-white/5">Account</Link><WatchtowerControls initialized={initialized} /></div>
+
+          <div className="flex items-center gap-2">
+            <Link href="/" className="hidden rounded-lg px-3 py-2 text-sm font-medium text-muted transition-colors hover:bg-surface-hover hover:text-obsidian sm:inline-flex">
+              Storefront
+            </Link>
+            <Link href="/admin/account" className="rounded-lg px-3 py-2 text-sm font-medium text-muted transition-colors hover:bg-surface-hover hover:text-obsidian">
+              Account
+            </Link>
+            <WatchtowerControls initialized={initialized} />
+          </div>
         </div>
       </header>
 
       <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
-        <section className="grid gap-4 md:grid-cols-4">
-          <Metric label="Watchers" value={initialized ? String(jobs.length) : "Not initialized"} />
-          <Metric label="Enabled" value={String(enabledJobs)} />
-          <Metric label="New candidates" value={String(unresolvedCandidates)} />
-          <Metric label="ACT authority" value="Locked" />
-        </section>
-
-        <section className="mt-8 grid gap-4 lg:grid-cols-[1.7fr_1fr]">
-          <div className="rounded-3xl border border-white/10 bg-white/[0.04] p-6">
-            <div className="flex flex-wrap items-end justify-between gap-3">
-              <div>
-                <p className="text-xs uppercase tracking-[0.2em] text-white/40">Automation</p>
-                <h2 className="mt-2 font-display text-2xl font-bold">Watchers</h2>
+        <section className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-obsidian via-gray-900 to-obsidian px-6 py-10 text-white shadow-lg md:px-10 md:py-12">
+          <div
+            className="absolute inset-0 opacity-10"
+            style={{
+              backgroundImage:
+                "radial-gradient(circle at 20% 20%, #6366F1 0%, transparent 42%), radial-gradient(circle at 80% 80%, #6366F1 0%, transparent 42%)",
+            }}
+          />
+          <div className="relative grid gap-8 lg:grid-cols-[1.5fr_1fr] lg:items-end">
+            <div>
+              <p className="text-xs font-medium tracking-[0.28em] text-indigo-light">NORVANA / OWNER CONTROL ROOM</p>
+              <h1 className="mt-3 font-display text-3xl font-bold md:text-5xl">Watchtower</h1>
+              <p className="mt-4 max-w-2xl text-sm leading-6 text-white/60 md:text-base">
+                Monitor sourcing, operating opportunities, and evidence without giving automation
+                authority to spend, publish, order, or activate suppliers.
+              </p>
+              <div className="mt-6 flex flex-wrap gap-2 text-xs">
+                <StatusChip tone="green">OBSERVE</StatusChip>
+                <StatusChip tone="indigo">RECOMMEND</StatusChip>
+                <StatusChip tone="muted">ACT LOCKED</StatusChip>
+                <StatusChip tone="muted">{"$"}0 DEFAULT BUDGET</StatusChip>
               </div>
-              <span className="rounded-full border border-amber-300/20 bg-amber-300/10 px-3 py-1 text-xs text-amber-100">
-                {executorEnabled ? "Executor configured" : "Executor not enabled yet"}
-              </span>
             </div>
 
-            <div className="mt-6 space-y-3">
-              {(initialized ? jobs : WATCHTOWER_JOB_TEMPLATES).map((job) => {
-                const id = "id" in job ? job.id : null;
-                const status = "status" in job ? job.status : "PLANNED";
-                return (
-                  <article key={job.slug} className="rounded-2xl border border-white/10 bg-black/20 p-5">
-                    <div className="flex flex-wrap items-start justify-between gap-4">
-                      <div className="max-w-2xl">
-                        <div className="flex flex-wrap items-center gap-2">
-                          <h3 className="font-semibold">{job.name}</h3>
-                          <span className="rounded-full bg-white/5 px-2 py-1 font-mono text-[10px] text-white/45">
-                            {job.authority}
-                          </span>
-                          <span className="rounded-full bg-white/5 px-2 py-1 text-[10px] uppercase text-white/45">
-                            {job.category}
-                          </span>
-                        </div>
-                        <p className="mt-2 text-sm leading-6 text-white/55">{job.description}</p>
-                        <p className="mt-3 text-xs text-white/35">
-                          {cadenceLabel(job.cadenceMinutes)} · budget ceiling {"$"}{(job.budgetCents / 100).toFixed(2)}
-                        </p>
-                      </div>
-                      {initialized && id ? (
-                        <JobToggle job={{ id, status }} />
-                      ) : (
-                        <span className="rounded-lg border border-white/10 px-3 py-2 text-xs text-white/40">
-                          Planned
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-2">
+              <HeroMetric label="Watchers" value={initialized ? String(jobs.length) : "—"} />
+              <HeroMetric label="Enabled" value={String(enabledJobs)} />
+              <HeroMetric label="Candidates" value={String(unresolvedCandidates)} />
+              <HeroMetric label="Authority" value="Locked" />
+            </div>
+          </div>
+        </section>
+
+        <section className="mt-8 grid gap-4 md:grid-cols-3">
+          <InfoCard eyebrow="SYSTEM" title="Truth state">
+            <StatusRow label="Database" value={initialized ? "READY" : "NOT INITIALIZED"} good={initialized} />
+            <StatusRow label="Scheduler" value={schedulerConfigured ? "CONFIGURED" : "NOT CONFIGURED"} good={schedulerConfigured} />
+            <StatusRow label="Executor" value={executorEnabled ? "CONFIGURED" : "DISABLED"} good={!executorEnabled} />
+            <StatusRow label="External actions" value="DISABLED" good />
+            <StatusRow label="IgniAqua federation" value={federationConfigured ? "CONFIGURED" : "PLANNED"} good={!federationConfigured} />
+          </InfoCard>
+
+          <InfoCard eyebrow="AUTHORITY" title="Bounded by design">
+            <p className="text-sm leading-6 text-muted">
+              Watchtower R0 can observe and recommend. Spending, bidding, publishing, supplier
+              activation, refunds, and fulfillment remain outside its authority.
+            </p>
+            <div className="mt-5 rounded-2xl bg-surface-hover p-4">
+              <p className="text-xs font-medium uppercase tracking-wider text-muted">Current ceiling</p>
+              <p className="mt-2 font-display text-xl font-bold">Recommend only</p>
+            </div>
+          </InfoCard>
+
+          <InfoCard eyebrow="OPERATING DOCTRINE" title="Closest-to-$0">
+            <p className="text-sm leading-6 text-muted">
+              Every watcher starts at a {"$"}0 automation budget. Paid data, APIs, models, or
+              subscriptions require evidence that the expense saves more or materially lowers risk.
+            </p>
+            <div className="mt-5 flex items-center justify-between rounded-2xl border border-border p-4">
+              <span className="text-sm text-muted">Default budget</span>
+              <span className="font-display text-xl font-bold text-indigo-accent">{"$"}0</span>
+            </div>
+          </InfoCard>
+        </section>
+
+        <section className="mt-8 rounded-3xl border border-border bg-surface p-5 shadow-sm md:p-7">
+          <div className="flex flex-wrap items-end justify-between gap-4">
+            <div>
+              <p className="text-xs font-medium uppercase tracking-[0.2em] text-indigo-accent">Automation</p>
+              <h2 className="mt-2 font-display text-2xl font-bold">Watchers</h2>
+              <p className="mt-2 max-w-2xl text-sm text-muted">
+                These lanes watch Norvana&apos;s market and operating surface. They begin paused and stay bounded by the authority ceiling.
+              </p>
+            </div>
+            <span className={executorEnabled
+              ? "badge bg-emerald-50 text-success"
+              : "badge bg-surface-hover text-muted"
+            }>
+              {executorEnabled ? "Executor configured" : "Executor disabled"}
+            </span>
+          </div>
+
+          <div className="mt-6 grid gap-4 lg:grid-cols-2">
+            {(initialized ? jobs : WATCHTOWER_JOB_TEMPLATES).map((job) => {
+              const id = "id" in job ? job.id : null;
+              const status = "status" in job ? job.status : "PLANNED";
+
+              return (
+                <article
+                  key={job.slug}
+                  className="rounded-2xl border border-border bg-bone p-5 transition-shadow hover:shadow-sm"
+                >
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="min-w-0">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <h3 className="font-display text-lg font-semibold">{job.name}</h3>
+                        <span className="badge bg-indigo-accent/10 font-mono text-[10px] text-indigo-dark">
+                          {job.authority}
                         </span>
-                      )}
+                        <span className="badge bg-surface text-[10px] uppercase text-muted">
+                          {job.category}
+                        </span>
+                      </div>
+                      <p className="mt-3 text-sm leading-6 text-muted">{job.description}</p>
+                      <p className="mt-4 text-xs text-muted">
+                        {cadenceLabel(job.cadenceMinutes)} · budget ceiling {"$"}{(job.budgetCents / 100).toFixed(2)}
+                      </p>
                     </div>
-                  </article>
-                );
-              })}
-            </div>
-          </div>
 
-          <div className="space-y-4">
-            <Panel title="Truth state">
-              <StatusRow label="Database" value={initialized ? "READY" : "NOT INITIALIZED"} />
-              <StatusRow label="Scheduler" value={schedulerConfigured ? "CONFIGURED" : "NOT CONFIGURED"} />
-              <StatusRow label="Executor" value={executorEnabled ? "CONFIGURED" : "DISABLED"} />
-              <StatusRow label="External actions" value="DISABLED" />
-              <StatusRow label="IgniAqua federation" value={federationConfigured ? "CONFIGURED" : "PLANNED"} />
-            </Panel>
-
-            <Panel title="Authority ceiling">
-              <p className="text-sm leading-6 text-white/55">
-                Watchtower R0 may observe and recommend. It cannot spend money, place bids,
-                publish products, activate suppliers, or submit fulfillment orders.
-              </p>
-              <div className="mt-4 grid grid-cols-3 gap-2 text-center text-xs">
-                <span className="rounded-lg bg-emerald-400/10 px-2 py-2 text-emerald-200">OBSERVE</span>
-                <span className="rounded-lg bg-indigo-400/10 px-2 py-2 text-indigo-200">RECOMMEND</span>
-                <span className="rounded-lg bg-white/5 px-2 py-2 text-white/30">ACT LOCKED</span>
-              </div>
-            </Panel>
-
-            <Panel title="Closest-to-$0">
-              <p className="text-sm leading-6 text-white/55">
-                Every watcher starts with a $0 automation budget. Paid data, APIs, models, or
-                subscriptions require evidence that the expense saves more or materially lowers risk.
-              </p>
-            </Panel>
+                    {initialized && id ? (
+                      <JobToggle job={{ id, status }} />
+                    ) : (
+                      <span className="badge bg-surface text-muted">Planned</span>
+                    )}
+                  </div>
+                </article>
+              );
+            })}
           </div>
         </section>
 
-        <section className="mt-8 grid gap-4 lg:grid-cols-2">
-          <Panel title="Recent runs">
+        <section className="mt-8 grid gap-6 lg:grid-cols-2">
+          <DataPanel eyebrow="OPERATIONS" title="Recent runs">
             {runs.length ? (
               <div className="space-y-3">
                 {runs.map((run) => (
-                  <div key={run.id} className="rounded-xl border border-white/10 p-3 text-sm">
+                  <div key={run.id} className="rounded-2xl border border-border bg-bone p-4">
                     <div className="flex justify-between gap-4">
-                      <span className="text-white/75">Run #{run.id}</span>
-                      <span className="font-mono text-xs text-white/40">{run.status}</span>
+                      <span className="font-medium">Run #{run.id}</span>
+                      <span className="font-mono text-xs text-muted">{run.status}</span>
                     </div>
-                    <p className="mt-2 text-white/45">{run.summary || "No summary yet."}</p>
+                    <p className="mt-2 text-sm text-muted">{run.summary || "No summary yet."}</p>
                   </div>
                 ))}
               </div>
             ) : (
               <Empty>No Watchtower executions have been recorded yet.</Empty>
             )}
-          </Panel>
+          </DataPanel>
 
-          <Panel title="Candidate inbox">
+          <DataPanel eyebrow="SCOUT" title="Candidate inbox">
             {candidates.length ? (
               <div className="space-y-3">
                 {candidates.map((candidate) => (
-                  <div key={candidate.id} className="rounded-xl border border-white/10 p-3 text-sm">
+                  <div key={candidate.id} className="rounded-2xl border border-border bg-bone p-4">
                     <div className="flex justify-between gap-4">
-                      <span className="text-white/75">{candidate.title}</span>
-                      <span className="font-mono text-xs text-white/40">{candidate.truthState}</span>
+                      <span className="font-medium">{candidate.title}</span>
+                      <span className="font-mono text-xs text-muted">{candidate.truthState}</span>
                     </div>
-                    <p className="mt-2 text-white/45">
+                    <p className="mt-2 text-sm text-muted">
                       {candidate.sourceName || "Unknown source"} · {candidate.lane}
                     </p>
                   </div>
@@ -218,48 +268,106 @@ export default async function AdminPage() {
             ) : (
               <Empty>No sourcing or operating candidates have been recorded yet.</Empty>
             )}
-          </Panel>
+          </DataPanel>
         </section>
 
-        <footer className="mt-8 flex flex-wrap gap-3 border-t border-white/10 pt-6 text-xs text-white/35">
+        <footer className="mt-10 flex flex-wrap items-center gap-2 border-t border-border py-7 text-xs text-muted">
           <span>Norvana owns business state.</span>
           <span>•</span>
           <span>IgniAqua services remain authority-bounded.</span>
           <span>•</span>
-          <Link href="/" className="text-indigo-light hover:underline">Storefront</Link>
+          <Link href="/" className="font-medium text-indigo-accent hover:underline">Storefront</Link>
         </footer>
       </div>
     </main>
   );
 }
 
-function Metric({ label, value }: { label: string; value: string }) {
+function HeroMetric({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-5">
-      <p className="text-xs uppercase tracking-[0.18em] text-white/35">{label}</p>
-      <p className="mt-3 font-display text-2xl font-bold">{value}</p>
+    <div className="rounded-2xl border border-white/10 bg-white/[0.06] p-4 backdrop-blur-sm">
+      <p className="text-[10px] uppercase tracking-[0.16em] text-white/40">{label}</p>
+      <p className="mt-2 font-display text-2xl font-bold">{value}</p>
     </div>
   );
 }
 
-function Panel({ title, children }: { title: string; children: ReactNode }) {
+function StatusChip({
+  tone,
+  children,
+}: {
+  tone: "green" | "indigo" | "muted";
+  children: ReactNode;
+}) {
+  const classes =
+    tone === "green"
+      ? "border-emerald-400/20 bg-emerald-400/10 text-emerald-200"
+      : tone === "indigo"
+        ? "border-indigo-300/20 bg-indigo-300/10 text-indigo-200"
+        : "border-white/10 bg-white/5 text-white/50";
+
+  return <span className={`rounded-full border px-3 py-1.5 font-medium ${classes}`}>{children}</span>;
+}
+
+function InfoCard({
+  eyebrow,
+  title,
+  children,
+}: {
+  eyebrow: string;
+  title: string;
+  children: ReactNode;
+}) {
   return (
-    <section className="rounded-3xl border border-white/10 bg-white/[0.04] p-6">
-      <h2 className="font-display text-lg font-bold">{title}</h2>
-      <div className="mt-4">{children}</div>
+    <section className="rounded-3xl border border-border bg-surface p-6 shadow-sm">
+      <p className="text-xs font-medium uppercase tracking-[0.18em] text-indigo-accent">{eyebrow}</p>
+      <h2 className="mt-2 font-display text-xl font-bold">{title}</h2>
+      <div className="mt-5">{children}</div>
     </section>
   );
 }
 
-function StatusRow({ label, value }: { label: string; value: string }) {
+function DataPanel({
+  eyebrow,
+  title,
+  children,
+}: {
+  eyebrow: string;
+  title: string;
+  children: ReactNode;
+}) {
   return (
-    <div className="flex items-center justify-between gap-4 border-b border-white/5 py-2.5 text-sm last:border-0">
-      <span className="text-white/45">{label}</span>
-      <span className="font-mono text-[11px] text-white/70">{value}</span>
+    <section className="rounded-3xl border border-border bg-surface p-6 shadow-sm">
+      <p className="text-xs font-medium uppercase tracking-[0.18em] text-indigo-accent">{eyebrow}</p>
+      <h2 className="mt-2 font-display text-xl font-bold">{title}</h2>
+      <div className="mt-5">{children}</div>
+    </section>
+  );
+}
+
+function StatusRow({
+  label,
+  value,
+  good,
+}: {
+  label: string;
+  value: string;
+  good?: boolean;
+}) {
+  return (
+    <div className="flex items-center justify-between gap-4 border-b border-border py-2.5 text-sm last:border-0">
+      <span className="text-muted">{label}</span>
+      <span className={good ? "font-mono text-[11px] text-success" : "font-mono text-[11px] text-muted"}>
+        {value}
+      </span>
     </div>
   );
 }
 
 function Empty({ children }: { children: ReactNode }) {
-  return <p className="rounded-xl border border-dashed border-white/10 p-5 text-sm text-white/35">{children}</p>;
+  return (
+    <p className="rounded-2xl border border-dashed border-border bg-bone p-5 text-sm text-muted">
+      {children}
+    </p>
+  );
 }
