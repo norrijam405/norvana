@@ -1,18 +1,20 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCart } from "@/components/cart-context";
 import { FREE_SHIPPING_THRESHOLD } from "@/lib/constants";
 import { Footer } from "@/components/footer";
 import { Suspense } from "react";
+import Link from "next/link";
 
 function CheckoutContent() {
   const { items, subtotal, clearCart } = useCart();
   const router = useRouter();
   const searchParams = useSearchParams();
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
+  const cancelled = searchParams.get("cancelled");
+  const [error, setError] = useState(() => cancelled ? "Payment was cancelled. Please try again." : "");
   const [form, setForm] = useState({
     customerName: "",
     customerEmail: "",
@@ -22,13 +24,6 @@ function CheckoutContent() {
     zip: "",
   });
 
-  const cancelled = searchParams.get("cancelled");
-
-  useEffect(() => {
-    if (cancelled) {
-      setError("Payment was cancelled. Please try again.");
-    }
-  }, [cancelled]);
 
   const freeShipping = subtotal >= FREE_SHIPPING_THRESHOLD;
   const shipping = freeShipping ? 0 : 5;
@@ -87,7 +82,7 @@ function CheckoutContent() {
             <p className="text-4xl mb-4">🛒</p>
             <h2 className="font-display text-xl font-bold">Your cart is empty</h2>
             <p className="text-sm text-muted mt-2">Add some products before checking out.</p>
-            <a href="/shop" className="btn-primary mt-6 inline-flex">Browse Shop</a>
+            <Link href="/shop" className="btn-primary mt-6 inline-flex">Browse Shop</Link>
           </div>
         </main>
         <Footer />
