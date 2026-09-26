@@ -2,6 +2,11 @@ import { timingSafeEqual } from "node:crypto";
 import { NextRequest, NextResponse } from "next/server";
 import { setOwnerPassword } from "@/lib/admin-identity";
 import { requireBrowserSameOrigin } from "@/lib/admin-guard";
+import {
+  checkAdminThrottle,
+  clearAdminAuthFailures,
+  recordAdminAuthFailure,
+} from "@/lib/admin-throttle";
 
 function secureEqual(left: string, right: string) {
   const a = Buffer.from(left);
@@ -28,6 +33,17 @@ export async function POST(req: NextRequest) {
     );
   }
 
+  const throttle = await checkAdminThrottle(req, "RECOVERY");
+  if (!throttle.allowed) {
+    return NextResponse.json(
+      { error: "Too many recovery attempts. Try again later.", code: "NORVANA_ADMIN_RECOVERY_RATE_LIMITED" },
+      {
+        status: 429,
+        headers: { "Retry-After": String(throttle.retryAfterSeconds) },
+      }
+    );
+  }
+
   const body = await req.json().catch(() => ({}));
   const recoverySecret =
     typeof body.recoverySecret === "string" ? body.recoverySecret : "";
@@ -35,7 +51,15 @@ export async function POST(req: NextRequest) {
     typeof body.newPassword === "string" ? body.newPassword : "";
 
   if (!recoverySecret || !secureEqual(recoverySecret, expected)) {
-    return NextResponse.json({ error: "Invalid recovery credential." }, { status: 401 });
+    const failure = await recordAdminAuthFailure(req, "RECOVERY");
+    return NextResponse.json(
+      {
+        error: failure.blocked
+          ? "Too many recovery attempts. Try again later."
+          : "Invalid recovery credential.",
+      },
+      { status: failure.blocked ? 429 : 401 }
+    );
   }
 
   try {
@@ -43,6 +67,8 @@ export async function POST(req: NextRequest) {
     if (!result.ok) {
       return NextResponse.json({ error: result.error }, { status: 400 });
     }
+
+    await clearAdminAuthFailures(req, "RECOVERY");
 
     return NextResponse.json({
       reset: true,

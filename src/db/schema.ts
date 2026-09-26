@@ -312,3 +312,13 @@ export const adminUsers = pgTable(
   },
   (table) => [uniqueIndex("admin_users_username_idx").on(table.username)]
 );
+
+
+export const adminAuthThrottle = pgTable("admin_auth_throttle", {
+  keyHash: varchar("key_hash", { length: 64 }).primaryKey(),
+  action: varchar("action", { length: 30 }).notNull(),
+  windowStartedAt: timestamp("window_started_at").notNull(),
+  failureCount: integer("failure_count").notNull().default(0),
+  blockedUntil: timestamp("blocked_until"),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});

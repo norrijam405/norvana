@@ -4,7 +4,14 @@ on:
   push:
     branches:
       - "recovery/**"
+    paths-ignore:
+      - "docs/**"
+      - "README.md"
   workflow_dispatch:
+
+concurrency:
+  group: norvana-recovery-${{ github.ref }}
+  cancel-in-progress: true
 
 permissions:
   contents: read

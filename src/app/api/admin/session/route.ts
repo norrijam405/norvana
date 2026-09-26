@@ -8,6 +8,11 @@ import {
 } from "@/lib/admin-session";
 import { requireBrowserSameOrigin } from "@/lib/admin-guard";
 import {
+  checkAdminThrottle,
+  clearAdminAuthFailures,
+  recordAdminAuthFailure,
+} from "@/lib/admin-throttle";
+import {
   bootstrapAdminConfigured,
   ownerCredentialState,
   ownerIdentityExists,
@@ -55,6 +60,17 @@ export async function POST(req: NextRequest) {
     );
   }
 
+  const throttle = await checkAdminThrottle(req, "LOGIN");
+  if (!throttle.allowed) {
+    return NextResponse.json(
+      { error: "Too many owner login attempts. Try again later.", code: "NORVANA_ADMIN_RATE_LIMITED" },
+      {
+        status: 429,
+        headers: { "Retry-After": String(throttle.retryAfterSeconds) },
+      }
+    );
+  }
+
   const body = await req.json().catch(() => ({}));
   const password = typeof body.password === "string" ? body.password : "";
 
@@ -70,8 +86,18 @@ export async function POST(req: NextRequest) {
   }
 
   if (!valid) {
-    return NextResponse.json({ error: "Invalid credentials." }, { status: 401 });
+    const failure = await recordAdminAuthFailure(req, "LOGIN");
+    return NextResponse.json(
+      {
+        error: failure.blocked
+          ? "Too many owner login attempts. Try again later."
+          : "Invalid credentials.",
+      },
+      { status: failure.blocked ? 429 : 401 }
+    );
   }
+
+  await clearAdminAuthFailures(req, "LOGIN");
 
   const response = NextResponse.json({ authenticated: true });
   response.cookies.set({
