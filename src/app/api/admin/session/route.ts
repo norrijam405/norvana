@@ -8,6 +8,7 @@ import {
 } from "@/lib/admin-session";
 import {
   bootstrapAdminConfigured,
+  ownerCredentialState,
   ownerIdentityExists,
   ownerLoginConfigured,
   verifyOwnerPassword,
@@ -15,6 +16,7 @@ import {
 
 export async function GET(req: NextRequest) {
   const databaseOwnerPresent = await ownerIdentityExists();
+  const ownerCredential = await ownerCredentialState();
   const bootstrapConfigured = bootstrapAdminConfigured();
 
   return NextResponse.json({
@@ -22,6 +24,8 @@ export async function GET(req: NextRequest) {
     authenticated: Boolean(adminSessionFromRequest(req)),
     credentialSource: databaseOwnerPresent ? "database-owner" : bootstrapConfigured ? "bootstrap" : "none",
     databaseOwnerPresent,
+    ownerCredentialRotated: ownerCredential.rotated,
+    ownerCredentialBootstrapDerived: ownerCredential.bootstrapDerived,
     bootstrapConfigured,
   });
 }
