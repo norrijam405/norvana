@@ -328,6 +328,37 @@ Initial activation values must keep these authority-bearing switches disabled:
 Configuration presence is verified through a non-secret preflight endpoint that returns booleans and readiness state, never secret values.
 
 
+---
+
+### NV-DEC-2026-09-26-021 — Watcher enablement requires four independent R0 gates
+
+**Status:** ACCEPTED / IMPLEMENTING
+
+A Watchtower R0 job may not transition from PAUSED to ENABLED unless all of the following are true:
+
+- the owner has replaced the temporary bootstrap-derived credential with a permanent password;
+- a durable safe control-plane self-test has passed;
+- the job authority is OBSERVE or RECOMMEND;
+- the automation budget is exactly $0.
+
+These checks are enforced server-side and are not merely UI guidance.
+
+The scheduler and worker also independently re-check the R0 authority and budget policy before queueing/claiming/finalizing work.
+
+---
+
+### NV-DEC-2026-09-26-022 — Batch recovery changes during Vercel Hobby cooldowns
+
+**Status:** ACCEPTED / IMPLEMENTING
+
+Norvana does not upgrade to a paid Vercel plan merely to bypass a temporary Hobby build-rate cooldown.
+
+During a cooldown, automatic Git deployments may be temporarily disabled on the recovery branch while GitHub CI continues validating code changes. Changes are batched into a single controlled Preview candidate rather than producing one deployment per small commit.
+
+The temporary deployment freeze must be removed or explicitly overridden only when a specific CI-green Preview candidate is ready for deliberate deployment and verification.
+
+This is an application of Norvana's Closest-to-$0 operating doctrine and must not be carried into production accidentally.
+
 ## Change discipline
 
 Future workers must preserve this ledger as an append-only decision history. Corrections are allowed, but material earlier decisions should remain visible with an explicit SUPERSEDED marker rather than being erased.
