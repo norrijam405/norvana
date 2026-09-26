@@ -3,6 +3,7 @@ import { and, desc, eq } from "drizzle-orm";
 import { db } from "@/db";
 import { watchJobs, watchRuns } from "@/db/schema";
 import { requireRecoveryAdmin } from "@/lib/admin-guard";
+import { ownerCredentialState } from "@/lib/admin-identity";
 
 const SAFE_STATUS = new Set(["PAUSED", "ENABLED"]);
 const SAFE_AUTHORITY = new Set(["OBSERVE", "RECOMMEND"]);
@@ -30,6 +31,17 @@ export async function PATCH(
     }
 
     if (status === "ENABLED") {
+      const ownerCredential = await ownerCredentialState();
+      if (!ownerCredential.rotated) {
+        return NextResponse.json(
+          {
+            error: "Change the temporary owner password before enabling a watcher.",
+            code: "WATCHTOWER_OWNER_PASSWORD_ROTATION_REQUIRED",
+          },
+          { status: 409 }
+        );
+      }
+
       const [proof] = await db
         .select({ id: watchRuns.id })
         .from(watchRuns)
