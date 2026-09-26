@@ -2,8 +2,12 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db";
 import { codeBackups } from "@/db/schema";
 import { eq, desc } from "drizzle-orm";
+import { requireRecoveryAdmin } from "@/lib/admin-guard";
 
-export async function GET() {
+export async function GET(req: NextRequest) {
+  const gate = requireRecoveryAdmin(req);
+  if (gate) return gate;
+
   try {
     const all = await db.select().from(codeBackups).orderBy(desc(codeBackups.createdAt)).limit(20);
     return NextResponse.json(all);
@@ -14,6 +18,9 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
+  const gate = requireRecoveryAdmin(req);
+  if (gate) return gate;
+
   try {
     const body = await req.json();
     const [backup] = await db.insert(codeBackups).values(body).returning();
