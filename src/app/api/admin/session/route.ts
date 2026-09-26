@@ -6,12 +6,23 @@ import {
   adminSessionFromRequest,
   createAdminSessionToken,
 } from "@/lib/admin-session";
-import { ownerLoginConfigured, verifyOwnerPassword } from "@/lib/admin-identity";
+import {
+  bootstrapAdminConfigured,
+  ownerIdentityExists,
+  ownerLoginConfigured,
+  verifyOwnerPassword,
+} from "@/lib/admin-identity";
 
 export async function GET(req: NextRequest) {
+  const databaseOwnerPresent = await ownerIdentityExists();
+  const bootstrapConfigured = bootstrapAdminConfigured();
+
   return NextResponse.json({
-    configured: adminSessionConfigured() && (await ownerLoginConfigured()),
+    configured: adminSessionConfigured() && (databaseOwnerPresent || bootstrapConfigured),
     authenticated: Boolean(adminSessionFromRequest(req)),
+    credentialSource: databaseOwnerPresent ? "database-owner" : bootstrapConfigured ? "bootstrap" : "none",
+    databaseOwnerPresent,
+    bootstrapConfigured,
   });
 }
 
