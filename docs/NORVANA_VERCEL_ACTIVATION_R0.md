@@ -102,3 +102,8 @@ Receipts should record secret **presence/configuration state and safe fingerprin
 ## Preview environment reload checkpoint — 2026-09-26
 
 A fresh recovery-branch deployment is intentionally triggered after founder-side Preview environment configuration so the runtime can reload server-side Watchtower authentication settings. This checkpoint does not promote to production or change Watchtower authority.
+
+
+## Preview password-reset reload checkpoint — 2026-09-26
+
+A fresh recovery-branch Preview deployment is intentionally triggered after the founder-side bootstrap password reset so Vercel can reload the updated Preview-only owner credential. This checkpoint does not promote to production and does not change Watchtower authority.
