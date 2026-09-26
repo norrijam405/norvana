@@ -9,8 +9,19 @@ function safeEqual(left: Buffer, right: Buffer) {
 
 const PBKDF2_ITERATIONS = 310_000;
 
+function pbkdf2SaltBytes(salt: string) {
+  // Bootstrap/setup helpers generate a 24-byte random salt encoded as 48 hex chars.
+  // PBKDF2 must use those original bytes, not the UTF-8 characters of the hex string.
+  if (/^[0-9a-f]{48}$/i.test(salt)) {
+    return Buffer.from(salt, "hex");
+  }
+
+  // Fail-compatible for any legacy/non-hex salt that may already exist.
+  return Buffer.from(salt, "utf8");
+}
+
 function derivePbkdf2(password: string, salt: string, iterations = PBKDF2_ITERATIONS) {
-  return pbkdf2Sync(password, salt, iterations, 64, "sha256");
+  return pbkdf2Sync(password, pbkdf2SaltBytes(salt), iterations, 64, "sha256");
 }
 
 function verifyHash(password: string, salt: string, stored: string) {
@@ -18,7 +29,7 @@ function verifyHash(password: string, salt: string, stored: string) {
     const [, iterationsRaw, digest, expectedHex] = stored.split(":");
     const iterations = Number(iterationsRaw);
     if (!iterations || digest !== "sha256" || !expectedHex) return false;
-    const actual = pbkdf2Sync(password, salt, iterations, 64, "sha256");
+    const actual = derivePbkdf2(password, salt, iterations);
     return safeEqual(actual, Buffer.from(expectedHex, "hex"));
   }
 
