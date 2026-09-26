@@ -45,7 +45,7 @@ The historical client-side password is retired.
 Owner access uses:
 
 - a temporary server-side bootstrap password hash for first access;
-- scrypt verification;
+- PBKDF2-SHA256 verification for current owner credentials, with legacy scrypt verification retained only for backward-compatible recovery;
 - durable salted owner password hash in Norvana's database after first successful bootstrap;
 - in-app owner password rotation;
 - server-only session secret;
@@ -230,3 +230,44 @@ The preflight is intended to verify:
 - bootstrap/session/recovery configuration presence;
 - scheduler/worker configuration presence;
 - whether queue/executor or consequential-action flags remain disabled.
+
+
+## Safe control-plane self-test
+
+Before any watcher may be enabled, Watchtower requires a durable control-plane self-test.
+
+The self-test:
+
+- requires all jobs to remain PAUSED;
+- requires queueing and execution to remain disabled;
+- requires external fulfillment and supplier connectors to remain disabled;
+- requires every R0 job budget to equal $0;
+- requires every R0 job authority to remain OBSERVE or RECOMMEND;
+- performs no source research and no external commerce action;
+- writes a CONTROL_TEST run and an action receipt;
+- reads both records back before returning PASS.
+
+A control-plane PASS is necessary but not sufficient to enable a watcher.
+
+## R0 watcher enable gates
+
+A watcher may transition from PAUSED to ENABLED only when:
+
+1. the owner credential has been rotated away from the temporary bootstrap-derived credential;
+2. the safe control-plane self-test has a durable PASS;
+3. the job authority is OBSERVE or RECOMMEND;
+4. the job budget is exactly $0.
+
+These gates are enforced server-side.
+
+## Worker state discipline
+
+Worker execution uses an explicit one-way state transition:
+
+`QUEUED -> RUNNING -> FINAL`
+
+Final statuses are PASS, NO_MATERIAL_CHANGE, FAILED, or BLOCKED.
+
+A worker result is accepted only while the run is RUNNING. Finalization uses a conditional atomic update so concurrent or repeated result submissions cannot both win and duplicate candidates/receipts.
+
+The scheduler and worker independently re-evaluate R0 authority and budget limits. A malformed or directly injected queued run cannot grant itself ACT authority or a paid automation budget.
