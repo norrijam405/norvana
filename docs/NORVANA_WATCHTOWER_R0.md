@@ -141,3 +141,46 @@ Before Watchtower is considered live:
 6. at least one RECOMMEND job produces a candidate with evidence.
 7. failure/timeout behavior verified.
 8. no ACT path can bypass the R0 authority ceiling.
+
+
+## Scheduler and worker protocol
+
+The initial scheduler may use GitHub Actions as a low-fixed-cost wake-up mechanism.
+
+Canonical schedules remain in `watch_jobs`; GitHub does not own job truth.
+
+### Queue flow
+
+1. GitHub Actions calls the protected Watchtower tick endpoint.
+2. The tick endpoint identifies due ENABLED jobs.
+3. A durable `watch_runs` record is created as QUEUED.
+4. A qualified worker claims one queued run with the worker secret.
+5. Norvana returns the job instructions, source policy, budget ceiling and hard authority limits.
+6. The worker returns structured findings, evidence references and candidate records.
+7. Norvana stores the result and an action receipt.
+
+Queueing and execution remain independently disabled by default.
+
+### Worker replacement
+
+The worker protocol is provider-neutral. A worker can be replaced without moving:
+
+- schedules;
+- job instructions;
+- run history;
+- candidate state;
+- evidence;
+- budget;
+- authority;
+- receipts.
+
+### R0 hard limits returned to workers
+
+- maySpendMoney = false
+- mayPublishProducts = false
+- mayPlaceOrders = false
+- mayChangePrices = false
+- mayActivateSuppliers = false
+- mayIssueRefunds = false
+
+A worker response cannot grant itself additional authority.
