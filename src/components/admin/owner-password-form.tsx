@@ -37,7 +37,7 @@ export function OwnerPasswordForm() {
       setCurrentPassword("");
       setNewPassword("");
       setConfirm("");
-      setMessage("Owner password changed. The old bootstrap password will no longer authenticate.");
+      setMessage("Owner password changed. The temporary bootstrap password is no longer authoritative.");
     } catch {
       setError("Unable to reach the owner identity service.");
     } finally {
@@ -46,7 +46,7 @@ export function OwnerPasswordForm() {
   }
 
   return (
-    <form onSubmit={submit} className="space-y-4">
+    <form onSubmit={submit} className="space-y-5">
       <PasswordField
         label="Current password"
         value={currentPassword}
@@ -67,22 +67,18 @@ export function OwnerPasswordForm() {
       />
 
       {error ? (
-        <p className="rounded-xl border border-red-400/30 bg-red-400/10 p-3 text-sm text-red-200">
+        <p className="rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-error">
           {error}
         </p>
       ) : null}
 
       {message ? (
-        <p className="rounded-xl border border-emerald-400/30 bg-emerald-400/10 p-3 text-sm text-emerald-200">
+        <p className="rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-sm text-success">
           {message}
         </p>
       ) : null}
 
-      <button
-        type="submit"
-        disabled={pending}
-        className="rounded-xl bg-indigo-accent px-5 py-3 text-sm font-semibold text-white disabled:opacity-50"
-      >
+      <button type="submit" disabled={pending} className="btn-primary disabled:opacity-50">
         {pending ? "Changing…" : "Change owner password"}
       </button>
     </form>
@@ -101,7 +97,7 @@ function PasswordField({
   autoComplete: string;
 }) {
   return (
-    <label className="block text-sm text-white/65">
+    <label className="block text-sm font-medium text-obsidian">
       {label}
       <input
         type="password"
@@ -110,7 +106,7 @@ function PasswordField({
         autoComplete={autoComplete}
         value={value}
         onChange={(event) => onChange(event.target.value)}
-        className="mt-2 w-full rounded-xl border border-white/10 bg-black/25 px-4 py-3 text-white outline-none focus:border-indigo-light"
+        className="input mt-2"
       />
     </label>
   );
