@@ -2,21 +2,31 @@ import { NextRequest, NextResponse } from "next/server";
 import {
   ADMIN_SESSION_COOKIE,
   ADMIN_SESSION_MAX_AGE,
-  adminAuthConfigured,
+  adminSessionConfigured,
   adminSessionFromRequest,
   createAdminSessionToken,
-  verifyAdminPassword,
 } from "@/lib/admin-session";
+import { ownerLoginConfigured, verifyOwnerPassword } from "@/lib/admin-identity";
 
 export async function GET(req: NextRequest) {
   return NextResponse.json({
-    configured: adminAuthConfigured(),
+    configured: adminSessionConfigured() && (await ownerLoginConfigured()),
     authenticated: Boolean(adminSessionFromRequest(req)),
   });
 }
 
 export async function POST(req: NextRequest) {
-  if (!adminAuthConfigured()) {
+  if (!adminSessionConfigured()) {
+    return NextResponse.json(
+      {
+        error: "Owner session security is not configured yet.",
+        code: "NORVANA_ADMIN_SESSION_NOT_CONFIGURED",
+      },
+      { status: 503 }
+    );
+  }
+
+  if (!(await ownerLoginConfigured())) {
     return NextResponse.json(
       {
         error: "Owner login is not configured yet.",
@@ -29,7 +39,18 @@ export async function POST(req: NextRequest) {
   const body = await req.json().catch(() => ({}));
   const password = typeof body.password === "string" ? body.password : "";
 
-  if (!password || !verifyAdminPassword(password)) {
+  let valid = false;
+  try {
+    valid = await verifyOwnerPassword(password);
+  } catch (error) {
+    console.error("Admin identity verification error:", error);
+    return NextResponse.json(
+      { error: "Owner identity service is unavailable." },
+      { status: 503 }
+    );
+  }
+
+  if (!valid) {
     return NextResponse.json({ error: "Invalid credentials." }, { status: 401 });
   }
 
