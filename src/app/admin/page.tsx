@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 export default function AdminPage() {
   return (
     <main className="min-h-screen bg-obsidian text-white flex items-center justify-center px-4">
@@ -13,7 +15,7 @@ export default function AdminPage() {
           <p>Storefront browsing can continue during recovery.</p>
           <p>Supplier ordering, credential mutation, and self-repair are not authorized from this screen.</p>
         </div>
-        <a href="/" className="btn-primary inline-flex mt-6">Return to Store</a>
+        <Link href="/" className="btn-primary inline-flex mt-6">Return to Store</Link>
       </section>
     </main>
   );
