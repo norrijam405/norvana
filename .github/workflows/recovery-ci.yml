@@ -1,0 +1,39 @@
+name: Norvana Recovery CI
+
+on:
+  push:
+    branches:
+      - "recovery/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  static-verification:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Install dependencies
+        run: npm install --ignore-scripts
+      - name: Reject obvious current-tree secret regressions
+        shell: bash
+        run: |
+          set -euo pipefail
+          if grep -RInE --exclude-dir=.git --exclude='*.md' 'postgres(ql)?://[^[:space:]"'\''`]+:[^[:space:]@"'\''`]+@' .; then
+            echo "Potential credential-bearing database URL found in executable/config tree."
+            exit 1
+          fi
+          if grep -RInE --exclude-dir=.git 'ADMIN_PASSWORD[[:space:]]*=' src; then
+            echo "Client-side ADMIN_PASSWORD regression found."
+            exit 1
+          fi
+      - name: Typecheck
+        run: npm run typecheck
+      - name: Lint
+        run: npm run lint
