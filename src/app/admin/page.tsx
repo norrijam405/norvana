@@ -37,9 +37,14 @@ export default async function AdminPage() {
           <div className="mt-8 rounded-2xl border border-amber-300/20 bg-amber-300/10 p-5 text-sm text-amber-100">
             No default password exists in source code, and historical passwords are not accepted.
           </div>
-          <Link href="/" className="mt-8 inline-flex rounded-xl border border-white/10 px-4 py-3 text-sm text-white/70">
-            Return to storefront
-          </Link>
+          <div className="mt-6 flex flex-wrap gap-3">
+            <Link href="/admin/setup" className="inline-flex rounded-xl bg-indigo-accent px-4 py-3 text-sm font-semibold text-white">
+              Generate Preview setup values
+            </Link>
+            <Link href="/" className="inline-flex rounded-xl border border-white/10 px-4 py-3 text-sm text-white/70">
+              Return to storefront
+            </Link>
+          </div>
         </div>
       </main>
     );
