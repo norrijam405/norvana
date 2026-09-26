@@ -1,4 +1,4 @@
-import { createHmac, scryptSync, timingSafeEqual } from "node:crypto";
+import { createHmac, timingSafeEqual } from "node:crypto";
 import type { NextRequest } from "next/server";
 
 export const ADMIN_SESSION_COOKIE = "norvana_admin_session";
@@ -20,23 +20,8 @@ function required(name: string) {
   return value;
 }
 
-export function adminAuthConfigured() {
-  return Boolean(
-    process.env.NORVANA_ADMIN_PASSWORD_SALT &&
-      process.env.NORVANA_ADMIN_PASSWORD_HASH &&
-      process.env.NORVANA_ADMIN_SESSION_SECRET
-  );
-}
-
-export function verifyAdminPassword(password: string) {
-  if (!adminAuthConfigured()) return false;
-
-  const salt = required("NORVANA_ADMIN_PASSWORD_SALT");
-  const expectedHex = required("NORVANA_ADMIN_PASSWORD_HASH");
-  const actual = scryptSync(password, salt, 64);
-  const expected = Buffer.from(expectedHex, "hex");
-
-  return safeEqual(actual, expected);
+export function adminSessionConfigured() {
+  return Boolean(process.env.NORVANA_ADMIN_SESSION_SECRET);
 }
 
 export function createAdminSessionToken(now = Date.now()) {
