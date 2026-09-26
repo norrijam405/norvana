@@ -107,3 +107,33 @@ A fresh recovery-branch deployment is intentionally triggered after founder-side
 ## Preview password-reset reload checkpoint — 2026-09-26
 
 A fresh recovery-branch Preview deployment is intentionally triggered after the founder-side bootstrap password reset so Vercel can reload the updated Preview-only owner credential. This checkpoint does not promote to production and does not change Watchtower authority.
+
+
+## Hobby build-rate cooldown procedure
+
+If Vercel reports a Hobby build-rate limit:
+
+1. do not upgrade solely to bypass the cooldown;
+2. stop repeated Preview-triggering commits;
+3. set recovery-branch repository configuration to disable automatic Git deployments;
+4. continue only non-deployment work with GitHub CI;
+5. aggregate changes into one exact CI-green candidate;
+6. after the cooldown, deliberately deploy that exact candidate once;
+7. verify the Preview before re-enabling ordinary automatic Git deployment behavior.
+
+Current temporary recovery configuration:
+
+`vercel.json -> git.deploymentEnabled=false`
+
+This is a recovery-branch operational freeze, not a production architecture decision. It must not be merged into production unintentionally.
+
+## Additional R0 enable prerequisites
+
+Before any watcher is enabled:
+
+- the owner password must be rotated away from the bootstrap-derived credential;
+- the safe control-plane self-test must PASS and produce a durable run/receipt;
+- the watcher must retain OBSERVE/RECOMMEND authority;
+- the watcher budget must remain $0.
+
+The scheduler and worker re-check these policy limits independently.
