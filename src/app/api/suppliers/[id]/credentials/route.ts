@@ -3,11 +3,15 @@ import { db } from "@/db";
 import { supplierCredentials, suppliers } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { createSupplierConnector, type SupplierPlatform } from "@/lib/supplier-integrations";
+import { requireRecoveryAdmin } from "@/lib/admin-guard";
 
 export async function POST(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const gate = requireRecoveryAdmin(req);
+  if (gate) return gate;
+
   try {
     const { id } = await params;
     const body = await req.json();
@@ -63,9 +67,12 @@ export async function POST(
 }
 
 export async function DELETE(
-  _req: NextRequest,
+  req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const gate = requireRecoveryAdmin(req);
+  if (gate) return gate;
+
   try {
     const { id } = await params;
     await db.delete(supplierCredentials).where(eq(supplierCredentials.supplierId, parseInt(id)));
