@@ -200,3 +200,33 @@ Forgotten-password recovery is a separate authority path from normal owner login
 - after a successful recovery, the recovery gate should be disabled again.
 
 This exists specifically so Norvana does not fall back to a hard-coded browser password when the owner forgets a credential.
+
+
+## Browser-local bootstrap helper
+
+The recovery Preview exposes `/admin/setup` as a client-only credential generator.
+
+It:
+
+- creates a random temporary bootstrap password;
+- derives a PBKDF2-SHA256 password hash in the browser;
+- generates fresh session, recovery, scheduler and worker secrets in the browser;
+- outputs environment-variable entries for Vercel Preview;
+- defaults queue, executor, fulfillment, supplier connectors, recovery and IgniAqua federation to disabled;
+- does not transmit generated values to Norvana or an API.
+
+The helper is not an authentication endpoint and cannot mutate Norvana state.
+
+## Non-secret setup preflight
+
+`/api/admin/setup-status` exposes only safe configuration booleans and readiness state.
+
+It must never return secret values.
+
+The preflight is intended to verify:
+
+- database reachability;
+- owner identity presence;
+- bootstrap/session/recovery configuration presence;
+- scheduler/worker configuration presence;
+- whether queue/executor or consequential-action flags remain disabled.

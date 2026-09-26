@@ -73,3 +73,12 @@ npm run build
 ```
 
 Recovery work is not equivalent to production readiness. Supplier ordering, live financing, autonomous publishing and deployment require separate verification and authorization.
+
+
+### Watchtower Preview bootstrap
+
+Browser-local Preview setup helper: `/admin/setup`
+
+The helper generates bootstrap/security values locally in the browser. Generated secrets must go directly into Vercel Preview environment variables and must never be committed or pasted into chat.
+
+Safe configuration-state probe: `/api/admin/setup-status`

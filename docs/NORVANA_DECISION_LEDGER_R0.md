@@ -294,6 +294,40 @@ Recovery uses a separate server-side recovery credential and is disabled by defa
 After a successful recovery, the recovery gate should be disabled again. The recovery credential must never be shipped in browser source.
 
 
+---
+
+### NV-DEC-2026-09-26-019 — Preview bootstrap secrets are generated locally, not shared in chat
+
+**Status:** ACCEPTED / IMPLEMENTING
+
+Norvana provides a browser-local setup helper for the recovery Preview.
+
+The helper generates a temporary bootstrap password plus password hash, session secret, recovery secret, scheduler secret, and worker secret without sending those values to Norvana or an external API.
+
+Founder setup values are copied directly into Vercel Preview environment variables and must not be committed to GitHub or pasted into chat.
+
+The bootstrap password is temporary. After first login, the owner rotates to a private permanent password stored as a salted hash in Norvana's database.
+
+---
+
+### NV-DEC-2026-09-26-020 — Preview-first activation with explicit zero-authority defaults
+
+**Status:** ACCEPTED / IMPLEMENTING
+
+Watchtower activation occurs on Vercel Preview before production promotion.
+
+Initial activation values must keep these authority-bearing switches disabled:
+
+- Watchtower queue disabled;
+- Watchtower executor disabled;
+- external fulfillment disabled;
+- supplier connectors disabled;
+- IgniAqua federation disabled;
+- password recovery disabled during normal operation.
+
+Configuration presence is verified through a non-secret preflight endpoint that returns booleans and readiness state, never secret values.
+
+
 ## Change discipline
 
 Future workers must preserve this ledger as an append-only decision history. Corrections are allowed, but material earlier decisions should remain visible with an explicit SUPERSEDED marker rather than being erased.
