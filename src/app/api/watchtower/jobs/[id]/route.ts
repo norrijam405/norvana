@@ -4,9 +4,9 @@ import { db } from "@/db";
 import { watchJobs, watchRuns } from "@/db/schema";
 import { requireRecoveryAdmin } from "@/lib/admin-guard";
 import { ownerCredentialState } from "@/lib/admin-identity";
+import { evaluateWatcherEnable, isR0Authority } from "@/lib/watchtower/policy";
 
 const SAFE_STATUS = new Set(["PAUSED", "ENABLED"]);
-const SAFE_AUTHORITY = new Set(["OBSERVE", "RECOMMEND"]);
 
 export async function PATCH(
   req: NextRequest,
@@ -32,15 +32,6 @@ export async function PATCH(
 
     if (status === "ENABLED") {
       const ownerCredential = await ownerCredentialState();
-      if (!ownerCredential.rotated) {
-        return NextResponse.json(
-          {
-            error: "Change the temporary owner password before enabling a watcher.",
-            code: "WATCHTOWER_OWNER_PASSWORD_ROTATION_REQUIRED",
-          },
-          { status: 409 }
-        );
-      }
 
       const [proof] = await db
         .select({ id: watchRuns.id })
@@ -69,22 +60,16 @@ export async function PATCH(
         return NextResponse.json({ error: "Watchtower job not found." }, { status: 404 });
       }
 
-      if (current.budgetCents !== 0) {
-        return NextResponse.json(
-          {
-            error: "R0 watchers must retain a $0 automation budget.",
-            code: "WATCHTOWER_NONZERO_BUDGET_LOCKED",
-          },
-          { status: 409 }
-        );
-      }
+      const decision = evaluateWatcherEnable({
+        ownerCredentialRotated: ownerCredential.rotated,
+        controlSelfTestPassed: Boolean(proof),
+        authority: current.authority,
+        budgetCents: current.budgetCents,
+      });
 
-      if (!SAFE_AUTHORITY.has(current.authority)) {
+      if (!decision.ok) {
         return NextResponse.json(
-          {
-            error: "Watcher authority exceeds the R0 ceiling.",
-            code: "WATCHTOWER_AUTHORITY_CEILING_EXCEEDED",
-          },
+          { error: decision.reason, code: decision.code },
           { status: 409 }
         );
       }
@@ -97,7 +82,7 @@ export async function PATCH(
 
   if (body.authority !== undefined) {
     const authority = String(body.authority).toUpperCase();
-    if (!SAFE_AUTHORITY.has(authority)) {
+    if (!isR0Authority(authority)) {
       return NextResponse.json(
         { error: "ACT authority is locked in R0." },
         { status: 400 }
