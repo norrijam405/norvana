@@ -20,14 +20,18 @@ export default async function AdminAccountPage() {
   return (
     <main className="min-h-screen bg-bone text-obsidian">
       <header className="border-b border-border bg-bone/85 backdrop-blur-md">
-        <div className="mx-auto flex h-16 max-w-5xl items-center justify-between px-4 sm:px-6">
-          <div className="flex items-center gap-4">
-            <Link href="/" className="font-display text-xl font-bold tracking-wider">NORVANA</Link>
-            <span className="hidden h-5 w-px bg-border sm:block" />
-            <span className="hidden text-sm text-muted sm:block">Owner Security</span>
+        <nav className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
+          <Link href="/" className="font-display text-xl font-bold tracking-wider">NORVANA</Link>
+
+          <div className="hidden items-center gap-7 md:flex">
+            <Link href="/" className="text-sm font-medium text-muted transition-colors hover:text-obsidian">Home</Link>
+            <Link href="/shop" className="text-sm font-medium text-muted transition-colors hover:text-obsidian">Shop</Link>
+            <Link href="/archive" className="text-sm font-medium text-muted transition-colors hover:text-obsidian">Archive</Link>
+            <Link href="/admin" className="text-sm font-semibold text-indigo-accent">Watchtower</Link>
           </div>
+
           <Link href="/admin" className="btn-secondary px-4 py-2 text-sm">Back to Watchtower</Link>
-        </div>
+        </nav>
       </header>
 
       <div className="mx-auto max-w-5xl px-4 py-10 sm:px-6">
