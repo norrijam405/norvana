@@ -7,7 +7,7 @@ import { db } from "@/db";
 import { watchCandidates, watchJobs, watchRuns } from "@/db/schema";
 import {
   ADMIN_SESSION_COOKIE,
-  adminAuthConfigured,
+  adminSessionConfigured,
   verifyAdminSessionToken,
 } from "@/lib/admin-session";
 import { WATCHTOWER_JOB_TEMPLATES } from "@/lib/watchtower/default-jobs";
@@ -23,7 +23,7 @@ function cadenceLabel(minutes: number) {
 }
 
 export default async function AdminPage() {
-  if (!adminAuthConfigured()) {
+  if (!adminSessionConfigured()) {
     return (
       <main className="min-h-screen bg-obsidian px-4 py-16 text-white">
         <div className="mx-auto max-w-3xl">
@@ -83,7 +83,7 @@ export default async function AdminPage() {
             <p className="text-xs tracking-[0.28em] text-indigo-light">NORVANA</p>
             <h1 className="mt-1 font-display text-2xl font-bold">Watchtower Control Panel</h1>
           </div>
-          <WatchtowerControls initialized={initialized} />
+          <div className="flex items-center gap-3"><Link href="/admin/account" className="rounded-xl border border-white/10 px-4 py-2.5 text-sm text-white/70 hover:bg-white/5">Account</Link><WatchtowerControls initialized={initialized} /></div>
         </div>
       </header>
 
