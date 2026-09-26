@@ -1,5 +1,4 @@
 export const BRAND = "NORVANA";
-export const ADMIN_PASSWORD = "norvana";
 export const FREE_SHIPPING_THRESHOLD = 75;
 
 export const SAMPLE_PRODUCTS = [
