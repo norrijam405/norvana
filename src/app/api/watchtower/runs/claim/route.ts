@@ -3,8 +3,7 @@ import { and, asc, eq } from "drizzle-orm";
 import { db } from "@/db";
 import { actionReceipts, watchJobs, watchRuns } from "@/db/schema";
 import { requireWatchtowerWorker } from "@/lib/watchtower/worker-auth";
-
-const SAFE_AUTHORITIES = new Set(["OBSERVE", "RECOMMEND"]);
+import { evaluateR0Job } from "@/lib/watchtower/policy";
 
 export async function POST(req: NextRequest) {
   const gate = requireWatchtowerWorker(req);
@@ -43,10 +42,9 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Watch job not found." }, { status: 409 });
   }
 
-  if (!SAFE_AUTHORITIES.has(job.authority) || job.budgetCents !== 0) {
-    const reason = !SAFE_AUTHORITIES.has(job.authority)
-      ? "AUTHORITY_CEILING_EXCEEDED"
-      : "NONZERO_R0_BUDGET";
+  const policy = evaluateR0Job(job.authority, job.budgetCents);
+  if (!policy.ok) {
+    const reason = policy.code;
 
     const [blockedRun] = await db
       .update(watchRuns)
