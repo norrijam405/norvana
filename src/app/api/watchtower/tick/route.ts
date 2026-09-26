@@ -10,6 +10,8 @@ function secureEqual(left: string, right: string) {
   return a.length === b.length && timingSafeEqual(a, b);
 }
 
+const SAFE_AUTHORITIES = new Set(["OBSERVE", "RECOMMEND"]);
+
 export async function POST(req: NextRequest) {
   const expected = process.env.NORVANA_WATCHTOWER_CRON_SECRET;
   const supplied = req.headers.get("x-norvana-watchtower-cron-secret");
@@ -39,8 +41,46 @@ export async function POST(req: NextRequest) {
     );
 
   const queued: number[] = [];
+  const blocked: { jobId: number; reason: string }[] = [];
 
   for (const job of due) {
+    if (!SAFE_AUTHORITIES.has(job.authority)) {
+      await db.insert(actionReceipts).values({
+        actionType: "WATCH_RUN_QUEUE_BLOCKED",
+        authorityClass: job.authority,
+        subjectType: "watch_job",
+        subjectId: String(job.id),
+        status: "BLOCKED",
+        actor: "watchtower-scheduler",
+        details: {
+          jobSlug: job.slug,
+          reason: "AUTHORITY_CEILING_EXCEEDED",
+          authority: job.authority,
+        },
+      });
+
+      blocked.push({ jobId: job.id, reason: "AUTHORITY_CEILING_EXCEEDED" });
+      continue;
+    }
+
+    if (job.budgetCents !== 0) {
+      await db.insert(actionReceipts).values({
+        actionType: "WATCH_RUN_QUEUE_BLOCKED",
+        authorityClass: job.authority,
+        subjectType: "watch_job",
+        subjectId: String(job.id),
+        status: "BLOCKED",
+        actor: "watchtower-scheduler",
+        details: {
+          jobSlug: job.slug,
+          reason: "NONZERO_R0_BUDGET",
+          budgetCents: job.budgetCents,
+        },
+      });
+
+      blocked.push({ jobId: job.id, reason: "NONZERO_R0_BUDGET" });
+      continue;
+    }
     const [run] = await db
       .insert(watchRuns)
       .values({
@@ -85,5 +125,6 @@ export async function POST(req: NextRequest) {
     queueEnabled: true,
     queued: queued.length,
     runIds: queued,
+    blocked,
   });
 }
