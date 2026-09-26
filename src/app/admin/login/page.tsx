@@ -1,6 +1,7 @@
 "use client";
 
 import { FormEvent, useState } from "react";
+import Link from "next/link";
 
 export default function AdminLoginPage() {
   const [password, setPassword] = useState("");
@@ -70,6 +71,8 @@ export default function AdminLoginPage() {
             {pending ? "Signing in…" : "Enter Watchtower"}
           </button>
         </form>
+
+        <Link href="/admin/recover" className="mt-5 inline-block text-sm text-white/45 hover:text-indigo-light">Forgot your password?</Link>
       </section>
     </main>
   );
