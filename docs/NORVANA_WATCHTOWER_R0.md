@@ -186,3 +186,17 @@ The worker protocol is provider-neutral. A worker can be replaced without moving
 - mayIssueRefunds = false
 
 A worker response cannot grant itself additional authority.
+
+
+## Owner recovery
+
+Forgotten-password recovery is a separate authority path from normal owner login.
+
+- recovery is disabled by default;
+- a server-side recovery credential is required;
+- recovery can only reset the durable owner password;
+- it does not unlock Watchtower ACT authority or business actions;
+- the recovery credential is never embedded in browser source;
+- after a successful recovery, the recovery gate should be disabled again.
+
+This exists specifically so Norvana does not fall back to a hard-coded browser password when the owner forgets a credential.
