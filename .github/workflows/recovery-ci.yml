@@ -32,6 +32,8 @@ jobs:
             echo "Client-side ADMIN_PASSWORD regression found."
             exit 1
           fi
+      - name: Watchtower policy tests
+        run: npm run test:watchtower
       - name: Typecheck
         run: npm run typecheck
       - name: Lint
