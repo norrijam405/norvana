@@ -34,26 +34,28 @@ export function WatchtowerControls({ initialized }: { initialized: boolean }) {
   }
 
   return (
-    <div className="flex flex-wrap items-center gap-3">
+    <div className="flex flex-wrap items-center justify-end gap-2">
       {!initialized ? (
         <button
           onClick={initialize}
           disabled={pending === "bootstrap"}
-          className="rounded-xl bg-indigo-accent px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-50"
+          className="rounded-lg bg-indigo-accent px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-indigo-dark disabled:opacity-50"
         >
-          {pending === "bootstrap" ? "Initializing…" : "Initialize Watchtower"}
+          {pending === "bootstrap" ? "Initializing…" : "Initialize"}
         </button>
       ) : null}
 
       <button
         onClick={logout}
         disabled={pending === "logout"}
-        className="rounded-xl border border-white/10 px-4 py-2.5 text-sm text-white/70 hover:bg-white/5"
+        className="rounded-lg border border-border bg-surface px-3 py-2 text-sm font-medium text-muted transition-colors hover:bg-surface-hover hover:text-obsidian disabled:opacity-50"
       >
-        Sign out
+        {pending === "logout" ? "Signing out…" : "Sign out"}
       </button>
 
-      {message ? <p className="w-full text-sm text-amber-200">{message}</p> : null}
+      {message ? (
+        <p className="basis-full text-right text-xs text-warning">{message}</p>
+      ) : null}
     </div>
   );
 }
@@ -83,19 +85,19 @@ export function JobToggle({ job }: { job: JobControl }) {
   }
 
   return (
-    <div className="text-right">
+    <div className="shrink-0 text-right">
       <button
         onClick={toggle}
         disabled={pending}
         className={
           job.status === "ENABLED"
-            ? "rounded-lg border border-emerald-400/30 bg-emerald-400/10 px-3 py-2 text-xs font-semibold text-emerald-200"
-            : "rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-xs font-semibold text-white/60"
+            ? "rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs font-semibold text-success transition-colors hover:bg-emerald-100 disabled:opacity-50"
+            : "rounded-lg border border-border bg-surface px-3 py-2 text-xs font-semibold text-muted transition-colors hover:bg-surface-hover hover:text-obsidian disabled:opacity-50"
         }
       >
         {pending ? "Updating…" : job.status === "ENABLED" ? "Enabled" : "Paused"}
       </button>
-      {error ? <p className="mt-1 text-[10px] text-red-200">{error}</p> : null}
+      {error ? <p className="mt-1 max-w-32 text-[10px] text-error">{error}</p> : null}
     </div>
   );
 }
