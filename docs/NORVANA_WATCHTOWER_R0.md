@@ -44,13 +44,15 @@ The historical client-side password is retired.
 
 Owner access uses:
 
-- server-side password hash;
+- a temporary server-side bootstrap password hash for first access;
 - scrypt verification;
+- durable salted owner password hash in Norvana's database after first successful bootstrap;
+- in-app owner password rotation;
 - server-only session secret;
 - signed HttpOnly cookie;
 - no password literal in browser source.
 
-There is no default password.
+There is no default password. After the database owner identity exists, the old bootstrap credential is no longer accepted as an alternate password.
 
 ## R0 watchers
 
