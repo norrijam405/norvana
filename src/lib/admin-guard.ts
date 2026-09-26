@@ -50,15 +50,15 @@ export function requireBrowserSameOrigin(req: NextRequest): NextResponse | null 
  * presents NORVANA_ADMIN_API_TOKEN in x-norvana-admin-token.
  */
 export function requireRecoveryAdmin(req: NextRequest): NextResponse | null {
-  if (adminSessionFromRequest(req)) {
-    return requireBrowserSameOrigin(req);
-  }
-
   const configured = process.env.NORVANA_ADMIN_API_TOKEN;
   const supplied = req.headers.get(ADMIN_HEADER);
 
   if (configured && supplied && constantTimeEqual(configured, supplied)) {
     return null;
+  }
+
+  if (adminSessionFromRequest(req)) {
+    return requireBrowserSameOrigin(req);
   }
 
   if (!configured && !process.env.NORVANA_ADMIN_SESSION_SECRET) {
