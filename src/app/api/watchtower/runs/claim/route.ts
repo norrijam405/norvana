@@ -4,6 +4,8 @@ import { db } from "@/db";
 import { actionReceipts, watchJobs, watchRuns } from "@/db/schema";
 import { requireWatchtowerWorker } from "@/lib/watchtower/worker-auth";
 
+const SAFE_AUTHORITIES = new Set(["OBSERVE", "RECOMMEND"]);
+
 export async function POST(req: NextRequest) {
   const gate = requireWatchtowerWorker(req);
   if (gate) return gate;
@@ -26,17 +28,7 @@ export async function POST(req: NextRequest) {
     return new NextResponse(null, { status: 204 });
   }
 
-  const [run] = await db
-    .update(watchRuns)
-    .set({ status: "RUNNING", startedAt: new Date() })
-    .where(and(eq(watchRuns.id, candidate.id), eq(watchRuns.status, "QUEUED")))
-    .returning();
-
-  if (!run) {
-    return NextResponse.json({ retry: true }, { status: 409 });
-  }
-
-  const [job] = await db.select().from(watchJobs).where(eq(watchJobs.id, run.jobId)).limit(1);
+  const [job] = await db.select().from(watchJobs).where(eq(watchJobs.id, candidate.jobId)).limit(1);
 
   if (!job) {
     await db
@@ -46,9 +38,58 @@ export async function POST(req: NextRequest) {
         errorMessage: "Watch job no longer exists.",
         completedAt: new Date(),
       })
-      .where(eq(watchRuns.id, run.id));
+      .where(and(eq(watchRuns.id, candidate.id), eq(watchRuns.status, "QUEUED")));
 
     return NextResponse.json({ error: "Watch job not found." }, { status: 409 });
+  }
+
+  if (!SAFE_AUTHORITIES.has(job.authority) || job.budgetCents !== 0) {
+    const reason = !SAFE_AUTHORITIES.has(job.authority)
+      ? "AUTHORITY_CEILING_EXCEEDED"
+      : "NONZERO_R0_BUDGET";
+
+    const [blockedRun] = await db
+      .update(watchRuns)
+      .set({
+        status: "BLOCKED",
+        errorMessage: `Worker refused queued run: ${reason}.`,
+        completedAt: new Date(),
+      })
+      .where(and(eq(watchRuns.id, candidate.id), eq(watchRuns.status, "QUEUED")))
+      .returning();
+
+    if (blockedRun) {
+      await db.insert(actionReceipts).values({
+        actionType: "WATCH_RUN_CLAIM_BLOCKED",
+        authorityClass: job.authority,
+        subjectType: "watch_run",
+        subjectId: String(blockedRun.id),
+        status: "BLOCKED",
+        actor: "watchtower-worker",
+        details: {
+          jobId: job.id,
+          jobSlug: job.slug,
+          reason,
+          budgetCents: job.budgetCents,
+          authority: job.authority,
+        },
+      });
+    }
+
+    return NextResponse.json(
+      { error: "Queued run violates Watchtower R0 execution limits.", code: reason },
+      { status: 409 }
+    );
+  }
+
+  const [run] = await db
+    .update(watchRuns)
+    .set({ status: "RUNNING", startedAt: new Date() })
+    .where(and(eq(watchRuns.id, candidate.id), eq(watchRuns.status, "QUEUED")))
+    .returning();
+
+  if (!run) {
+    return NextResponse.json({ retry: true }, { status: 409 });
   }
 
   await db.insert(actionReceipts).values({
