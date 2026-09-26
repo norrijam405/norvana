@@ -33,6 +33,9 @@ export async function POST(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const gate = requireRecoveryAdmin(req);
+  if (gate) return gate;
+
   try {
     const { id } = await params;
     const supplierId = parseInt(id);
