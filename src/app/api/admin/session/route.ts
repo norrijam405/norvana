@@ -7,6 +7,7 @@ import {
   createAdminSessionToken,
 } from "@/lib/admin-session";
 import { requireBrowserSameOrigin } from "@/lib/admin-guard";
+import { readJsonObjectLimited } from "@/lib/request-body";
 import {
   checkAdminThrottle,
   clearAdminAuthFailures,
@@ -71,8 +72,16 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const body = await req.json().catch(() => ({}));
-  const password = typeof body.password === "string" ? body.password : "";
+  const parsed = await readJsonObjectLimited(req, 8_192);
+  if (!parsed.ok) {
+    return NextResponse.json(
+      { error: parsed.error, code: parsed.code },
+      { status: parsed.status }
+    );
+  }
+
+  const password =
+    typeof parsed.body.password === "string" ? parsed.body.password : "";
 
   let valid = false;
   try {

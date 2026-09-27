@@ -37,7 +37,8 @@ export function OwnerPasswordForm() {
       setCurrentPassword("");
       setNewPassword("");
       setConfirm("");
-      setMessage("Owner password changed. The temporary bootstrap password is no longer authoritative.");
+      setMessage("Owner password changed. Sign in again with your permanent password.");
+      window.location.assign("/admin/login?rotated=1");
     } catch {
       setError("Unable to reach the owner identity service.");
     } finally {

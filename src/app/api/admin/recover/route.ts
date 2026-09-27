@@ -2,6 +2,7 @@ import { timingSafeEqual } from "node:crypto";
 import { NextRequest, NextResponse } from "next/server";
 import { setOwnerPassword } from "@/lib/admin-identity";
 import { requireBrowserSameOrigin } from "@/lib/admin-guard";
+import { readJsonObjectLimited } from "@/lib/request-body";
 import {
   checkAdminThrottle,
   clearAdminAuthFailures,
@@ -44,11 +45,18 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const body = await req.json().catch(() => ({}));
+  const parsed = await readJsonObjectLimited(req, 16_384);
+  if (!parsed.ok) {
+    return NextResponse.json(
+      { error: parsed.error, code: parsed.code },
+      { status: parsed.status }
+    );
+  }
+
   const recoverySecret =
-    typeof body.recoverySecret === "string" ? body.recoverySecret : "";
+    typeof parsed.body.recoverySecret === "string" ? parsed.body.recoverySecret : "";
   const newPassword =
-    typeof body.newPassword === "string" ? body.newPassword : "";
+    typeof parsed.body.newPassword === "string" ? parsed.body.newPassword : "";
 
   if (!recoverySecret || !secureEqual(recoverySecret, expected)) {
     const failure = await recordAdminAuthFailure(req, "RECOVERY");

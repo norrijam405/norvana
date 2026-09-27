@@ -111,7 +111,7 @@ export async function ownerLoginConfigured() {
 }
 
 export async function verifyOwnerPassword(password: string) {
-  if (!password) return false;
+  if (!password || password.length > 256) return false;
 
   await ensureAdminIdentityTable();
 
@@ -145,6 +145,10 @@ export async function verifyOwnerPassword(password: string) {
 export async function setOwnerPassword(newPassword: string) {
   if (newPassword.length < 12) {
     return { ok: false as const, error: "New password must be at least 12 characters." };
+  }
+
+  if (newPassword.length > 256) {
+    return { ok: false as const, error: "New password must be 256 characters or fewer." };
   }
 
   await ensureAdminIdentityTable();

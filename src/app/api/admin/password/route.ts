@@ -1,16 +1,25 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireRecoveryAdmin } from "@/lib/admin-guard";
 import { changeOwnerPassword } from "@/lib/admin-identity";
+import { ADMIN_SESSION_COOKIE } from "@/lib/admin-session";
+import { readJsonObjectLimited } from "@/lib/request-body";
 
 export async function POST(req: NextRequest) {
   const gate = requireRecoveryAdmin(req);
   if (gate) return gate;
 
-  const body = await req.json().catch(() => ({}));
+  const parsed = await readJsonObjectLimited(req, 16_384);
+  if (!parsed.ok) {
+    return NextResponse.json(
+      { error: parsed.error, code: parsed.code },
+      { status: parsed.status }
+    );
+  }
+
   const currentPassword =
-    typeof body.currentPassword === "string" ? body.currentPassword : "";
+    typeof parsed.body.currentPassword === "string" ? parsed.body.currentPassword : "";
   const newPassword =
-    typeof body.newPassword === "string" ? body.newPassword : "";
+    typeof parsed.body.newPassword === "string" ? parsed.body.newPassword : "";
 
   try {
     const result = await changeOwnerPassword(currentPassword, newPassword);
@@ -18,10 +27,23 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: result.error }, { status: 400 });
     }
 
-    return NextResponse.json({
+    const response = NextResponse.json({
       changed: true,
       bootstrapCredentialNoLongerAuthoritative: true,
+      reloginRequired: true,
     });
+
+    response.cookies.set({
+      name: ADMIN_SESSION_COOKIE,
+      value: "",
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "strict",
+      path: "/",
+      maxAge: 0,
+    });
+
+    return response;
   } catch (error) {
     console.error("Admin password change error:", error);
     return NextResponse.json(
