@@ -44,19 +44,43 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const name = String(body.name || "").trim();
+  const name = String(body.name || "").trim().slice(0, 255);
   const slug = String(body.slug || "")
     .trim()
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, "-")
-    .replace(/(^-|-$)/g, "");
+    .replace(/(^-|-$)/g, "")
+    .slice(0, 120)
+    .replace(/-$/g, "");
 
   if (!name || !slug) {
     return NextResponse.json({ error: "Name and slug are required." }, { status: 400 });
   }
 
-  const cadenceMinutes = Math.max(60, Number(body.cadenceMinutes) || 1440);
-  const requestedBudgetCents = Math.max(0, Number(body.budgetCents) || 0);
+  const rawCadence = body.cadenceMinutes === undefined ? 1440 : Number(body.cadenceMinutes);
+  if (!Number.isFinite(rawCadence) || !Number.isInteger(rawCadence)) {
+    return NextResponse.json(
+      { error: "cadenceMinutes must be an integer.", code: "WATCHTOWER_INVALID_CADENCE" },
+      { status: 400 }
+    );
+  }
+  const cadenceMinutes = Math.min(525_600, Math.max(60, rawCadence));
+
+  const rawBudget = body.budgetCents === undefined ? 0 : Number(body.budgetCents);
+  if (!Number.isFinite(rawBudget) || !Number.isInteger(rawBudget) || rawBudget < 0) {
+    return NextResponse.json(
+      { error: "budgetCents must be a non-negative integer.", code: "WATCHTOWER_INVALID_BUDGET" },
+      { status: 400 }
+    );
+  }
+  const requestedBudgetCents = rawBudget;
+
+  const sourcePolicy =
+    body.sourcePolicy &&
+    typeof body.sourcePolicy === "object" &&
+    !Array.isArray(body.sourcePolicy)
+      ? (body.sourcePolicy as Record<string, unknown>)
+      : {};
 
   if (requestedBudgetCents !== 0) {
     return NextResponse.json(
@@ -74,15 +98,14 @@ export async function POST(req: NextRequest) {
       .values({
         name,
         slug,
-        category: String(body.category || "general"),
-        description: String(body.description || ""),
-        instructions: String(body.instructions || ""),
+        category: String(body.category || "general").slice(0, 80),
+        description: String(body.description || "").slice(0, 10_000),
+        instructions: String(body.instructions || "").slice(0, 20_000),
         authority,
         status: "PAUSED",
         cadenceMinutes,
         budgetCents: 0,
-        sourcePolicy:
-          body.sourcePolicy && typeof body.sourcePolicy === "object" ? body.sourcePolicy : {},
+        sourcePolicy,
       })
       .returning();
 
