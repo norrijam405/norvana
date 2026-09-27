@@ -2,10 +2,10 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db";
 import { debugLogs } from "@/db/schema";
 import { runDiagnosticScan } from "@/lib/debugger";
-import { requireRecoveryAdmin } from "@/lib/admin-guard";
+import { requireCurrentRecoveryAdmin } from "@/lib/admin-guard";
 
 export async function POST(req: NextRequest) {
-  const gate = requireRecoveryAdmin(req);
+  const gate = await requireCurrentRecoveryAdmin(req);
   if (gate) return gate;
 
   try {
