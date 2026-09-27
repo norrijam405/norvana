@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { and, asc, desc, eq } from "drizzle-orm";
+import { and, asc, desc, eq, ne } from "drizzle-orm";
 import { db } from "@/db";
 import { actionReceipts, watchJobs, watchRuns } from "@/db/schema";
 import { requireWatchtowerWorker } from "@/lib/watchtower/worker-auth";
@@ -103,10 +103,23 @@ export async function POST(req: NextRequest) {
     );
   }
 
+  const requestedMode = (req.headers.get("x-norvana-worker-mode") || "standard").toLowerCase();
+  if (requestedMode !== "standard" && requestedMode !== "harness") {
+    return NextResponse.json(
+      { error: "Invalid worker mode.", code: "WATCHTOWER_INVALID_WORKER_MODE" },
+      { status: 400 }
+    );
+  }
+
+  const candidateWhere =
+    requestedMode === "harness"
+      ? and(eq(watchRuns.status, "QUEUED"), eq(watchRuns.trigger, "HARNESS_TEST"))
+      : and(eq(watchRuns.status, "QUEUED"), ne(watchRuns.trigger, "HARNESS_TEST"));
+
   const [candidate] = await db
     .select()
     .from(watchRuns)
-    .where(eq(watchRuns.status, "QUEUED"))
+    .where(candidateWhere)
     .orderBy(asc(watchRuns.createdAt))
     .limit(1);
 
@@ -195,7 +208,7 @@ export async function POST(req: NextRequest) {
     subjectId: String(run.id),
     status: "RUNNING",
     actor: "watchtower-worker",
-    details: { jobId: job.id, jobSlug: job.slug },
+    details: { jobId: job.id, jobSlug: job.slug, workerMode: requestedMode },
   });
 
   return NextResponse.json({
@@ -215,6 +228,7 @@ export async function POST(req: NextRequest) {
       budgetCents: job.budgetCents,
       sourcePolicy: job.sourcePolicy,
     },
+    workerMode: requestedMode,
     hardLimits: {
       maySpendMoney: false,
       mayPublishProducts: false,
