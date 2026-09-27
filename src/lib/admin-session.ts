@@ -1,5 +1,6 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
 import type { NextRequest } from "next/server";
+import { ownerSessionVersion } from "@/lib/admin-identity";
 
 export const ADMIN_SESSION_COOKIE = "norvana_admin_session";
 const SESSION_TTL_SECONDS = 60 * 60 * 12;
@@ -8,6 +9,7 @@ type AdminSessionPayload = {
   role: "owner";
   iat: number;
   exp: number;
+  sv?: number;
 };
 
 function safeEqual(left: Buffer, right: Buffer) {
@@ -24,13 +26,14 @@ export function adminSessionConfigured() {
   return Boolean(process.env.NORVANA_ADMIN_SESSION_SECRET);
 }
 
-export function createAdminSessionToken(now = Date.now()) {
+export function createAdminSessionToken(sessionVersion = 0, now = Date.now()) {
   const secret = required("NORVANA_ADMIN_SESSION_SECRET");
   const iat = Math.floor(now / 1000);
   const payload: AdminSessionPayload = {
     role: "owner",
     iat,
     exp: iat + SESSION_TTL_SECONDS,
+    sv: sessionVersion,
   };
 
   const encoded = Buffer.from(JSON.stringify(payload)).toString("base64url");
@@ -67,8 +70,22 @@ export function verifyAdminSessionToken(token?: string | null): AdminSessionPayl
   }
 }
 
+export async function verifyCurrentAdminSessionToken(token?: string | null) {
+  const payload = verifyAdminSessionToken(token);
+  if (!payload || !payload.sv || payload.sv < 1) return null;
+
+  const currentVersion = await ownerSessionVersion();
+  if (!currentVersion || payload.sv !== currentVersion) return null;
+
+  return payload;
+}
+
 export function adminSessionFromRequest(req: NextRequest) {
   return verifyAdminSessionToken(req.cookies.get(ADMIN_SESSION_COOKIE)?.value);
+}
+
+export async function currentAdminSessionFromRequest(req: NextRequest) {
+  return verifyCurrentAdminSessionToken(req.cookies.get(ADMIN_SESSION_COOKIE)?.value);
 }
 
 export const ADMIN_SESSION_MAX_AGE = SESSION_TTL_SECONDS;
