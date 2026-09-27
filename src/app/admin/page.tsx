@@ -15,6 +15,7 @@ import { JobToggle, WatchtowerControls } from "@/components/admin/watchtower-con
 import { WatchtowerSelfTest } from "@/components/admin/watchtower-self-test";
 import { WatchtowerWorkerSelfTest } from "@/components/admin/watchtower-worker-self-test";
 import { ownerCredentialState } from "@/lib/admin-identity";
+import { currentWatchtowerRuntimeId } from "@/lib/watchtower/runtime-id";
 
 export const dynamic = "force-dynamic";
 
@@ -83,11 +84,24 @@ export default async function AdminPage() {
   }
 
   const ownerCredential = await ownerCredentialState();
-  const controlProofPassed = runs.some(
-    (run) => run.trigger === "CONTROL_TEST" && run.status === "PASS"
+  const runtimeId = currentWatchtowerRuntimeId();
+  const controlProofPassed = Boolean(
+    runtimeId &&
+      runs.some(
+        (run) =>
+          run.trigger === "CONTROL_TEST" &&
+          run.status === "PASS" &&
+          run.runtimeId === runtimeId
+      )
   );
-  const workerProofPassed = runs.some(
-    (run) => run.trigger === "WORKER_TEST" && run.status === "PASS"
+  const workerProofPassed = Boolean(
+    runtimeId &&
+      runs.some(
+        (run) =>
+          run.trigger === "WORKER_TEST" &&
+          run.status === "PASS" &&
+          run.runtimeId === runtimeId
+      )
   );
   const enabledJobs = jobs.filter((job) => job.status === "ENABLED").length;
   const unresolvedCandidates = candidates.filter((candidate) => candidate.status === "NEW").length;
@@ -179,6 +193,11 @@ export default async function AdminPage() {
               good={!externalActionsEnabled}
             />
             <StatusRow label="IgniAqua federation" value={federationConfigured ? "CONFIGURED" : "PLANNED"} good={!federationConfigured} />
+            <StatusRow
+              label="Proof scope"
+              value={runtimeId ? "CURRENT DEPLOYMENT" : "UNBOUND"}
+              good={Boolean(runtimeId)}
+            />
             <StatusRow
               label="Control proof"
               value={controlProofPassed ? "PASS" : "REQUIRED"}
