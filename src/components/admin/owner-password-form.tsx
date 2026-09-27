@@ -1,8 +1,10 @@
 "use client";
 
 import { FormEvent, useState } from "react";
+import { useRouter } from "next/navigation";
 
 export function OwnerPasswordForm() {
+  const router = useRouter();
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirm, setConfirm] = useState("");
@@ -38,7 +40,7 @@ export function OwnerPasswordForm() {
       setNewPassword("");
       setConfirm("");
       setMessage("Owner password changed. Sign in again with your permanent password.");
-      window.location.assign("/admin/login?rotated=1");
+      router.push("/admin/login?rotated=1");
     } catch {
       setError("Unable to reach the owner identity service.");
     } finally {
