@@ -5,10 +5,22 @@ import { actionReceipts, watchJobs, watchRuns } from "@/db/schema";
 import { requireCurrentRecoveryAdmin } from "@/lib/admin-guard";
 import { ownerCredentialState } from "@/lib/admin-identity";
 import { evaluateR0Job } from "@/lib/watchtower/policy";
+import { currentWatchtowerRuntimeId } from "@/lib/watchtower/runtime-id";
 
 export async function POST(req: NextRequest) {
   const gate = await requireCurrentRecoveryAdmin(req);
   if (gate) return gate;
+
+  const runtimeId = currentWatchtowerRuntimeId();
+  if (!runtimeId) {
+    return NextResponse.json(
+      {
+        error: "Watchtower runtime identity is unavailable.",
+        code: "WATCHTOWER_RUNTIME_ID_REQUIRED",
+      },
+      { status: 503 }
+    );
+  }
 
   if (
     process.env.NORVANA_WATCHTOWER_QUEUE_ENABLED === "true" ||
@@ -91,7 +103,13 @@ export async function POST(req: NextRequest) {
   const [controlProof] = await db
     .select({ id: watchRuns.id })
     .from(watchRuns)
-    .where(and(eq(watchRuns.trigger, "CONTROL_TEST"), eq(watchRuns.status, "PASS")))
+    .where(
+      and(
+        eq(watchRuns.trigger, "CONTROL_TEST"),
+        eq(watchRuns.status, "PASS"),
+        eq(watchRuns.runtimeId, runtimeId)
+      )
+    )
     .limit(1);
 
   if (!controlProof) {
@@ -114,6 +132,7 @@ export async function POST(req: NextRequest) {
         jobId: job.id,
         status: "QUEUED",
         trigger: "WORKER_TEST",
+        runtimeId,
         summary: "Deterministic worker contract proof queued with no external execution.",
         findings: [],
         evidenceRefs: [],
@@ -137,6 +156,7 @@ export async function POST(req: NextRequest) {
           externalNetworkUsed: false,
           executorUsed: false,
           estimatedCostCents: 0,
+          runtimeId,
         },
       })
       .returning();
@@ -238,6 +258,7 @@ export async function POST(req: NextRequest) {
   return NextResponse.json({
     ok: true,
     proofClass: "DETERMINISTIC_WORKER_CONTRACT",
+    runtimeId,
     runId: proof.run.id,
     receiptIds: proof.receipts,
     statePath: ["QUEUED", "RUNNING", "PASS"],
