@@ -255,6 +255,7 @@ export const watchRuns = pgTable("watch_runs", {
   jobId: integer("job_id").notNull(),
   status: varchar("status", { length: 30 }).notNull().default("QUEUED"),
   trigger: varchar("trigger", { length: 30 }).notNull().default("SCHEDULE"),
+  runtimeId: varchar("runtime_id", { length: 255 }),
   summary: text("summary").notNull().default(""),
   findings: json("findings").$type<Record<string, unknown>[]>().notNull().default([]),
   evidenceRefs: json("evidence_refs").$type<Record<string, unknown>[]>().notNull().default([]),
