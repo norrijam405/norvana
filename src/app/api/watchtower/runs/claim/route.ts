@@ -5,6 +5,7 @@ import { actionReceipts, watchJobs, watchRuns } from "@/db/schema";
 import { requireWatchtowerWorker } from "@/lib/watchtower/worker-auth";
 import { ownerCredentialState } from "@/lib/admin-identity";
 import { evaluateR0Job } from "@/lib/watchtower/policy";
+import { currentWatchtowerRuntimeId } from "@/lib/watchtower/runtime-id";
 
 function r0ExternalActionsDisabled() {
   return (
@@ -20,6 +21,17 @@ export async function POST(req: NextRequest) {
   if (process.env.NORVANA_WATCHTOWER_EXECUTOR_ENABLED !== "true") {
     return NextResponse.json(
       { error: "Watchtower execution is disabled.", code: "WATCHTOWER_EXECUTOR_DISABLED" },
+      { status: 503 }
+    );
+  }
+
+  const runtimeId = currentWatchtowerRuntimeId();
+  if (!runtimeId) {
+    return NextResponse.json(
+      {
+        error: "Watchtower runtime identity is unavailable.",
+        code: "WATCHTOWER_RUNTIME_ID_REQUIRED",
+      },
       { status: 503 }
     );
   }
@@ -48,7 +60,13 @@ export async function POST(req: NextRequest) {
   const [controlProof] = await db
     .select({ id: watchRuns.id })
     .from(watchRuns)
-    .where(and(eq(watchRuns.trigger, "CONTROL_TEST"), eq(watchRuns.status, "PASS")))
+    .where(
+      and(
+        eq(watchRuns.trigger, "CONTROL_TEST"),
+        eq(watchRuns.status, "PASS"),
+        eq(watchRuns.runtimeId, runtimeId)
+      )
+    )
     .orderBy(desc(watchRuns.completedAt))
     .limit(1);
 
@@ -65,7 +83,13 @@ export async function POST(req: NextRequest) {
   const [workerProof] = await db
     .select({ id: watchRuns.id })
     .from(watchRuns)
-    .where(and(eq(watchRuns.trigger, "WORKER_TEST"), eq(watchRuns.status, "PASS")))
+    .where(
+      and(
+        eq(watchRuns.trigger, "WORKER_TEST"),
+        eq(watchRuns.status, "PASS"),
+        eq(watchRuns.runtimeId, runtimeId)
+      )
+    )
     .orderBy(desc(watchRuns.completedAt))
     .limit(1);
 
@@ -88,6 +112,17 @@ export async function POST(req: NextRequest) {
 
   if (!candidate) {
     return new NextResponse(null, { status: 204 });
+  }
+
+  if (candidate.runtimeId !== runtimeId) {
+    return NextResponse.json(
+      {
+        error: "Queued run belongs to a different deployment and requires review.",
+        code: "WATCHTOWER_STALE_RUNTIME_RUN",
+        runId: candidate.id,
+      },
+      { status: 409 }
+    );
   }
 
   const [job] = await db.select().from(watchJobs).where(eq(watchJobs.id, candidate.jobId)).limit(1);
