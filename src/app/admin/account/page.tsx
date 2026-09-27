@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 import {
   ADMIN_SESSION_COOKIE,
   adminSessionConfigured,
-  verifyAdminSessionToken,
+  verifyCurrentAdminSessionToken,
 } from "@/lib/admin-session";
 import { OwnerPasswordForm } from "@/components/admin/owner-password-form";
 
@@ -14,7 +14,9 @@ export default async function AdminAccountPage() {
   if (!adminSessionConfigured()) redirect("/admin");
 
   const cookieStore = await cookies();
-  const session = verifyAdminSessionToken(cookieStore.get(ADMIN_SESSION_COOKIE)?.value);
+  const session = await verifyCurrentAdminSessionToken(
+    cookieStore.get(ADMIN_SESSION_COOKIE)?.value
+  );
   if (!session) redirect("/admin/login");
 
   return (
