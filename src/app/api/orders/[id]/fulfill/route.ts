@@ -9,7 +9,7 @@ export async function POST(
   _req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const adminGate = requireCurrentRecoveryAdmin(_req);
+  const adminGate = await requireCurrentRecoveryAdmin(_req);
   if (adminGate) return adminGate;
   const fulfillmentGate = requireExternalFulfillmentEnabled();
   if (fulfillmentGate) return fulfillmentGate;
