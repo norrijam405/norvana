@@ -5,6 +5,7 @@ import { db } from "@/db";
 import { actionReceipts, watchJobs, watchRuns } from "@/db/schema";
 import { ownerCredentialState } from "@/lib/admin-identity";
 import { evaluateR0Job } from "@/lib/watchtower/policy";
+import { currentWatchtowerRuntimeId } from "@/lib/watchtower/runtime-id";
 
 function r0ExternalActionsDisabled() {
   return (
@@ -36,6 +37,17 @@ export async function POST(req: NextRequest) {
     });
   }
 
+  const runtimeId = currentWatchtowerRuntimeId();
+  if (!runtimeId) {
+    return NextResponse.json(
+      {
+        error: "Watchtower runtime identity is unavailable.",
+        code: "WATCHTOWER_RUNTIME_ID_REQUIRED",
+      },
+      { status: 503 }
+    );
+  }
+
   if (!r0ExternalActionsDisabled()) {
     return NextResponse.json(
       {
@@ -60,7 +72,13 @@ export async function POST(req: NextRequest) {
   const [controlProof] = await db
     .select({ id: watchRuns.id })
     .from(watchRuns)
-    .where(and(eq(watchRuns.trigger, "CONTROL_TEST"), eq(watchRuns.status, "PASS")))
+    .where(
+      and(
+        eq(watchRuns.trigger, "CONTROL_TEST"),
+        eq(watchRuns.status, "PASS"),
+        eq(watchRuns.runtimeId, runtimeId)
+      )
+    )
     .orderBy(desc(watchRuns.completedAt))
     .limit(1);
 
@@ -77,7 +95,13 @@ export async function POST(req: NextRequest) {
   const [workerProof] = await db
     .select({ id: watchRuns.id })
     .from(watchRuns)
-    .where(and(eq(watchRuns.trigger, "WORKER_TEST"), eq(watchRuns.status, "PASS")))
+    .where(
+      and(
+        eq(watchRuns.trigger, "WORKER_TEST"),
+        eq(watchRuns.status, "PASS"),
+        eq(watchRuns.runtimeId, runtimeId)
+      )
+    )
     .orderBy(desc(watchRuns.completedAt))
     .limit(1);
 
@@ -158,6 +182,7 @@ export async function POST(req: NextRequest) {
           jobId: claimedJob.id,
           status: "QUEUED",
           trigger: "SCHEDULE",
+          runtimeId,
           summary: "Queued by Norvana Watchtower scheduler.",
         })
         .returning();
@@ -174,6 +199,7 @@ export async function POST(req: NextRequest) {
           jobSlug: claimedJob.slug,
           cadenceMinutes: claimedJob.cadenceMinutes,
           budgetCents: claimedJob.budgetCents,
+          runtimeId,
         },
       });
 
