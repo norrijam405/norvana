@@ -2,7 +2,7 @@ import type { ReactNode } from "react";
 import Link from "next/link";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
-import { asc, desc } from "drizzle-orm";
+import { and, asc, desc, eq } from "drizzle-orm";
 import { db } from "@/db";
 import { watchCandidates, watchJobs, watchRuns } from "@/db/schema";
 import {
@@ -65,6 +65,8 @@ export default async function AdminPage() {
   );
   if (!session) redirect("/admin/login");
 
+  const runtimeId = currentWatchtowerRuntimeId();
+
   let initialized = false;
   let jobs: (typeof watchJobs.$inferSelect)[] = [];
   let runs: (typeof watchRuns.$inferSelect)[] = [];
@@ -84,25 +86,43 @@ export default async function AdminPage() {
   }
 
   const ownerCredential = await ownerCredentialState();
-  const runtimeId = currentWatchtowerRuntimeId();
-  const controlProofPassed = Boolean(
-    runtimeId &&
-      runs.some(
-        (run) =>
-          run.trigger === "CONTROL_TEST" &&
-          run.status === "PASS" &&
-          run.runtimeId === runtimeId
-      )
-  );
-  const workerProofPassed = Boolean(
-    runtimeId &&
-      runs.some(
-        (run) =>
-          run.trigger === "WORKER_TEST" &&
-          run.status === "PASS" &&
-          run.runtimeId === runtimeId
-      )
-  );
+
+  let controlProofPassed = false;
+  let workerProofPassed = false;
+
+  if (initialized && runtimeId) {
+    try {
+      const [controlProof] = await db
+        .select({ id: watchRuns.id })
+        .from(watchRuns)
+        .where(
+          and(
+            eq(watchRuns.trigger, "CONTROL_TEST"),
+            eq(watchRuns.status, "PASS"),
+            eq(watchRuns.runtimeId, runtimeId)
+          )
+        )
+        .limit(1);
+
+      const [workerProof] = await db
+        .select({ id: watchRuns.id })
+        .from(watchRuns)
+        .where(
+          and(
+            eq(watchRuns.trigger, "WORKER_TEST"),
+            eq(watchRuns.status, "PASS"),
+            eq(watchRuns.runtimeId, runtimeId)
+          )
+        )
+        .limit(1);
+
+      controlProofPassed = Boolean(controlProof);
+      workerProofPassed = Boolean(workerProof);
+    } catch {
+      controlProofPassed = false;
+      workerProofPassed = false;
+    }
+  }
   const enabledJobs = jobs.filter((job) => job.status === "ENABLED").length;
   const unresolvedCandidates = candidates.filter((candidate) => candidate.status === "NEW").length;
   const schedulerConfigured = Boolean(process.env.NORVANA_WATCHTOWER_CRON_SECRET);
