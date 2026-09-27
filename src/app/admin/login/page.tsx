@@ -2,8 +2,10 @@
 
 import { FormEvent, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 export default function AdminLoginPage() {
+  const router = useRouter();
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [pending, setPending] = useState(false);
@@ -26,7 +28,7 @@ export default function AdminLoginPage() {
         return;
       }
 
-      window.location.assign("/admin");
+      router.push("/admin");
     } catch {
       setError("Unable to reach the Norvana admin service.");
     } finally {
