@@ -80,6 +80,9 @@ export default async function AdminPage() {
   }
 
   const ownerCredential = await ownerCredentialState();
+  const controlProofPassed = runs.some(
+    (run) => run.trigger === "CONTROL_TEST" && run.status === "PASS"
+  );
   const enabledJobs = jobs.filter((job) => job.status === "ENABLED").length;
   const unresolvedCandidates = candidates.filter((candidate) => candidate.status === "NEW").length;
   const schedulerConfigured = Boolean(process.env.NORVANA_WATCHTOWER_CRON_SECRET);
@@ -159,6 +162,11 @@ export default async function AdminPage() {
             <StatusRow label="Executor" value={executorEnabled ? "CONFIGURED" : "DISABLED"} good={!executorEnabled} />
             <StatusRow label="External actions" value="DISABLED" good />
             <StatusRow label="IgniAqua federation" value={federationConfigured ? "CONFIGURED" : "PLANNED"} good={!federationConfigured} />
+            <StatusRow
+              label="Control proof"
+              value={controlProofPassed ? "PASS" : "REQUIRED"}
+              good={controlProofPassed}
+            />
             <StatusRow
               label="Owner credential"
               value={ownerCredential.rotated ? "PERMANENT" : "ROTATION REQUIRED"}
