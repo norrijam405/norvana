@@ -2,10 +2,10 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db";
 import { supplierCredentials } from "@/db/schema";
 import { eq } from "drizzle-orm";
-import { requireRecoveryAdmin } from "@/lib/admin-guard";
+import { requireCurrentRecoveryAdmin } from "@/lib/admin-guard";
 
 export async function POST(req: NextRequest) {
-  const gate = requireRecoveryAdmin(req);
+  const gate = await requireCurrentRecoveryAdmin(req);
   if (gate) return gate;
 
   return NextResponse.json(
@@ -22,7 +22,7 @@ export async function DELETE(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const gate = requireRecoveryAdmin(req);
+  const gate = await requireCurrentRecoveryAdmin(req);
   if (gate) return gate;
 
   try {
