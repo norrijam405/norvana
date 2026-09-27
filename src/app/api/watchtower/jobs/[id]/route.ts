@@ -49,6 +49,13 @@ export async function PATCH(
         .orderBy(desc(watchRuns.completedAt))
         .limit(1);
 
+      const [workerProof] = await db
+        .select({ id: watchRuns.id })
+        .from(watchRuns)
+        .where(and(eq(watchRuns.trigger, "WORKER_TEST"), eq(watchRuns.status, "PASS")))
+        .orderBy(desc(watchRuns.completedAt))
+        .limit(1);
+
       if (!proof) {
         return NextResponse.json(
           {
@@ -72,6 +79,7 @@ export async function PATCH(
       const decision = evaluateWatcherEnable({
         ownerCredentialRotated: ownerCredential.rotated,
         controlSelfTestPassed: Boolean(proof),
+        workerContractProofPassed: Boolean(workerProof),
         authority: current.authority,
         budgetCents: current.budgetCents,
       });

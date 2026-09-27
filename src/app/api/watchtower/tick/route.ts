@@ -74,6 +74,23 @@ export async function POST(req: NextRequest) {
     );
   }
 
+  const [workerProof] = await db
+    .select({ id: watchRuns.id })
+    .from(watchRuns)
+    .where(and(eq(watchRuns.trigger, "WORKER_TEST"), eq(watchRuns.status, "PASS")))
+    .orderBy(desc(watchRuns.completedAt))
+    .limit(1);
+
+  if (!workerProof) {
+    return NextResponse.json(
+      {
+        error: "Deterministic worker contract proof is required before Watchtower queueing.",
+        code: "WATCHTOWER_WORKER_PROOF_REQUIRED",
+      },
+      { status: 409 }
+    );
+  }
+
   const now = new Date();
   const due = await db
     .select()

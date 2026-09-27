@@ -24,6 +24,7 @@ test("watcher enable requires permanent owner credential", () => {
   const result = evaluateWatcherEnable({
     ownerCredentialRotated: false,
     controlSelfTestPassed: true,
+    workerContractProofPassed: true,
     authority: "OBSERVE",
     budgetCents: 0,
   });
@@ -37,6 +38,7 @@ test("watcher enable requires successful control self-test", () => {
   const result = evaluateWatcherEnable({
     ownerCredentialRotated: true,
     controlSelfTestPassed: false,
+    workerContractProofPassed: true,
     authority: "OBSERVE",
     budgetCents: 0,
   });
@@ -46,10 +48,25 @@ test("watcher enable requires successful control self-test", () => {
   }
 });
 
+test("watcher enable requires deterministic worker proof", () => {
+  const result = evaluateWatcherEnable({
+    ownerCredentialRotated: true,
+    controlSelfTestPassed: true,
+    workerContractProofPassed: false,
+    authority: "OBSERVE",
+    budgetCents: 0,
+  });
+  assert.equal(result.ok, false);
+  if (!result.ok) {
+    assert.equal(result.code, "WATCHTOWER_WORKER_PROOF_REQUIRED");
+  }
+});
+
 test("watcher enable rejects ACT and paid budgets even after prerequisites", () => {
   const act = evaluateWatcherEnable({
     ownerCredentialRotated: true,
     controlSelfTestPassed: true,
+    workerContractProofPassed: true,
     authority: "ACT",
     budgetCents: 0,
   });
@@ -58,6 +75,7 @@ test("watcher enable rejects ACT and paid budgets even after prerequisites", () 
   const paid = evaluateWatcherEnable({
     ownerCredentialRotated: true,
     controlSelfTestPassed: true,
+    workerContractProofPassed: true,
     authority: "RECOMMEND",
     budgetCents: 1,
   });
@@ -69,6 +87,7 @@ test("watcher enable passes only when all R0 gates pass", () => {
     evaluateWatcherEnable({
       ownerCredentialRotated: true,
       controlSelfTestPassed: true,
+      workerContractProofPassed: true,
       authority: "RECOMMEND",
       budgetCents: 0,
     }),

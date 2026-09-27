@@ -13,6 +13,7 @@ import {
 import { WATCHTOWER_JOB_TEMPLATES } from "@/lib/watchtower/default-jobs";
 import { JobToggle, WatchtowerControls } from "@/components/admin/watchtower-controls";
 import { WatchtowerSelfTest } from "@/components/admin/watchtower-self-test";
+import { WatchtowerWorkerSelfTest } from "@/components/admin/watchtower-worker-self-test";
 import { ownerCredentialState } from "@/lib/admin-identity";
 
 export const dynamic = "force-dynamic";
@@ -84,6 +85,9 @@ export default async function AdminPage() {
   const ownerCredential = await ownerCredentialState();
   const controlProofPassed = runs.some(
     (run) => run.trigger === "CONTROL_TEST" && run.status === "PASS"
+  );
+  const workerProofPassed = runs.some(
+    (run) => run.trigger === "WORKER_TEST" && run.status === "PASS"
   );
   const enabledJobs = jobs.filter((job) => job.status === "ENABLED").length;
   const unresolvedCandidates = candidates.filter((candidate) => candidate.status === "NEW").length;
@@ -181,6 +185,11 @@ export default async function AdminPage() {
               good={controlProofPassed}
             />
             <StatusRow
+              label="Worker proof"
+              value={workerProofPassed ? "PASS" : "REQUIRED"}
+              good={workerProofPassed}
+            />
+            <StatusRow
               label="Owner credential"
               value={ownerCredential.rotated ? "PERMANENT" : "ROTATION REQUIRED"}
               good={ownerCredential.rotated}
@@ -194,6 +203,7 @@ export default async function AdminPage() {
               </Link>
             ) : null}
             <WatchtowerSelfTest />
+            <WatchtowerWorkerSelfTest controlProofPassed={controlProofPassed} />
           </InfoCard>
 
           <InfoCard eyebrow="AUTHORITY" title="Bounded by design">

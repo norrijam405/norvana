@@ -36,6 +36,7 @@ export function evaluateR0Job(
 export function evaluateWatcherEnable(input: {
   ownerCredentialRotated: boolean;
   controlSelfTestPassed: boolean;
+  workerContractProofPassed: boolean;
   authority: string;
   budgetCents: number;
 }): R0GateDecision {
@@ -52,6 +53,14 @@ export function evaluateWatcherEnable(input: {
       ok: false,
       code: "WATCHTOWER_CONTROL_SELF_TEST_REQUIRED",
       reason: "Run the Watchtower safe self-test before enabling a watcher.",
+    };
+  }
+
+  if (!input.workerContractProofPassed) {
+    return {
+      ok: false,
+      code: "WATCHTOWER_WORKER_PROOF_REQUIRED",
+      reason: "Run the deterministic worker contract proof before enabling a watcher.",
     };
   }
 
