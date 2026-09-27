@@ -6,6 +6,13 @@ import { actionReceipts, watchJobs, watchRuns } from "@/db/schema";
 import { ownerCredentialState } from "@/lib/admin-identity";
 import { evaluateR0Job } from "@/lib/watchtower/policy";
 
+function r0ExternalActionsDisabled() {
+  return (
+    process.env.NORVANA_EXTERNAL_FULFILLMENT_ENABLED !== "true" &&
+    process.env.NORVANA_SUPPLIER_CONNECTORS_ENABLED !== "true"
+  );
+}
+
 function secureEqual(left: string, right: string) {
   const a = Buffer.from(left);
   const b = Buffer.from(right);
@@ -27,6 +34,16 @@ export async function POST(req: NextRequest) {
       queued: 0,
       message: "Watchtower scheduler is configured but queueing is disabled.",
     });
+  }
+
+  if (!r0ExternalActionsDisabled()) {
+    return NextResponse.json(
+      {
+        error: "Watchtower R0 queueing requires external commerce actions to remain disabled.",
+        code: "WATCHTOWER_EXTERNAL_ACTIONS_MUST_BE_DISABLED",
+      },
+      { status: 409 }
+    );
   }
 
   const ownerCredential = await ownerCredentialState();

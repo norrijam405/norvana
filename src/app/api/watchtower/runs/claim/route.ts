@@ -6,6 +6,13 @@ import { requireWatchtowerWorker } from "@/lib/watchtower/worker-auth";
 import { ownerCredentialState } from "@/lib/admin-identity";
 import { evaluateR0Job } from "@/lib/watchtower/policy";
 
+function r0ExternalActionsDisabled() {
+  return (
+    process.env.NORVANA_EXTERNAL_FULFILLMENT_ENABLED !== "true" &&
+    process.env.NORVANA_SUPPLIER_CONNECTORS_ENABLED !== "true"
+  );
+}
+
 export async function POST(req: NextRequest) {
   const gate = requireWatchtowerWorker(req);
   if (gate) return gate;
@@ -14,6 +21,16 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(
       { error: "Watchtower execution is disabled.", code: "WATCHTOWER_EXECUTOR_DISABLED" },
       { status: 503 }
+    );
+  }
+
+  if (!r0ExternalActionsDisabled()) {
+    return NextResponse.json(
+      {
+        error: "Watchtower R0 execution requires external commerce actions to remain disabled.",
+        code: "WATCHTOWER_EXTERNAL_ACTIONS_MUST_BE_DISABLED",
+      },
+      { status: 409 }
     );
   }
 

@@ -3,6 +3,7 @@ import { asc } from "drizzle-orm";
 import { db } from "@/db";
 import { watchJobs } from "@/db/schema";
 import { requireRecoveryAdmin } from "@/lib/admin-guard";
+import { readJsonObjectLimited } from "@/lib/request-body";
 
 const SAFE_AUTHORITIES = new Set(["OBSERVE", "RECOMMEND"]);
 
@@ -25,7 +26,15 @@ export async function POST(req: NextRequest) {
   const gate = requireRecoveryAdmin(req);
   if (gate) return gate;
 
-  const body = await req.json().catch(() => ({}));
+  const parsed = await readJsonObjectLimited(req, 32_768);
+  if (!parsed.ok) {
+    return NextResponse.json(
+      { error: parsed.error, code: parsed.code },
+      { status: parsed.status }
+    );
+  }
+
+  const body = parsed.body;
   const authority = String(body.authority || "OBSERVE").toUpperCase();
 
   if (!SAFE_AUTHORITIES.has(authority)) {
