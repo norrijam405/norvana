@@ -27,6 +27,8 @@ jobs:
           node-version: 22
       - name: Install dependencies
         run: npm install --ignore-scripts
+      - name: Runtime dependency audit
+        run: npm audit --omit=dev --audit-level=high
       - name: Reject obvious current-tree secret regressions
         shell: bash
         run: |
