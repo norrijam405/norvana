@@ -28,6 +28,7 @@ CREATE TABLE IF NOT EXISTS watch_runs (
   job_id integer NOT NULL,
   status varchar(30) NOT NULL DEFAULT 'QUEUED',
   trigger varchar(30) NOT NULL DEFAULT 'SCHEDULE',
+  runtime_id varchar(255),
   summary text NOT NULL DEFAULT '',
   findings json NOT NULL DEFAULT '[]'::json,
   evidence_refs json NOT NULL DEFAULT '[]'::json,
@@ -38,6 +39,9 @@ CREATE TABLE IF NOT EXISTS watch_runs (
   completed_at timestamp,
   created_at timestamp NOT NULL DEFAULT now()
 );
+
+ALTER TABLE watch_runs
+  ADD COLUMN IF NOT EXISTS runtime_id varchar(255);
 
 CREATE TABLE IF NOT EXISTS watch_candidates (
   id serial PRIMARY KEY,
