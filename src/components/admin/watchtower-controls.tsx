@@ -30,7 +30,7 @@ export function WatchtowerControls({ initialized }: { initialized: boolean }) {
   async function logout() {
     setPending("logout");
     await fetch("/api/admin/session", { method: "DELETE" });
-    window.location.assign("/admin/login");
+    router.push("/admin/login");
   }
 
   return (
