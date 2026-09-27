@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { asc, eq } from "drizzle-orm";
+import { asc, eq, inArray } from "drizzle-orm";
 import { db } from "@/db";
 import { actionReceipts, watchJobs, watchRuns } from "@/db/schema";
 import { requireCurrentRecoveryAdmin } from "@/lib/admin-guard";
@@ -29,6 +29,23 @@ export async function POST(req: NextRequest) {
   ) {
     return NextResponse.json(
       { error: "Self-test requires consequential commerce actions to remain disabled." },
+      { status: 409 }
+    );
+  }
+
+  const activeRuns = await db
+    .select({ id: watchRuns.id, status: watchRuns.status })
+    .from(watchRuns)
+    .where(inArray(watchRuns.status, ["QUEUED", "RUNNING"]))
+    .limit(10);
+
+  if (activeRuns.length) {
+    return NextResponse.json(
+      {
+        error: "Safe self-test refuses to pass while executable runs remain queued or running.",
+        code: "WATCHTOWER_STALE_EXECUTABLE_RUNS_PRESENT",
+        activeRunCount: activeRuns.length,
+      },
       { status: 409 }
     );
   }
@@ -73,6 +90,11 @@ export async function POST(req: NextRequest) {
       summary:
         "Watchtower control-plane self-test passed. No source research, external network action, supplier action, publishing, spending, or fulfillment occurred.",
       findings: [
+        {
+          check: "active_runs",
+          result: "PASS",
+          count: 0,
+        },
         {
           check: "jobs_paused",
           result: "PASS",
@@ -123,7 +145,9 @@ export async function POST(req: NextRequest) {
       actor: "watchtower-control-self-test",
       details: {
         jobCount: jobs.length,
-        allPaused: true,
+        activeRunCount: 0,
+        activeRunCount: 0,
+    allPaused: true,
         boundedAuthority: true,
         zeroBudget: true,
         queueEnabled: false,

@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import { and, asc, eq } from "drizzle-orm";
+import { and, asc, eq, inArray } from "drizzle-orm";
 import { db } from "@/db";
 import { actionReceipts, watchJobs, watchRuns } from "@/db/schema";
 import { requireCurrentRecoveryAdmin } from "@/lib/admin-guard";
+import { ownerCredentialState } from "@/lib/admin-identity";
 import { evaluateR0Job } from "@/lib/watchtower/policy";
 
 export async function POST(req: NextRequest) {
@@ -31,6 +32,34 @@ export async function POST(req: NextRequest) {
       {
         error: "Worker contract proof requires external action paths to remain disabled.",
         code: "WATCHTOWER_WORKER_PROOF_REQUIRES_EXTERNAL_LOCK",
+      },
+      { status: 409 }
+    );
+  }
+
+  const ownerCredential = await ownerCredentialState();
+  if (!ownerCredential.rotated) {
+    return NextResponse.json(
+      {
+        error: "Permanent owner credential is required before worker contract proof.",
+        code: "WATCHTOWER_OWNER_PASSWORD_ROTATION_REQUIRED",
+      },
+      { status: 409 }
+    );
+  }
+
+  const activeRuns = await db
+    .select({ id: watchRuns.id, status: watchRuns.status })
+    .from(watchRuns)
+    .where(inArray(watchRuns.status, ["QUEUED", "RUNNING"]))
+    .limit(10);
+
+  if (activeRuns.length) {
+    return NextResponse.json(
+      {
+        error: "Worker contract proof refuses to run while executable runs remain queued or running.",
+        code: "WATCHTOWER_STALE_EXECUTABLE_RUNS_PRESENT",
+        activeRunCount: activeRuns.length,
       },
       { status: 409 }
     );
@@ -212,6 +241,7 @@ export async function POST(req: NextRequest) {
     runId: proof.run.id,
     receiptIds: proof.receipts,
     statePath: ["QUEUED", "RUNNING", "PASS"],
+    activeRunCount: 0,
     allWatchersPaused: true,
     queueEnabled: false,
     executorEnabled: false,
