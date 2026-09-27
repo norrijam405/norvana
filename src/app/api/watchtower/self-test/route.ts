@@ -146,8 +146,7 @@ export async function POST(req: NextRequest) {
       details: {
         jobCount: jobs.length,
         activeRunCount: 0,
-        activeRunCount: 0,
-    allPaused: true,
+        allPaused: true,
         boundedAuthority: true,
         zeroBudget: true,
         queueEnabled: false,
