@@ -6,6 +6,7 @@ import { requireCurrentRecoveryAdmin } from "@/lib/admin-guard";
 import { ownerCredentialState } from "@/lib/admin-identity";
 import { readJsonObjectLimited } from "@/lib/request-body";
 import { evaluateWatcherEnable, isR0Authority } from "@/lib/watchtower/policy";
+import { currentWatchtowerRuntimeId } from "@/lib/watchtower/runtime-id";
 
 const SAFE_STATUS = new Set(["PAUSED", "ENABLED"]);
 
@@ -40,19 +41,42 @@ export async function PATCH(
     }
 
     if (status === "ENABLED") {
+      const runtimeId = currentWatchtowerRuntimeId();
+      if (!runtimeId) {
+        return NextResponse.json(
+          {
+            error: "Watchtower runtime identity is unavailable.",
+            code: "WATCHTOWER_RUNTIME_ID_REQUIRED",
+          },
+          { status: 503 }
+        );
+      }
+
       const ownerCredential = await ownerCredentialState();
 
       const [proof] = await db
         .select({ id: watchRuns.id })
         .from(watchRuns)
-        .where(and(eq(watchRuns.trigger, "CONTROL_TEST"), eq(watchRuns.status, "PASS")))
+        .where(
+          and(
+            eq(watchRuns.trigger, "CONTROL_TEST"),
+            eq(watchRuns.status, "PASS"),
+            eq(watchRuns.runtimeId, runtimeId)
+          )
+        )
         .orderBy(desc(watchRuns.completedAt))
         .limit(1);
 
       const [workerProof] = await db
         .select({ id: watchRuns.id })
         .from(watchRuns)
-        .where(and(eq(watchRuns.trigger, "WORKER_TEST"), eq(watchRuns.status, "PASS")))
+        .where(
+          and(
+            eq(watchRuns.trigger, "WORKER_TEST"),
+            eq(watchRuns.status, "PASS"),
+            eq(watchRuns.runtimeId, runtimeId)
+          )
+        )
         .orderBy(desc(watchRuns.completedAt))
         .limit(1);
 
