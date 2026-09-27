@@ -1,0 +1,49 @@
+name: Norvana Watchtower External Harness
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirmation:
+        description: "Type RUN_DETERMINISTIC_HARNESS"
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: norvana-watchtower-external-harness
+  cancel-in-progress: false
+
+jobs:
+  deterministic-harness:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      NORVANA_WATCHTOWER_BASE_URL: ${{ vars.NORVANA_WATCHTOWER_BASE_URL }}
+      NORVANA_WATCHTOWER_HARNESS_ENABLED: ${{ vars.NORVANA_WATCHTOWER_HARNESS_ENABLED }}
+      NORVANA_WATCHTOWER_WORKER_SECRET: ${{ secrets.NORVANA_WATCHTOWER_WORKER_SECRET }}
+    steps:
+      - name: Verify explicit harness gate
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "${{ inputs.confirmation }}" = "RUN_DETERMINISTIC_HARNESS"
+          test "${NORVANA_WATCHTOWER_HARNESS_ENABLED}" = "true"
+          case "${NORVANA_WATCHTOWER_BASE_URL}" in
+            https://*) ;;
+            *) echo "Harness base URL must be HTTPS."; exit 1 ;;
+          esac
+          test -n "${NORVANA_WATCHTOWER_WORKER_SECRET}"
+
+      - name: Checkout exact repository state
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Set up Node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 22
+          package-manager-cache: false
+
+      - name: Run deterministic external harness
+        run: node scripts/watchtower-worker-harness.mjs
