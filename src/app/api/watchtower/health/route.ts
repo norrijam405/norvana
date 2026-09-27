@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db";
 import { watchJobs } from "@/db/schema";
-import { requireRecoveryAdmin } from "@/lib/admin-guard";
+import { requireCurrentRecoveryAdmin } from "@/lib/admin-guard";
 
 export async function GET(req: NextRequest) {
-  const gate = requireRecoveryAdmin(req);
+  const gate = await requireCurrentRecoveryAdmin(req);
   if (gate) return gate;
 
   let initialized = false;
