@@ -55,6 +55,7 @@ export async function ensureAdminIdentityTable() {
       password_salt varchar(255) NOT NULL,
       password_hash varchar(255) NOT NULL,
       bootstrap_derived boolean NOT NULL DEFAULT false,
+      session_version integer NOT NULL DEFAULT 1,
       created_at timestamp NOT NULL DEFAULT now(),
       updated_at timestamp NOT NULL DEFAULT now()
     );
@@ -63,6 +64,11 @@ export async function ensureAdminIdentityTable() {
   await db.execute(sql.raw(`
     ALTER TABLE admin_users
       ADD COLUMN IF NOT EXISTS bootstrap_derived boolean NOT NULL DEFAULT false;
+  `));
+
+  await db.execute(sql.raw(`
+    ALTER TABLE admin_users
+      ADD COLUMN IF NOT EXISTS session_version integer NOT NULL DEFAULT 1;
   `));
 }
 
@@ -106,6 +112,18 @@ export async function ownerCredentialState() {
   }
 }
 
+export async function ownerSessionVersion() {
+  await ensureAdminIdentityTable();
+
+  const [owner] = await db
+    .select({ sessionVersion: adminUsers.sessionVersion })
+    .from(adminUsers)
+    .where(eq(adminUsers.username, "owner"))
+    .limit(1);
+
+  return owner?.sessionVersion ?? null;
+}
+
 export async function ownerLoginConfigured() {
   return (await ownerIdentityExists()) || bootstrapAdminConfigured();
 }
@@ -137,6 +155,7 @@ export async function verifyOwnerPassword(password: string) {
     passwordSalt: salt,
     passwordHash: expectedHex,
     bootstrapDerived: true,
+    sessionVersion: 1,
   });
 
   return true;
@@ -165,6 +184,7 @@ export async function setOwnerPassword(newPassword: string) {
       passwordSalt: salt,
       passwordHash: hash,
       bootstrapDerived: false,
+      sessionVersion: 1,
     })
     .onConflictDoUpdate({
       target: adminUsers.username,
@@ -172,6 +192,7 @@ export async function setOwnerPassword(newPassword: string) {
         passwordSalt: salt,
         passwordHash: hash,
         bootstrapDerived: false,
+        sessionVersion: sql`${adminUsers.sessionVersion} + 1`,
         updatedAt: new Date(),
       },
     });
