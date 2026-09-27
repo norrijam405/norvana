@@ -54,7 +54,7 @@ export async function ensureAdminIdentityTable() {
       role varchar(30) NOT NULL DEFAULT 'owner',
       password_salt varchar(255) NOT NULL,
       password_hash varchar(255) NOT NULL,
-      bootstrap_derived boolean NOT NULL DEFAULT true,
+      bootstrap_derived boolean NOT NULL DEFAULT false,
       created_at timestamp NOT NULL DEFAULT now(),
       updated_at timestamp NOT NULL DEFAULT now()
     );
@@ -62,7 +62,7 @@ export async function ensureAdminIdentityTable() {
 
   await db.execute(sql.raw(`
     ALTER TABLE admin_users
-      ADD COLUMN IF NOT EXISTS bootstrap_derived boolean NOT NULL DEFAULT true;
+      ADD COLUMN IF NOT EXISTS bootstrap_derived boolean NOT NULL DEFAULT false;
   `));
 }
 

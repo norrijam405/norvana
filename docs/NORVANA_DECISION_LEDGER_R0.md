@@ -359,6 +359,20 @@ The temporary deployment freeze must be removed or explicitly overridden only wh
 
 This is an application of Norvana's Closest-to-$0 operating doctrine and must not be carried into production accidentally.
 
+---
+
+### NV-DEC-2026-09-27-023 — Preserve pre-tracking owner rotation truth
+
+**Status:** ACCEPTED / IMPLEMENTING
+
+Owner credential-state tracking was introduced after the founder had already completed the temporary-bootstrap to permanent-password rotation on the recovery Preview.
+
+Therefore, existing `admin_users` rows that predate the `bootstrap_derived` column are migrated as durable/rotated credentials (`bootstrap_derived=false`).
+
+Future owner rows created directly from the bootstrap credential are explicitly written as `bootstrap_derived=true`, and a successful owner password change explicitly sets the value to `false`.
+
+This prevents a migration from falsely requiring the founder to repeat an already-completed credential rotation.
+
 ## Change discipline
 
 Future workers must preserve this ledger as an append-only decision history. Corrections are allowed, but material earlier decisions should remain visible with an explicit SUPERSEDED marker rather than being erased.
