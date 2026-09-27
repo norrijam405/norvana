@@ -3,6 +3,7 @@ import { and, eq } from "drizzle-orm";
 import { db } from "@/db";
 import { actionReceipts, watchCandidates, watchJobs, watchRuns } from "@/db/schema";
 import { requireWatchtowerWorker } from "@/lib/watchtower/worker-auth";
+import { currentWatchtowerRuntimeId } from "@/lib/watchtower/runtime-id";
 import {
   evaluateR0Job,
   evaluateRunFinalizationState,
@@ -56,9 +57,30 @@ export async function POST(
     return NextResponse.json({ error: "Invalid run id." }, { status: 400 });
   }
 
+  const runtimeId = currentWatchtowerRuntimeId();
+  if (!runtimeId) {
+    return NextResponse.json(
+      {
+        error: "Watchtower runtime identity is unavailable.",
+        code: "WATCHTOWER_RUNTIME_ID_REQUIRED",
+      },
+      { status: 503 }
+    );
+  }
+
   const [run] = await db.select().from(watchRuns).where(eq(watchRuns.id, runId)).limit(1);
   if (!run) {
     return NextResponse.json({ error: "Watch run not found." }, { status: 404 });
+  }
+
+  if (run.runtimeId !== runtimeId) {
+    return NextResponse.json(
+      {
+        error: "Watch run belongs to a different deployment and cannot be finalized here.",
+        code: "WATCHTOWER_STALE_RUNTIME_RUN",
+      },
+      { status: 409 }
+    );
   }
 
   const stateDecision = evaluateRunFinalizationState(run.status);
@@ -231,6 +253,7 @@ export async function POST(
         estimatedCostCents,
         budgetCents: job.budgetCents,
         candidateCount: insertedCandidateCount,
+        runtimeId,
       },
     });
 
