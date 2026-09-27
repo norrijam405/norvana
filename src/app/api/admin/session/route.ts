@@ -3,7 +3,7 @@ import {
   ADMIN_SESSION_COOKIE,
   ADMIN_SESSION_MAX_AGE,
   adminSessionConfigured,
-  adminSessionFromRequest,
+  currentAdminSessionFromRequest,
   createAdminSessionToken,
 } from "@/lib/admin-session";
 import { requireBrowserSameOrigin } from "@/lib/admin-guard";
@@ -18,6 +18,7 @@ import {
   ownerCredentialState,
   ownerIdentityExists,
   ownerLoginConfigured,
+  ownerSessionVersion,
   verifyOwnerPassword,
 } from "@/lib/admin-identity";
 
@@ -28,7 +29,7 @@ export async function GET(req: NextRequest) {
 
   return NextResponse.json({
     configured: adminSessionConfigured() && (databaseOwnerPresent || bootstrapConfigured),
-    authenticated: Boolean(adminSessionFromRequest(req)),
+    authenticated: Boolean(await currentAdminSessionFromRequest(req)),
     credentialSource: databaseOwnerPresent ? "database-owner" : bootstrapConfigured ? "bootstrap" : "none",
     databaseOwnerPresent,
     ownerCredentialRotated: ownerCredential.rotated,
@@ -108,10 +109,18 @@ export async function POST(req: NextRequest) {
 
   await clearAdminAuthFailures(req, "LOGIN");
 
+  const sessionVersion = await ownerSessionVersion();
+  if (!sessionVersion) {
+    return NextResponse.json(
+      { error: "Owner session version is unavailable." },
+      { status: 503 }
+    );
+  }
+
   const response = NextResponse.json({ authenticated: true });
   response.cookies.set({
     name: ADMIN_SESSION_COOKIE,
-    value: createAdminSessionToken(),
+    value: createAdminSessionToken(sessionVersion),
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
     sameSite: "strict",
