@@ -2,13 +2,13 @@ import { NextRequest, NextResponse } from "next/server";
 import { asc } from "drizzle-orm";
 import { db } from "@/db";
 import { watchJobs } from "@/db/schema";
-import { requireRecoveryAdmin } from "@/lib/admin-guard";
+import { requireCurrentRecoveryAdmin } from "@/lib/admin-guard";
 import { readJsonObjectLimited } from "@/lib/request-body";
 
 const SAFE_AUTHORITIES = new Set(["OBSERVE", "RECOMMEND"]);
 
 export async function GET(req: NextRequest) {
-  const gate = requireRecoveryAdmin(req);
+  const gate = await requireCurrentRecoveryAdmin(req);
   if (gate) return gate;
 
   try {
@@ -23,7 +23,7 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  const gate = requireRecoveryAdmin(req);
+  const gate = await requireCurrentRecoveryAdmin(req);
   if (gate) return gate;
 
   const parsed = await readJsonObjectLimited(req, 32_768);
