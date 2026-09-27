@@ -50,3 +50,17 @@ jobs:
         run: npm run typecheck
       - name: Lint
         run: npm run lint
+      - name: Production build
+        env:
+          DATABASE_URL: postgresql://norvana_ci:norvana_ci@127.0.0.1:5432/norvana_ci
+          STRIPE_SECRET_KEY: sk_test_norvana_ci_placeholder
+          STRIPE_WEBHOOK_SECRET: whsec_norvana_ci_placeholder
+          NORVANA_SITE_URL: http://localhost:3000
+          NORVANA_EXTERNAL_FULFILLMENT_ENABLED: "false"
+          NORVANA_SUPPLIER_CONNECTORS_ENABLED: "false"
+          IGNIAQUA_FEDERATION_ENABLED: "false"
+          NORVANA_ADMIN_RECOVERY_ENABLED: "false"
+          NORVANA_WATCHTOWER_QUEUE_ENABLED: "false"
+          NORVANA_WATCHTOWER_EXECUTOR_ENABLED: "false"
+          NEXT_TELEMETRY_DISABLED: "1"
+        run: npm run build
