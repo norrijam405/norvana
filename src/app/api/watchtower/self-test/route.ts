@@ -3,10 +3,22 @@ import { asc, eq, inArray } from "drizzle-orm";
 import { db } from "@/db";
 import { actionReceipts, watchJobs, watchRuns } from "@/db/schema";
 import { requireCurrentRecoveryAdmin } from "@/lib/admin-guard";
+import { currentWatchtowerRuntimeId } from "@/lib/watchtower/runtime-id";
 
 export async function POST(req: NextRequest) {
   const gate = await requireCurrentRecoveryAdmin(req);
   if (gate) return gate;
+
+  const runtimeId = currentWatchtowerRuntimeId();
+  if (!runtimeId) {
+    return NextResponse.json(
+      {
+        error: "Watchtower runtime identity is unavailable.",
+        code: "WATCHTOWER_RUNTIME_ID_REQUIRED",
+      },
+      { status: 503 }
+    );
+  }
 
   if (process.env.NORVANA_WATCHTOWER_QUEUE_ENABLED === "true") {
     return NextResponse.json(
@@ -87,6 +99,7 @@ export async function POST(req: NextRequest) {
       jobId: observeJob.id,
       status: "PASS",
       trigger: "CONTROL_TEST",
+      runtimeId,
       summary:
         "Watchtower control-plane self-test passed. No source research, external network action, supplier action, publishing, spending, or fulfillment occurred.",
       findings: [
@@ -152,6 +165,7 @@ export async function POST(req: NextRequest) {
         queueEnabled: false,
         executorEnabled: false,
         externalActionsEnabled: false,
+        runtimeId,
         researchPerformed: false,
       },
       })
@@ -179,6 +193,7 @@ export async function POST(req: NextRequest) {
   return NextResponse.json({
     ok: true,
     proofClass: "CONTROL_PLANE_ONLY",
+    runtimeId,
     runId: proof.run.id,
     receiptId: proof.receipt.id,
     jobCount: jobs.length,
