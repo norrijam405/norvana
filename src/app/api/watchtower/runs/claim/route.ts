@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import { and, asc, eq } from "drizzle-orm";
+import { and, asc, desc, eq } from "drizzle-orm";
 import { db } from "@/db";
 import { actionReceipts, watchJobs, watchRuns } from "@/db/schema";
 import { requireWatchtowerWorker } from "@/lib/watchtower/worker-auth";
+import { ownerCredentialState } from "@/lib/admin-identity";
 import { evaluateR0Job } from "@/lib/watchtower/policy";
 
 export async function POST(req: NextRequest) {
@@ -13,6 +14,34 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(
       { error: "Watchtower execution is disabled.", code: "WATCHTOWER_EXECUTOR_DISABLED" },
       { status: 503 }
+    );
+  }
+
+  const ownerCredential = await ownerCredentialState();
+  if (!ownerCredential.rotated) {
+    return NextResponse.json(
+      {
+        error: "Permanent owner credential is required before Watchtower execution.",
+        code: "WATCHTOWER_OWNER_PASSWORD_ROTATION_REQUIRED",
+      },
+      { status: 409 }
+    );
+  }
+
+  const [controlProof] = await db
+    .select({ id: watchRuns.id })
+    .from(watchRuns)
+    .where(and(eq(watchRuns.trigger, "CONTROL_TEST"), eq(watchRuns.status, "PASS")))
+    .orderBy(desc(watchRuns.completedAt))
+    .limit(1);
+
+  if (!controlProof) {
+    return NextResponse.json(
+      {
+        error: "Safe control-plane proof is required before Watchtower execution.",
+        code: "WATCHTOWER_CONTROL_SELF_TEST_REQUIRED",
+      },
+      { status: 409 }
     );
   }
 

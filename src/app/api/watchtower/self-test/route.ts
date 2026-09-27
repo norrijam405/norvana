@@ -24,7 +24,8 @@ export async function POST(req: NextRequest) {
 
   if (
     process.env.NORVANA_EXTERNAL_FULFILLMENT_ENABLED === "true" ||
-    process.env.NORVANA_SUPPLIER_CONNECTORS_ENABLED === "true"
+    process.env.NORVANA_SUPPLIER_CONNECTORS_ENABLED === "true" ||
+    process.env.IGNIAQUA_FEDERATION_ENABLED === "true"
   ) {
     return NextResponse.json(
       { error: "Self-test requires consequential commerce actions to remain disabled." },
@@ -62,9 +63,10 @@ export async function POST(req: NextRequest) {
   const observeJob =
     jobs.find((job) => job.authority === "OBSERVE") ?? jobs[0];
 
-  const [run] = await db
-    .insert(watchRuns)
-    .values({
+  const proof = await db.transaction(async (tx) => {
+    const [run] = await tx
+      .insert(watchRuns)
+      .values({
       jobId: observeJob.id,
       status: "PASS",
       trigger: "CONTROL_TEST",
@@ -107,12 +109,12 @@ export async function POST(req: NextRequest) {
       estimatedCostCents: 0,
       startedAt: new Date(),
       completedAt: new Date(),
-    })
-    .returning();
+      })
+      .returning();
 
-  const [receipt] = await db
-    .insert(actionReceipts)
-    .values({
+    const [receipt] = await tx
+      .insert(actionReceipts)
+      .values({
       actionType: "WATCHTOWER_CONTROL_SELF_TEST",
       authorityClass: "OBSERVE",
       subjectType: "watch_run",
@@ -129,33 +131,33 @@ export async function POST(req: NextRequest) {
         externalActionsEnabled: false,
         researchPerformed: false,
       },
-    })
-    .returning();
+      })
+      .returning();
 
-  const [runReadback] = await db
-    .select()
-    .from(watchRuns)
-    .where(eq(watchRuns.id, run.id))
-    .limit(1);
+    const [runReadback] = await tx
+      .select()
+      .from(watchRuns)
+      .where(eq(watchRuns.id, run.id))
+      .limit(1);
 
-  const [receiptReadback] = await db
-    .select()
-    .from(actionReceipts)
-    .where(eq(actionReceipts.id, receipt.id))
-    .limit(1);
+    const [receiptReadback] = await tx
+      .select()
+      .from(actionReceipts)
+      .where(eq(actionReceipts.id, receipt.id))
+      .limit(1);
 
-  if (!runReadback || !receiptReadback) {
-    return NextResponse.json(
-      { error: "Self-test write/readback verification failed." },
-      { status: 500 }
-    );
-  }
+    if (!runReadback || !receiptReadback) {
+      throw new Error("Self-test write/readback verification failed.");
+    }
+
+    return { run, receipt };
+  });
 
   return NextResponse.json({
     ok: true,
     proofClass: "CONTROL_PLANE_ONLY",
-    runId: run.id,
-    receiptId: receipt.id,
+    runId: proof.run.id,
+    receiptId: proof.receipt.id,
     jobCount: jobs.length,
     allPaused: true,
     boundedAuthority: true,

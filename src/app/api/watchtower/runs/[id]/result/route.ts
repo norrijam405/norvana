@@ -107,7 +107,17 @@ export async function POST(
 
   let body: Record<string, unknown> = {};
   try {
-    body = rawBody ? (JSON.parse(rawBody) as Record<string, unknown>) : {};
+    const parsed: unknown = rawBody ? JSON.parse(rawBody) : {};
+    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+      return NextResponse.json(
+        {
+          error: "Watch result payload must be a JSON object.",
+          code: "WATCH_RESULT_INVALID_OBJECT",
+        },
+        { status: 400 }
+      );
+    }
+    body = parsed as Record<string, unknown>;
   } catch {
     return NextResponse.json(
       { error: "Watch result payload must be valid JSON.", code: "WATCH_RESULT_INVALID_JSON" },
@@ -119,7 +129,25 @@ export async function POST(
     return NextResponse.json({ error: "Invalid final run status." }, { status: 400 });
   }
 
-  const estimatedCostCents = Math.max(0, Number(body.estimatedCostCents) || 0);
+  const rawEstimatedCost = body.estimatedCostCents === undefined
+    ? 0
+    : Number(body.estimatedCostCents);
+
+  if (
+    !Number.isFinite(rawEstimatedCost) ||
+    rawEstimatedCost < 0 ||
+    !Number.isInteger(rawEstimatedCost)
+  ) {
+    return NextResponse.json(
+      {
+        error: "estimatedCostCents must be a non-negative integer.",
+        code: "WATCH_RESULT_INVALID_COST",
+      },
+      { status: 400 }
+    );
+  }
+
+  const estimatedCostCents = rawEstimatedCost;
   const budgetExceeded = estimatedCostCents > job.budgetCents;
   const status = budgetExceeded ? "FAILED" : requestedStatus;
   const completedAt = new Date();
@@ -127,26 +155,92 @@ export async function POST(
   const findings = objectRecords(body.findings, MAX_FINDINGS);
   const evidenceRefs = objectRecords(body.evidenceRefs, MAX_EVIDENCE_REFS);
 
-  const [finalizedRun] = await db
-    .update(watchRuns)
-    .set({
-      status,
-      summary: String(body.summary || "").slice(0, 10_000),
-      findings,
-      evidenceRefs,
-      modelProvider: body.modelProvider ? String(body.modelProvider).slice(0, 100) : null,
-      estimatedCostCents,
-      errorMessage: budgetExceeded
-        ? `Reported execution cost ${estimatedCostCents} exceeded job budget ${job.budgetCents}.`
-        : body.errorMessage
-          ? String(body.errorMessage).slice(0, 5_000)
-          : null,
-      completedAt,
-    })
-    .where(and(eq(watchRuns.id, run.id), eq(watchRuns.status, "RUNNING")))
-    .returning();
+  const candidates = objectRecords(body.candidates, 100) as CandidateInput[];
 
-  if (!finalizedRun) {
+  const finalized = await db.transaction(async (tx) => {
+    const [finalizedRun] = await tx
+      .update(watchRuns)
+      .set({
+        status,
+        summary: String(body.summary || "").slice(0, 10_000),
+        findings,
+        evidenceRefs,
+        modelProvider: body.modelProvider ? String(body.modelProvider).slice(0, 100) : null,
+        estimatedCostCents,
+        errorMessage: budgetExceeded
+          ? `Reported execution cost ${estimatedCostCents} exceeded job budget ${job.budgetCents}.`
+          : body.errorMessage
+            ? String(body.errorMessage).slice(0, 5_000)
+            : null,
+        completedAt,
+      })
+      .where(and(eq(watchRuns.id, run.id), eq(watchRuns.status, "RUNNING")))
+      .returning();
+
+    if (!finalizedRun) return null;
+
+    let insertedCandidateCount = 0;
+
+    if (!budgetExceeded && (status === "PASS" || status === "NO_MATERIAL_CHANGE")) {
+      for (const candidate of candidates) {
+        const title = String(candidate.title || "").trim();
+        if (!title) continue;
+
+        await tx.insert(watchCandidates).values({
+          jobId: job.id,
+          runId: run.id,
+          title: title.slice(0, 255),
+          lane: String(candidate.lane || "general").slice(0, 60),
+          sourceName: String(candidate.sourceName || "").slice(0, 255),
+          sourceUrl: safeSourceUrl(candidate.sourceUrl),
+          sourceCountry: candidate.sourceCountry
+            ? String(candidate.sourceCountry).slice(0, 100)
+            : null,
+          truthState: String(candidate.truthState || "DISCOVERED").slice(0, 60),
+          economics:
+            candidate.economics &&
+            typeof candidate.economics === "object" &&
+            !Array.isArray(candidate.economics)
+              ? (candidate.economics as Record<string, unknown>)
+              : {},
+          riskFlags: Array.isArray(candidate.riskFlags)
+            ? candidate.riskFlags
+                .filter((flag): flag is string => typeof flag === "string")
+                .map((flag) => flag.slice(0, 200))
+                .slice(0, 50)
+            : [],
+          evidence: objectRecords(candidate.evidence, 50),
+          recommendation: String(candidate.recommendation || "").slice(0, 5000),
+          status: "NEW",
+        });
+
+        insertedCandidateCount += 1;
+      }
+    }
+
+    await tx.insert(actionReceipts).values({
+      actionType: budgetExceeded ? "WATCH_RUN_BUDGET_OVERRUN" : "WATCH_RUN_COMPLETED",
+      authorityClass: job.authority,
+      subjectType: "watch_run",
+      subjectId: String(run.id),
+      status,
+      actor: "watchtower-worker",
+      details: {
+        jobId: job.id,
+        jobSlug: job.slug,
+        estimatedCostCents,
+        budgetCents: job.budgetCents,
+        candidateCount: insertedCandidateCount,
+      },
+    });
+
+    return {
+      run: finalizedRun,
+      candidateCount: insertedCandidateCount,
+    };
+  });
+
+  if (!finalized) {
     return NextResponse.json(
       {
         error: "Watch run was already finalized by another worker response.",
@@ -156,58 +250,11 @@ export async function POST(
     );
   }
 
-  const candidates = Array.isArray(body.candidates) ? (body.candidates as CandidateInput[]) : [];
-
-  if (!budgetExceeded && (status === "PASS" || status === "NO_MATERIAL_CHANGE")) {
-    for (const candidate of candidates.slice(0, 100)) {
-      const title = String(candidate.title || "").trim();
-      if (!title) continue;
-
-      await db.insert(watchCandidates).values({
-        jobId: job.id,
-        runId: run.id,
-        title: title.slice(0, 255),
-        lane: String(candidate.lane || "general").slice(0, 60),
-        sourceName: String(candidate.sourceName || "").slice(0, 255),
-        sourceUrl: safeSourceUrl(candidate.sourceUrl),
-        sourceCountry: candidate.sourceCountry
-          ? String(candidate.sourceCountry).slice(0, 100)
-          : null,
-        truthState: String(candidate.truthState || "DISCOVERED").slice(0, 60),
-        economics:
-          candidate.economics && typeof candidate.economics === "object"
-            ? (candidate.economics as Record<string, unknown>)
-            : {},
-        riskFlags: Array.isArray(candidate.riskFlags)
-          ? candidate.riskFlags.map(String).slice(0, 50)
-          : [],
-        evidence: objectRecords(candidate.evidence, 50),
-        recommendation: String(candidate.recommendation || "").slice(0, 5000),
-        status: "NEW",
-      });
-    }
-  }
-
-  await db.insert(actionReceipts).values({
-    actionType: budgetExceeded ? "WATCH_RUN_BUDGET_OVERRUN" : "WATCH_RUN_COMPLETED",
-    authorityClass: job.authority,
-    subjectType: "watch_run",
-    subjectId: String(run.id),
-    status,
-    actor: "watchtower-worker",
-    details: {
-      jobId: job.id,
-      jobSlug: job.slug,
-      estimatedCostCents,
-      budgetCents: job.budgetCents,
-      candidateCount: budgetExceeded ? 0 : Math.min(candidates.length, 100),
-    },
-  });
-
   return NextResponse.json({
     accepted: true,
-    runId: run.id,
+    runId: finalized.run.id,
     status,
     budgetExceeded,
+    candidateCount: finalized.candidateCount,
   });
 }

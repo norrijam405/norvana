@@ -1,8 +1,9 @@
 import { timingSafeEqual } from "node:crypto";
 import { NextRequest, NextResponse } from "next/server";
-import { and, eq, isNull, lte, or } from "drizzle-orm";
+import { and, desc, eq, isNull, lte, or } from "drizzle-orm";
 import { db } from "@/db";
 import { actionReceipts, watchJobs, watchRuns } from "@/db/schema";
+import { ownerCredentialState } from "@/lib/admin-identity";
 import { evaluateR0Job } from "@/lib/watchtower/policy";
 
 function secureEqual(left: string, right: string) {
@@ -26,6 +27,34 @@ export async function POST(req: NextRequest) {
       queued: 0,
       message: "Watchtower scheduler is configured but queueing is disabled.",
     });
+  }
+
+  const ownerCredential = await ownerCredentialState();
+  if (!ownerCredential.rotated) {
+    return NextResponse.json(
+      {
+        error: "Permanent owner credential is required before Watchtower queueing.",
+        code: "WATCHTOWER_OWNER_PASSWORD_ROTATION_REQUIRED",
+      },
+      { status: 409 }
+    );
+  }
+
+  const [controlProof] = await db
+    .select({ id: watchRuns.id })
+    .from(watchRuns)
+    .where(and(eq(watchRuns.trigger, "CONTROL_TEST"), eq(watchRuns.status, "PASS")))
+    .orderBy(desc(watchRuns.completedAt))
+    .limit(1);
+
+  if (!controlProof) {
+    return NextResponse.json(
+      {
+        error: "Safe control-plane proof is required before Watchtower queueing.",
+        code: "WATCHTOWER_CONTROL_SELF_TEST_REQUIRED",
+      },
+      { status: 409 }
+    );
   }
 
   const now = new Date();
@@ -63,43 +92,61 @@ export async function POST(req: NextRequest) {
       blocked.push({ jobId: job.id, reason: policy.code });
       continue;
     }
-    const [run] = await db
-      .insert(watchRuns)
-      .values({
-        jobId: job.id,
-        status: "QUEUED",
-        trigger: "SCHEDULE",
-        summary: "Queued by Norvana Watchtower scheduler.",
-      })
-      .returning();
-
     const nextRunAt = new Date(now.getTime() + job.cadenceMinutes * 60_000);
 
-    await db
-      .update(watchJobs)
-      .set({
-        lastRunAt: now,
-        nextRunAt,
-        updatedAt: now,
-      })
-      .where(eq(watchJobs.id, job.id));
+    const run = await db.transaction(async (tx) => {
+      const [claimedJob] = await tx
+        .update(watchJobs)
+        .set({
+          lastRunAt: now,
+          nextRunAt,
+          updatedAt: now,
+        })
+        .where(
+          and(
+            eq(watchJobs.id, job.id),
+            eq(watchJobs.status, "ENABLED"),
+            eq(watchJobs.budgetCents, 0),
+            or(
+              eq(watchJobs.authority, "OBSERVE"),
+              eq(watchJobs.authority, "RECOMMEND")
+            ),
+            or(isNull(watchJobs.nextRunAt), lte(watchJobs.nextRunAt, now))
+          )
+        )
+        .returning();
 
-    await db.insert(actionReceipts).values({
-      actionType: "WATCH_RUN_QUEUED",
-      authorityClass: job.authority,
-      subjectType: "watch_run",
-      subjectId: String(run.id),
-      status: "QUEUED",
-      actor: "watchtower-scheduler",
-      details: {
-        jobId: job.id,
-        jobSlug: job.slug,
-        cadenceMinutes: job.cadenceMinutes,
-        budgetCents: job.budgetCents,
-      },
+      if (!claimedJob) return null;
+
+      const [queuedRun] = await tx
+        .insert(watchRuns)
+        .values({
+          jobId: claimedJob.id,
+          status: "QUEUED",
+          trigger: "SCHEDULE",
+          summary: "Queued by Norvana Watchtower scheduler.",
+        })
+        .returning();
+
+      await tx.insert(actionReceipts).values({
+        actionType: "WATCH_RUN_QUEUED",
+        authorityClass: claimedJob.authority,
+        subjectType: "watch_run",
+        subjectId: String(queuedRun.id),
+        status: "QUEUED",
+        actor: "watchtower-scheduler",
+        details: {
+          jobId: claimedJob.id,
+          jobSlug: claimedJob.slug,
+          cadenceMinutes: claimedJob.cadenceMinutes,
+          budgetCents: claimedJob.budgetCents,
+        },
+      });
+
+      return queuedRun;
     });
 
-    queued.push(run.id);
+    if (run) queued.push(run.id);
   }
 
   return NextResponse.json({

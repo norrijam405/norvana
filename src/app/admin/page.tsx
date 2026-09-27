@@ -87,6 +87,9 @@ export default async function AdminPage() {
   const unresolvedCandidates = candidates.filter((candidate) => candidate.status === "NEW").length;
   const schedulerConfigured = Boolean(process.env.NORVANA_WATCHTOWER_CRON_SECRET);
   const executorEnabled = process.env.NORVANA_WATCHTOWER_EXECUTOR_ENABLED === "true";
+  const externalActionsEnabled =
+    process.env.NORVANA_EXTERNAL_FULFILLMENT_ENABLED === "true" ||
+    process.env.NORVANA_SUPPLIER_CONNECTORS_ENABLED === "true";
   const federationConfigured =
     process.env.IGNIAQUA_FEDERATION_ENABLED === "true" &&
     Boolean(process.env.IGNIAQUA_FEDERATION_BASE_URL);
@@ -158,9 +161,17 @@ export default async function AdminPage() {
         <section className="mt-8 grid gap-4 md:grid-cols-3">
           <InfoCard eyebrow="SYSTEM" title="Truth state">
             <StatusRow label="Database" value={initialized ? "READY" : "NOT INITIALIZED"} good={initialized} />
-            <StatusRow label="Scheduler" value={schedulerConfigured ? "CONFIGURED" : "NOT CONFIGURED"} good={schedulerConfigured} />
+            <StatusRow
+              label="Scheduler secret"
+              value={schedulerConfigured ? "CONFIGURED" : "NOT CONFIGURED"}
+              good={schedulerConfigured}
+            />
             <StatusRow label="Executor" value={executorEnabled ? "CONFIGURED" : "DISABLED"} good={!executorEnabled} />
-            <StatusRow label="External actions" value="DISABLED" good />
+            <StatusRow
+              label="External actions"
+              value={externalActionsEnabled ? "ENABLED" : "DISABLED"}
+              good={!externalActionsEnabled}
+            />
             <StatusRow label="IgniAqua federation" value={federationConfigured ? "CONFIGURED" : "PLANNED"} good={!federationConfigured} />
             <StatusRow
               label="Control proof"

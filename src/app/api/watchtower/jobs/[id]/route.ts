@@ -4,6 +4,7 @@ import { db } from "@/db";
 import { watchJobs, watchRuns } from "@/db/schema";
 import { requireRecoveryAdmin } from "@/lib/admin-guard";
 import { ownerCredentialState } from "@/lib/admin-identity";
+import { readJsonObjectLimited } from "@/lib/request-body";
 import { evaluateWatcherEnable, isR0Authority } from "@/lib/watchtower/policy";
 
 const SAFE_STATUS = new Set(["PAUSED", "ENABLED"]);
@@ -21,7 +22,15 @@ export async function PATCH(
     return NextResponse.json({ error: "Invalid job id." }, { status: 400 });
   }
 
-  const body = await req.json().catch(() => ({}));
+  const parsed = await readJsonObjectLimited(req, 32_768);
+  if (!parsed.ok) {
+    return NextResponse.json(
+      { error: parsed.error, code: parsed.code },
+      { status: parsed.status }
+    );
+  }
+
+  const body = parsed.body;
   const updates: Record<string, unknown> = { updatedAt: new Date() };
 
   if (body.status !== undefined) {
@@ -96,7 +105,7 @@ export async function PATCH(
   }
 
   if (body.instructions !== undefined) {
-    updates.instructions = String(body.instructions);
+    updates.instructions = String(body.instructions).slice(0, 20_000);
   }
 
   const [job] = await db
