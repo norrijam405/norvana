@@ -8,7 +8,7 @@ import { watchCandidates, watchJobs, watchRuns } from "@/db/schema";
 import {
   ADMIN_SESSION_COOKIE,
   adminSessionConfigured,
-  verifyAdminSessionToken,
+  verifyCurrentAdminSessionToken,
 } from "@/lib/admin-session";
 import { WATCHTOWER_JOB_TEMPLATES } from "@/lib/watchtower/default-jobs";
 import { JobToggle, WatchtowerControls } from "@/components/admin/watchtower-controls";
@@ -58,7 +58,9 @@ export default async function AdminPage() {
   }
 
   const cookieStore = await cookies();
-  const session = verifyAdminSessionToken(cookieStore.get(ADMIN_SESSION_COOKIE)?.value);
+  const session = await verifyCurrentAdminSessionToken(
+    cookieStore.get(ADMIN_SESSION_COOKIE)?.value
+  );
   if (!session) redirect("/admin/login");
 
   let initialized = false;
