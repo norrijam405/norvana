@@ -4,6 +4,7 @@ import { db } from "@/db";
 import { actionReceipts, watchJobs, watchRuns } from "@/db/schema";
 import { requireCurrentRecoveryAdmin } from "@/lib/admin-guard";
 import { currentWatchtowerRuntimeId } from "@/lib/watchtower/runtime-id";
+import { bootstrapWatchtower } from "@/lib/watchtower/bootstrap";
 
 export async function POST(req: NextRequest) {
   const gate = await requireCurrentRecoveryAdmin(req);
@@ -44,6 +45,8 @@ export async function POST(req: NextRequest) {
       { status: 409 }
     );
   }
+
+  await bootstrapWatchtower();
 
   const activeRuns = await db
     .select({ id: watchRuns.id, status: watchRuns.status })
