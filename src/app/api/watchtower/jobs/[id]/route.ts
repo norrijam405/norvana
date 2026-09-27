@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { and, desc, eq } from "drizzle-orm";
 import { db } from "@/db";
 import { watchJobs, watchRuns } from "@/db/schema";
-import { requireRecoveryAdmin } from "@/lib/admin-guard";
+import { requireCurrentRecoveryAdmin } from "@/lib/admin-guard";
 import { ownerCredentialState } from "@/lib/admin-identity";
 import { readJsonObjectLimited } from "@/lib/request-body";
 import { evaluateWatcherEnable, isR0Authority } from "@/lib/watchtower/policy";
@@ -13,7 +13,7 @@ export async function PATCH(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const gate = requireRecoveryAdmin(req);
+  const gate = await requireCurrentRecoveryAdmin(req);
   if (gate) return gate;
 
   const { id } = await params;
