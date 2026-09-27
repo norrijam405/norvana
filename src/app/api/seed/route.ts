@@ -3,10 +3,10 @@ import { db } from "@/db";
 import { products, reviews, suppliers, nicheVolumes, subscribers } from "@/db/schema";
 import { SAMPLE_PRODUCTS, SAMPLE_VOLUMES, SAMPLE_SUPPLIERS, SAMPLE_REVIEWS } from "@/lib/constants";
 import { sql } from "drizzle-orm";
-import { requireRecoveryAdmin } from "@/lib/admin-guard";
+import { requireCurrentRecoveryAdmin } from "@/lib/admin-guard";
 
 export async function POST(req: NextRequest) {
-  const gate = requireRecoveryAdmin(req);
+  const gate = await requireCurrentRecoveryAdmin(req);
   if (gate) return gate;
 
   try {
