@@ -2,10 +2,10 @@ import { NextRequest, NextResponse } from "next/server";
 import { asc, eq } from "drizzle-orm";
 import { db } from "@/db";
 import { actionReceipts, watchJobs, watchRuns } from "@/db/schema";
-import { requireRecoveryAdmin } from "@/lib/admin-guard";
+import { requireCurrentRecoveryAdmin } from "@/lib/admin-guard";
 
 export async function POST(req: NextRequest) {
-  const gate = requireRecoveryAdmin(req);
+  const gate = await requireCurrentRecoveryAdmin(req);
   if (gate) return gate;
 
   if (process.env.NORVANA_WATCHTOWER_QUEUE_ENABLED === "true") {
