@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
-import { requireRecoveryAdmin } from "@/lib/admin-guard";
+import { requireCurrentRecoveryAdmin } from "@/lib/admin-guard";
 import { changeOwnerPassword } from "@/lib/admin-identity";
 import { ADMIN_SESSION_COOKIE } from "@/lib/admin-session";
 import { readJsonObjectLimited } from "@/lib/request-body";
 
 export async function POST(req: NextRequest) {
-  const gate = requireRecoveryAdmin(req);
+  const gate = await requireCurrentRecoveryAdmin(req);
   if (gate) return gate;
 
   const parsed = await readJsonObjectLimited(req, 16_384);
