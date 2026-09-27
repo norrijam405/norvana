@@ -1,9 +1,6 @@
 import { timingSafeEqual } from "node:crypto";
 import { NextRequest, NextResponse } from "next/server";
-import {
-  adminSessionFromRequest,
-  currentAdminSessionFromRequest,
-} from "@/lib/admin-session";
+import { currentAdminSessionFromRequest } from "@/lib/admin-session";
 
 const ADMIN_HEADER = "x-norvana-admin-token";
 
@@ -63,34 +60,6 @@ export async function requireCurrentRecoveryAdmin(
   }
 
   if (await currentAdminSessionFromRequest(req)) {
-    return requireBrowserSameOrigin(req);
-  }
-
-  if (!configured && !process.env.NORVANA_ADMIN_SESSION_SECRET) {
-    return NextResponse.json(
-      {
-        error: "Privileged Norvana mutations are disabled during recovery.",
-        code: "NORVANA_ADMIN_BOUNDARY_NOT_CONFIGURED",
-      },
-      { status: 503 }
-    );
-  }
-
-  return NextResponse.json(
-    { error: "Unauthorized.", code: "NORVANA_ADMIN_AUTH_REQUIRED" },
-    { status: 401 }
-  );
-}
-
-export function requireRecoveryAdmin(req: NextRequest): NextResponse | null {
-  const configured = process.env.NORVANA_ADMIN_API_TOKEN;
-  const supplied = req.headers.get(ADMIN_HEADER);
-
-  if (configured && supplied && constantTimeEqual(configured, supplied)) {
-    return null;
-  }
-
-  if (adminSessionFromRequest(req)) {
     return requireBrowserSameOrigin(req);
   }
 
