@@ -302,6 +302,44 @@ Recovery changes:
 
 The old sensitive worker secret is unrecoverable by design. Vercel CLI `env pull` returned `[SENSITIVE]`, so controlled rotation is required. Do not deploy this candidate until the same new worker secret is configured in Vercel Preview and GitHub Actions.
 
+## Controlled worker-secret recovery deployment + Trusted Sources wiring — 2026-09-28
+
+New controlled Preview deployment:
+- deployment id: `dpl_5vdCEVR6j7gY71mTVaiAcCNQQ6r1`
+- unique URL: `https://norvana-h4768p5u7-norrijam405-2107s-projects.vercel.app`
+- persistent recovery alias: `https://norvana-git-recovery-2026-09-e017ff-norrijam405-2107s-projects.vercel.app`
+- deployed Git source: `54b09f7dbb1abb76a984410aa047c5da6640b1a8`
+- deployment state: `READY`
+- target: Preview
+
+The deployment was created only after the founder saved the same newly generated `NORVANA_WATCHTOWER_WORKER_SECRET` in Vercel Preview/recovery-branch scope and GitHub Actions repository secrets.
+
+Recovery deployment freeze was immediately restored:
+- refreeze commit: `8ea5e3de788ff24d4c15afcbd65d98d4d5f0c98c`
+- Recovery CI for deployment source `54b09f7d...`: PASS
+- Recovery CI for refreeze `8ea5e3de...`: PASS
+- Vercel recheck showed exactly one deployment since the controlled gate; refreeze created no second deployment.
+
+Protected-Preview external worker access is being implemented with Vercel Trusted Sources rather than another long-lived bypass secret:
+- OIDC-capable harness client commit: `f933ced9eddb90f175e0bb75dec2ecbb540d0230`
+- Recovery CI run `36411835460`: SUCCESS
+- GitHub default-branch manual harness workflow commit: `7e75020c5b65e702d43576d2d058112277520534`
+- workflow requests `id-token: write`
+- workflow target is pinned to the exact new unique Preview URL
+- workflow checks out exact OIDC-capable harness client `f933ced9...`
+- existing human confirmation phrase `RUN_DETERMINISTIC_HARNESS` remains mandatory
+- worker-secret authentication remains mandatory
+- main Vercel Git deployment freeze remains enabled.
+
+Required founder configuration before external harness execution:
+Vercel Settings -> Deployment Protection -> Trusted Sources -> External Services -> Add -> GitHub Actions:
+- GitHub account: `norrijam405`
+- repository: `norvana`
+- branch: `main`
+- applies to environment: Preview
+
+After that, on the current recovery Preview using the founder owner session, execute the owner-only stale harness retirement route, then current-runtime Control Proof, Worker Proof, and exactly one fresh HARNESS_TEST queue operation. Do not enable a real watcher.
+
 ## Deployment/runtime proof binding
 
 watch_runs now carry runtime_id.
