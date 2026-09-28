@@ -7,6 +7,7 @@ import { currentWatchtowerRuntimeId } from "@/lib/watchtower/runtime-id";
 import {
   evaluateR0Job,
   evaluateRunFinalizationState,
+  evaluateHarnessResultEffects,
 } from "@/lib/watchtower/policy";
 
 const FINAL_STATUSES = new Set(["PASS", "NO_MATERIAL_CHANGE", "FAILED", "BLOCKED"]);
@@ -178,6 +179,22 @@ export async function POST(
   const evidenceRefs = objectRecords(body.evidenceRefs, MAX_EVIDENCE_REFS);
 
   const candidates = objectRecords(body.candidates, 100) as CandidateInput[];
+
+  const harnessEffectDecision = evaluateHarnessResultEffects({
+    trigger: run.trigger,
+    estimatedCostCents,
+    candidateCount: candidates.length,
+  });
+
+  if (!harnessEffectDecision.ok) {
+    return NextResponse.json(
+      {
+        error: harnessEffectDecision.reason,
+        code: harnessEffectDecision.code,
+      },
+      { status: 409 }
+    );
+  }
 
   const finalized = await db.transaction(async (tx) => {
     const [finalizedRun] = await tx

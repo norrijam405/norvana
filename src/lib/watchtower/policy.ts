@@ -113,3 +113,58 @@ export function evaluateRunFinalizationState(
 
   return { ok: true };
 }
+
+
+export function evaluateStaleHarnessRetirement(input: {
+  trigger: string;
+  status: string;
+  runRuntimeId: string | null;
+  currentRuntimeId: string;
+}): R0GateDecision {
+  if (input.trigger !== "HARNESS_TEST") {
+    return {
+      ok: false,
+      code: "WATCHTOWER_STALE_RETIREMENT_HARNESS_ONLY",
+      reason: "Only a stale HARNESS_TEST may be retired by this recovery path.",
+    };
+  }
+
+  if (input.status !== "QUEUED") {
+    return {
+      ok: false,
+      code: "WATCHTOWER_STALE_RETIREMENT_QUEUED_ONLY",
+      reason: "Only a queued stale harness run may be retired by this recovery path.",
+    };
+  }
+
+  const runRuntimeId = input.runRuntimeId?.trim();
+  const currentRuntimeId = input.currentRuntimeId.trim();
+
+  if (!runRuntimeId || !currentRuntimeId || runRuntimeId === currentRuntimeId) {
+    return {
+      ok: false,
+      code: "WATCHTOWER_STALE_RETIREMENT_REQUIRES_OLD_RUNTIME",
+      reason: "Harness retirement requires a run bound to a different runtime.",
+    };
+  }
+
+  return { ok: true };
+}
+
+export function evaluateHarnessResultEffects(input: {
+  trigger: string;
+  estimatedCostCents: number;
+  candidateCount: number;
+}): R0GateDecision {
+  if (input.trigger !== "HARNESS_TEST") return { ok: true };
+
+  if (input.estimatedCostCents !== 0 || input.candidateCount !== 0) {
+    return {
+      ok: false,
+      code: "WATCHTOWER_HARNESS_RESULT_MUST_BE_ZERO_EFFECT",
+      reason: "HARNESS_TEST results must report zero spend and emit zero candidates.",
+    };
+  }
+
+  return { ok: true };
+}

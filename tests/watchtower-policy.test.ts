@@ -3,6 +3,8 @@ import assert from "node:assert/strict";
 import {
   evaluateR0Job,
   evaluateRunFinalizationState,
+  evaluateStaleHarnessRetirement,
+  evaluateHarnessResultEffects,
   evaluateWatcherEnable,
   evaluateWorkerModeExecutorState,
   isR0Authority,
@@ -123,4 +125,63 @@ test("run finalization only accepts RUNNING state", () => {
     assert.equal(result.ok, false);
     if (!result.ok) assert.equal(result.code, "WATCH_RUN_INVALID_STATE");
   }
+});
+
+
+test("stale harness retirement is narrowly scoped", () => {
+  assert.deepEqual(
+    evaluateStaleHarnessRetirement({
+      trigger: "HARNESS_TEST",
+      status: "QUEUED",
+      runRuntimeId: "old-runtime",
+      currentRuntimeId: "new-runtime",
+    }),
+    { ok: true }
+  );
+
+  for (const input of [
+    { trigger: "SCHEDULE", status: "QUEUED", runRuntimeId: "old-runtime", currentRuntimeId: "new-runtime" },
+    { trigger: "HARNESS_TEST", status: "RUNNING", runRuntimeId: "old-runtime", currentRuntimeId: "new-runtime" },
+    { trigger: "HARNESS_TEST", status: "QUEUED", runRuntimeId: "same-runtime", currentRuntimeId: "same-runtime" },
+  ]) {
+    assert.equal(evaluateStaleHarnessRetirement(input).ok, false);
+  }
+});
+
+test("HARNESS_TEST results are zero-effect only", () => {
+  assert.deepEqual(
+    evaluateHarnessResultEffects({
+      trigger: "HARNESS_TEST",
+      estimatedCostCents: 0,
+      candidateCount: 0,
+    }),
+    { ok: true }
+  );
+
+  assert.equal(
+    evaluateHarnessResultEffects({
+      trigger: "HARNESS_TEST",
+      estimatedCostCents: 1,
+      candidateCount: 0,
+    }).ok,
+    false
+  );
+
+  assert.equal(
+    evaluateHarnessResultEffects({
+      trigger: "HARNESS_TEST",
+      estimatedCostCents: 0,
+      candidateCount: 1,
+    }).ok,
+    false
+  );
+
+  assert.deepEqual(
+    evaluateHarnessResultEffects({
+      trigger: "SCHEDULE",
+      estimatedCostCents: 0,
+      candidateCount: 1,
+    }),
+    { ok: true }
+  );
 });

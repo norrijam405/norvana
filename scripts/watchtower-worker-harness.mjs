@@ -31,8 +31,16 @@ if (payload?.job?.authority !== "OBSERVE") fail("Harness accepts OBSERVE authori
 if (payload?.job?.budgetCents !== 0) fail("Harness requires a $0 budget.");
 
 const limits = payload?.hardLimits || {};
-for (const [name, allowed] of Object.entries(limits)) {
-  if (allowed !== false) fail(`Hard limit ${name} is not false.`);
+const expectedHardLimits = [
+  "maySpendMoney",
+  "mayPublishProducts",
+  "mayPlaceOrders",
+  "mayChangePrices",
+  "mayActivateSuppliers",
+  "mayIssueRefunds",
+];
+for (const name of expectedHardLimits) {
+  if (limits?.[name] !== false) fail(`Required hard limit ${name} is missing or not false.`);
 }
 
 const runId = payload.run.id;
@@ -65,6 +73,9 @@ if (!result.ok) fail(`Harness result failed (${result.status}): ${resultText.sli
 const completed = JSON.parse(resultText);
 if (!completed?.accepted || completed?.runId !== runId) {
   fail("Harness result acknowledgement is invalid.");
+}
+if (completed?.status !== "NO_MATERIAL_CHANGE") {
+  fail("Harness result acknowledgement returned an unexpected final status.");
 }
 if (completed?.candidateCount !== 0 || completed?.budgetExceeded) {
   fail("Harness result violated zero-candidate/zero-budget expectations.");
