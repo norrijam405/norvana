@@ -406,7 +406,7 @@ test("concurrent harness claim/finalization ordering preserves uniqueness checks
   );
 
   const claimLock = claimSource.indexOf("pg_advisory_xact_lock");
-  const claimInvariant = claimSource.indexOf("evaluateActiveHarnessInvariant");
+  const claimInvariant = claimSource.indexOf("const activeInvariant = evaluateActiveHarnessInvariant");
   const claimTransition = claimSource.indexOf('set({ status: "RUNNING"');
 
   assert.ok(claimLock >= 0);
@@ -414,7 +414,7 @@ test("concurrent harness claim/finalization ordering preserves uniqueness checks
   assert.ok(claimTransition > claimInvariant);
 
   const resultLock = resultSource.indexOf("pg_advisory_xact_lock");
-  const resultInvariant = resultSource.indexOf("evaluateActiveHarnessInvariant");
+  const resultInvariant = resultSource.indexOf("const activeInvariant = evaluateActiveHarnessInvariant");
   const resultTransition = resultSource.indexOf(".set({\n        status,");
 
   assert.ok(resultLock >= 0);
