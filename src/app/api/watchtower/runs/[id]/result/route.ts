@@ -203,14 +203,14 @@ export async function POST(
 
     const [run] = await tx.select().from(watchRuns).where(eq(watchRuns.id, runId)).limit(1);
     if (!run) {
-      return { error: "Watch run not found.", status: 404 } as const;
+      return { error: "Watch run not found.", httpStatus: 404 } as const;
     }
 
     if (run.runtimeId !== runtimeId) {
       return {
         error: "Watch run belongs to a different deployment and cannot be finalized here.",
         code: "WATCHTOWER_STALE_RUNTIME_RUN",
-        status: 409,
+        httpStatus: 409,
       } as const;
     }
 
@@ -220,7 +220,7 @@ export async function POST(
         error: stateDecision.reason,
         code: stateDecision.code,
         currentStatus: run.status,
-        status: 409,
+        httpStatus: 409,
       } as const;
     }
 
@@ -228,13 +228,13 @@ export async function POST(
       return {
         error: "Harness mode may finalize HARNESS_TEST runs only.",
         code: "WATCHTOWER_HARNESS_MODE_RESULT_SCOPE_VIOLATION",
-        status: 409,
+        httpStatus: 409,
       } as const;
     }
 
     const [job] = await tx.select().from(watchJobs).where(eq(watchJobs.id, run.jobId)).limit(1);
     if (!job) {
-      return { error: "Watch job not found.", status: 409 } as const;
+      return { error: "Watch job not found.", httpStatus: 409 } as const;
     }
 
     if (requestedMode === "harness") {
@@ -269,7 +269,7 @@ export async function POST(
           });
         }
 
-        return { error: reason, code, status: 409 } as const;
+        return { error: reason, code, httpStatus: 409 } as const;
       };
 
       const [controlProof] = await tx
@@ -318,7 +318,7 @@ export async function POST(
     } else {
       const policy = evaluateR0Job(job.authority, job.budgetCents);
       if (!policy.ok) {
-        return { error: policy.reason, code: policy.code, status: 409 } as const;
+        return { error: policy.reason, code: policy.code, httpStatus: 409 } as const;
       }
     }
 
@@ -349,7 +349,7 @@ export async function POST(
       return {
         error: "Watch run was already finalized by another worker response.",
         code: "WATCH_RUN_ALREADY_FINALIZED",
-        status: 409,
+        httpStatus: 409,
       } as const;
     }
 
@@ -432,7 +432,7 @@ export async function POST(
         ...("code" in outcome ? { code: outcome.code } : {}),
         ...("currentStatus" in outcome ? { currentStatus: outcome.currentStatus } : {}),
       },
-      { status: outcome.status }
+      { status: outcome.httpStatus }
     );
   }
 
