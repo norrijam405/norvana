@@ -391,6 +391,73 @@ Therefore:
 
 Next action must be a NEW manual dispatch from the current `Norvana Watchtower External Harness` workflow on `main`, not a rerun of historical run `36383767703`.
 
+## GitHub OIDC harness-auth remediation — 2026-09-28
+
+Correct new workflow dispatch:
+- GitHub Actions run: `36444346521`
+- workflow source on main: `7e75020c5b65e702d43576d2d058112277520534`
+- explicit confirmation gate: PASS
+- GitHub OIDC mint: PASS
+- exact OIDC-capable client checkout: PASS
+- Vercel Trusted Sources: PASS (request reached Norvana)
+- Norvana claim response: HTTP 401 `Unauthorized`
+
+Vercel runtime independently recorded:
+`POST /api/watchtower/runs/claim 401` on deployment `dpl_5vdCEVR6j7gY71mTVaiAcCNQQ6r1`.
+
+This proves the remaining failure was the duplicated long-lived worker-secret equality check, not Vercel Deployment Protection or GitHub OIDC. The queued HARNESS_TEST was not claimed and no result/candidate/spend/external action occurred.
+
+Remediation architecture:
+- standard workers retain `NORVANA_WATCHTOWER_WORKER_SECRET` authentication;
+- HARNESS mode no longer uses the duplicated static worker secret;
+- HARNESS mode requires a short-lived GitHub Actions OIDC token;
+- Norvana independently verifies the JWT RS256 signature against GitHub's public JWKS;
+- claims are pinned to:
+  - issuer `https://token.actions.githubusercontent.com`;
+  - audience `https://github.com/norrijam405`;
+  - repository `norrijam405/norvana`;
+  - ref `refs/heads/main`;
+  - event `workflow_dispatch`;
+  - exact workflow ref `norrijam405/norvana/.github/workflows/watchtower-worker-harness.yml@refs/heads/main`;
+  - GitHub-hosted runner;
+- OIDC harness authentication is Preview-only;
+- HARNESS_TEST finalization is harness-mode-only;
+- zero-candidate / zero-spend enforcement remains server-side.
+
+Exact green implementation:
+`b51b16c8d62acb00c90a381180a94fc6a59a638d`
+
+Recovery CI:
+- run `36445431584`: SUCCESS
+- policy tests: PASS
+- typecheck: PASS
+- lint: PASS
+- dependency/security gates: PASS
+- production build: PASS
+
+A prior candidate `dd5d8dd086a885ab9dcdc83dea8df45002541068` failed CI at TypeScript JWK input typing and is preserved as failed lineage. It was not deployed. Fix commit `b51b16c8...` passed all gates.
+
+Controlled OIDC-hardened Preview:
+- deployment: `dpl_G1DUppPKP7QyDv2ncz4pAJJ5ruDq`
+- unique URL: `https://norvana-pvkhlmy7f-norrijam405-2107s-projects.vercel.app`
+- deployed source: `89cd3249b03f5b793fca9671e05039e8e3aa64c7`
+- state: READY
+- deployment-source Recovery CI `36445646475`: SUCCESS
+- refreeze commit: `ab88a9ad6599b07397879f147ba64bfe01a66326`
+- refreeze Recovery CI `36445777461`: SUCCESS
+- Vercel recheck: exactly one deployment since the controlled gate; no second deployment.
+
+Current main manual harness workflow:
+- commit: `a81c64c1852d6685375d43aeeb6da33e658c68e0`
+- main remains deployment-frozen;
+- target pinned to exact OIDC-hardened Preview URL;
+- checkout pinned to `b51b16c8...`;
+- workflow no longer consumes the GitHub repository worker-secret copy;
+- human phrase `RUN_DETERMINISTIC_HARNESS` remains required.
+
+Next gate:
+on the new current Preview using founder owner session, retire the old-runtime queued HARNESS_TEST, generate current-runtime Control Proof + Worker Proof, and queue exactly one fresh HARNESS_TEST. Then execute one NEW manual workflow dispatch from main.
+
 ## Deployment/runtime proof binding
 
 watch_runs now carry runtime_id.
