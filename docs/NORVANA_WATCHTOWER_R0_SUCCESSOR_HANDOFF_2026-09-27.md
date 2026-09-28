@@ -553,6 +553,37 @@ Current main manual harness workflow:
 Next gate:
 founder owner-session recovery chain on the new runtime: retire the stale queued HARNESS_TEST from `dpl_G1DUpp...`, run current Control Proof, run current Worker Proof, queue exactly one new HARNESS_TEST. Then one NEW manual workflow dispatch from main.
 
+## Forwarded-OIDC current-runtime recovery chain — 2026-09-28 16:59Z
+
+Founder browser execution on the exact forwarded-OIDC Preview:
+`dpl_8x2cGxz52kDwbiJPMyFBPjGv5wMv`
+completed the fail-fast owner-session recovery script without rejection.
+
+Independent Vercel runtime aggregation for `2026-09-28T16:59:20Z..16:59:28Z`, scoped to the exact deployment and HTTP 200, shows exactly one request for each path:
+- `/api/watchtower/harness/retire-stale`: 1
+- `/api/watchtower/self-test`: 1
+- `/api/watchtower/worker-self-test`: 1
+- `/api/watchtower/harness/queue`: 1
+
+Therefore the current forwarded-OIDC runtime has:
+- prior-runtime HARNESS_TEST retired through the owner-only recovery path;
+- current-runtime Control Proof PASS;
+- current-runtime Worker Proof PASS;
+- exactly one fresh current-runtime HARNESS_TEST queued.
+
+The Watchtower UI remained at:
+- 5 watchers;
+- 0 enabled;
+- 0 candidates;
+- authority Locked;
+- $0 default budget.
+
+Truth state:
+`FORWARDED_OIDC_PREVIEW_READY + CURRENT_RUNTIME_CONTROL_PROOF_PASS + CURRENT_RUNTIME_WORKER_PROOF_PASS + EXACTLY_ONE_FRESH_HARNESS_TEST_QUEUED`
+
+Next gate:
+one NEW manual dispatch of `Norvana Watchtower External Harness` from `main`, using current main workflow commit `b50e02045565f20da8a071ab9d8fe3ef35ec08b6` and exact confirmation `RUN_DETERMINISTIC_HARNESS`. Do not re-run any historical workflow attempt.
+
 ## Deployment/runtime proof binding
 
 watch_runs now carry runtime_id.
