@@ -1,11 +1,27 @@
 import { NextRequest, NextResponse } from "next/server";
-import { and, asc, desc, eq, inArray } from "drizzle-orm";
+import { and, asc, desc, eq, inArray, sql } from "drizzle-orm";
 import { db } from "@/db";
 import { actionReceipts, watchJobs, watchRuns } from "@/db/schema";
 import { requireCurrentRecoveryAdmin } from "@/lib/admin-guard";
 import { ownerCredentialState } from "@/lib/admin-identity";
-import { evaluateR0Job } from "@/lib/watchtower/policy";
+import {
+  evaluateHarnessEnvironmentSnapshot,
+  evaluateHarnessTargetJob,
+  evaluateHarnessWatcherSnapshot,
+  WATCHTOWER_HARNESS_ADVISORY_LOCK_KEY_1,
+  WATCHTOWER_HARNESS_ADVISORY_LOCK_KEY_2,
+} from "@/lib/watchtower/policy";
 import { currentWatchtowerRuntimeId } from "@/lib/watchtower/runtime-id";
+
+function currentHarnessEnvironment() {
+  return evaluateHarnessEnvironmentSnapshot({
+    queueEnabled: process.env.NORVANA_WATCHTOWER_QUEUE_ENABLED === "true",
+    executorEnabled: process.env.NORVANA_WATCHTOWER_EXECUTOR_ENABLED === "true",
+    fulfillmentEnabled: process.env.NORVANA_EXTERNAL_FULFILLMENT_ENABLED === "true",
+    supplierConnectorsEnabled: process.env.NORVANA_SUPPLIER_CONNECTORS_ENABLED === "true",
+    federationEnabled: process.env.IGNIAQUA_FEDERATION_ENABLED === "true",
+  });
+}
 
 export async function POST(req: NextRequest) {
   const gate = await requireCurrentRecoveryAdmin(req);
@@ -19,36 +35,10 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  if (process.env.NORVANA_WATCHTOWER_QUEUE_ENABLED === "true") {
+  const environment = currentHarnessEnvironment();
+  if (!environment.ok) {
     return NextResponse.json(
-      {
-        error: "Harness queueing requires the normal scheduler queue to remain disabled.",
-        code: "WATCHTOWER_HARNESS_REQUIRES_QUEUE_DISABLED",
-      },
-      { status: 409 }
-    );
-  }
-
-  if (process.env.NORVANA_WATCHTOWER_EXECUTOR_ENABLED === "true") {
-    return NextResponse.json(
-      {
-        error: "Queue the harness proof while the executor is still disabled.",
-        code: "WATCHTOWER_HARNESS_QUEUE_REQUIRES_EXECUTOR_DISABLED",
-      },
-      { status: 409 }
-    );
-  }
-
-  if (
-    process.env.NORVANA_EXTERNAL_FULFILLMENT_ENABLED === "true" ||
-    process.env.NORVANA_SUPPLIER_CONNECTORS_ENABLED === "true" ||
-    process.env.IGNIAQUA_FEDERATION_ENABLED === "true"
-  ) {
-    return NextResponse.json(
-      {
-        error: "Harness proof requires all consequential external action paths to remain disabled.",
-        code: "WATCHTOWER_HARNESS_REQUIRES_EXTERNAL_LOCK",
-      },
+      { error: environment.reason, code: environment.code },
       { status: 409 }
     );
   }
@@ -64,84 +54,88 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const [controlProof] = await db
-    .select({ id: watchRuns.id })
-    .from(watchRuns)
-    .where(
-      and(
-        eq(watchRuns.trigger, "CONTROL_TEST"),
-        eq(watchRuns.status, "PASS"),
-        eq(watchRuns.runtimeId, runtimeId)
-      )
-    )
-    .orderBy(desc(watchRuns.completedAt))
-    .limit(1);
+  const outcome = await db.transaction(async (tx) => {
+    await tx.execute(
+      sql`select pg_advisory_xact_lock(${WATCHTOWER_HARNESS_ADVISORY_LOCK_KEY_1}, ${WATCHTOWER_HARNESS_ADVISORY_LOCK_KEY_2})`
+    );
 
-  const [workerProof] = await db
-    .select({ id: watchRuns.id })
-    .from(watchRuns)
-    .where(
-      and(
-        eq(watchRuns.trigger, "WORKER_TEST"),
-        eq(watchRuns.status, "PASS"),
-        eq(watchRuns.runtimeId, runtimeId)
+    const [controlProof] = await tx
+      .select({ id: watchRuns.id })
+      .from(watchRuns)
+      .where(
+        and(
+          eq(watchRuns.trigger, "CONTROL_TEST"),
+          eq(watchRuns.status, "PASS"),
+          eq(watchRuns.runtimeId, runtimeId)
+        )
       )
-    )
-    .orderBy(desc(watchRuns.completedAt))
-    .limit(1);
+      .orderBy(desc(watchRuns.completedAt))
+      .limit(1);
 
-  if (!controlProof || !workerProof) {
-    return NextResponse.json(
-      {
+    const [workerProof] = await tx
+      .select({ id: watchRuns.id })
+      .from(watchRuns)
+      .where(
+        and(
+          eq(watchRuns.trigger, "WORKER_TEST"),
+          eq(watchRuns.status, "PASS"),
+          eq(watchRuns.runtimeId, runtimeId)
+        )
+      )
+      .orderBy(desc(watchRuns.completedAt))
+      .limit(1);
+
+    if (!controlProof || !workerProof) {
+      return {
         error: "Current-deployment Control Proof and Worker Proof are required first.",
         code: "WATCHTOWER_HARNESS_PREREQUISITES_REQUIRED",
-      },
-      { status: 409 }
-    );
-  }
+        status: 409,
+      } as const;
+    }
 
-  const activeRuns = await db
-    .select({ id: watchRuns.id, status: watchRuns.status })
-    .from(watchRuns)
-    .where(inArray(watchRuns.status, ["QUEUED", "RUNNING"]))
-    .limit(10);
+    const activeRuns = await tx
+      .select({ id: watchRuns.id, status: watchRuns.status })
+      .from(watchRuns)
+      .where(inArray(watchRuns.status, ["QUEUED", "RUNNING"]))
+      .limit(10);
 
-  if (activeRuns.length) {
-    return NextResponse.json(
-      {
+    if (activeRuns.length) {
+      return {
         error: "Harness proof requires an empty executable queue.",
         code: "WATCHTOWER_STALE_EXECUTABLE_RUNS_PRESENT",
+        status: 409,
         activeRunCount: activeRuns.length,
-      },
-      { status: 409 }
-    );
-  }
+      } as const;
+    }
 
-  const jobs = await db.select().from(watchJobs).orderBy(asc(watchJobs.id));
-  const unsafe = jobs.find((job) => job.status !== "PAUSED" || !evaluateR0Job(job.authority, job.budgetCents).ok);
+    const jobs = await tx.select().from(watchJobs).orderBy(asc(watchJobs.id));
+    const watcherDecision = evaluateHarnessWatcherSnapshot(jobs);
+    if (!watcherDecision.ok) {
+      return {
+        error: watcherDecision.reason,
+        code: watcherDecision.code,
+        status: 409,
+      } as const;
+    }
 
-  if (!jobs.length || unsafe) {
-    return NextResponse.json(
-      {
-        error: "All real watchers must remain PAUSED and within R0 policy for harness proof.",
-        code: "WATCHTOWER_HARNESS_WATCHERS_NOT_SAFE",
-      },
-      { status: 409 }
-    );
-  }
-
-  const job = jobs.find((item) => item.authority === "OBSERVE");
-  if (!job) {
-    return NextResponse.json(
-      {
+    const job = jobs.find((item) => item.authority === "OBSERVE");
+    if (!job) {
+      return {
         error: "Harness proof requires an OBSERVE watcher.",
         code: "WATCHTOWER_HARNESS_OBSERVE_JOB_REQUIRED",
-      },
-      { status: 409 }
-    );
-  }
+        status: 409,
+      } as const;
+    }
 
-  const proof = await db.transaction(async (tx) => {
+    const targetDecision = evaluateHarnessTargetJob(job.authority, job.budgetCents);
+    if (!targetDecision.ok) {
+      return {
+        error: targetDecision.reason,
+        code: targetDecision.code,
+        status: 409,
+      } as const;
+    }
+
     const [run] = await tx
       .insert(watchRuns)
       .values({
@@ -150,7 +144,7 @@ export async function POST(req: NextRequest) {
         trigger: "HARNESS_TEST",
         runtimeId,
         summary:
-          "Queued for external deterministic worker harness proof. Real watcher remains PAUSED.",
+          "Queued for external deterministic worker harness proof. Real watchers remain PAUSED.",
         findings: [],
         evidenceRefs: [],
         modelProvider: null,
@@ -171,24 +165,31 @@ export async function POST(req: NextRequest) {
           jobId: job.id,
           jobSlug: job.slug,
           runtimeId,
+          controlProofId: controlProof.id,
+          workerProofId: workerProof.id,
           realWatcherStatus: "PAUSED",
           normalQueueEnabled: false,
           executorEnabled: false,
           externalActionsEnabled: false,
           estimatedCostCents: 0,
+          safetyLock: "WATCHTOWER_HARNESS_GLOBAL",
         },
       })
       .returning();
 
-    return { run, receipt };
+    return { run, receipt, status: 200 } as const;
   });
+
+  if ("error" in outcome) {
+    return NextResponse.json(outcome, { status: outcome.status });
+  }
 
   return NextResponse.json({
     queued: true,
     proofClass: "EXTERNAL_DETERMINISTIC_WORKER_HARNESS",
     runtimeId,
-    runId: proof.run.id,
-    receiptId: proof.receipt.id,
+    runId: outcome.run.id,
+    receiptId: outcome.receipt.id,
     realWatchersPaused: true,
     normalQueueEnabled: false,
     executorEnabled: false,

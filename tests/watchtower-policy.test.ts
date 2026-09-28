@@ -4,7 +4,10 @@ import {
   evaluateR0Job,
   evaluateRunFinalizationState,
   evaluateStaleHarnessRetirement,
+  evaluateHarnessEnvironmentSnapshot,
   evaluateHarnessResultEffects,
+  evaluateHarnessTargetJob,
+  evaluateHarnessWatcherSnapshot,
   evaluateGitHubHarnessClaims,
   evaluateWatcherEnable,
   evaluateWorkerModeExecutorState,
@@ -213,4 +216,94 @@ test("GitHub harness claims are bound to the approved repo workflow and branch",
   ] as const) {
     assert.equal(evaluateGitHubHarnessClaims({ ...valid, [key]: value }).ok, false);
   }
+});
+
+
+test("harness environment requires every external execution path locked", () => {
+  const safe = {
+    queueEnabled: false,
+    executorEnabled: false,
+    fulfillmentEnabled: false,
+    supplierConnectorsEnabled: false,
+    federationEnabled: false,
+  };
+  assert.deepEqual(evaluateHarnessEnvironmentSnapshot(safe), { ok: true });
+
+  for (const key of Object.keys(safe) as Array<keyof typeof safe>) {
+    const result = evaluateHarnessEnvironmentSnapshot({ ...safe, [key]: true });
+    assert.equal(result.ok, false);
+  }
+});
+
+test("harness safety snapshot fails closed after watcher drift", () => {
+  const safeJobs = [
+    { status: "PAUSED", authority: "OBSERVE", budgetCents: 0 },
+    { status: "PAUSED", authority: "RECOMMEND", budgetCents: 0 },
+  ];
+
+  assert.deepEqual(evaluateHarnessWatcherSnapshot(safeJobs), { ok: true });
+
+  const queueThenEnable = safeJobs.map((job, index) =>
+    index === 0 ? { ...job, status: "ENABLED" } : job
+  );
+  const claimDecision = evaluateHarnessWatcherSnapshot(queueThenEnable);
+  assert.equal(claimDecision.ok, false);
+  if (!claimDecision.ok) {
+    assert.equal(claimDecision.code, "WATCHTOWER_HARNESS_REAL_WATCHER_NOT_PAUSED");
+  }
+
+  const claimThenAuthorityDrift = safeJobs.map((job, index) =>
+    index === 0 ? { ...job, authority: "ACT" } : job
+  );
+  const resultDecision = evaluateHarnessWatcherSnapshot(claimThenAuthorityDrift);
+  assert.equal(resultDecision.ok, false);
+  if (!resultDecision.ok) {
+    assert.equal(resultDecision.code, "WATCHTOWER_HARNESS_REAL_WATCHER_POLICY_DRIFT");
+  }
+
+  const budgetDrift = safeJobs.map((job, index) =>
+    index === 0 ? { ...job, budgetCents: 1 } : job
+  );
+  assert.equal(evaluateHarnessWatcherSnapshot(budgetDrift).ok, false);
+});
+
+test("harness target remains exact OBSERVE and zero budget", () => {
+  assert.deepEqual(evaluateHarnessTargetJob("OBSERVE", 0), { ok: true });
+
+  const recommend = evaluateHarnessTargetJob("RECOMMEND", 0);
+  assert.equal(recommend.ok, false);
+  if (!recommend.ok) assert.equal(recommend.code, "WATCHTOWER_HARNESS_REQUIRES_OBSERVE");
+
+  const paid = evaluateHarnessTargetJob("OBSERVE", 1);
+  assert.equal(paid.ok, false);
+  if (!paid.ok) assert.equal(paid.code, "WATCHTOWER_HARNESS_REQUIRES_ZERO_BUDGET");
+});
+
+test("critical routes share the same transaction-level harness safety lock", async () => {
+  const { readFile } = await import("node:fs/promises");
+  const routes = [
+    "../src/app/api/watchtower/harness/queue/route.ts",
+    "../src/app/api/watchtower/jobs/[id]/route.ts",
+    "../src/app/api/watchtower/runs/claim/route.ts",
+    "../src/app/api/watchtower/runs/[id]/result/route.ts",
+  ];
+
+  for (const route of routes) {
+    const source = await readFile(new URL(route, import.meta.url), "utf8");
+    assert.match(source, /pg_advisory_xact_lock/);
+    assert.match(source, /WATCHTOWER_HARNESS_ADVISORY_LOCK_KEY_1/);
+    assert.match(source, /WATCHTOWER_HARNESS_ADVISORY_LOCK_KEY_2/);
+  }
+});
+
+test("watcher safety mutations atomically invalidate active harness runs", async () => {
+  const { readFile } = await import("node:fs/promises");
+  const source = await readFile(
+    new URL("../src/app/api/watchtower/jobs/[id]/route.ts", import.meta.url),
+    "utf8"
+  );
+
+  assert.match(source, /HARNESS_TEST/);
+  assert.match(source, /WATCH_HARNESS_INVALIDATED_BY_WATCHER_MUTATION/);
+  assert.match(source, /inArray\(watchRuns\.status, \["QUEUED", "RUNNING"\]\)/);
 });

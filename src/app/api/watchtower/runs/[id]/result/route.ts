@@ -1,13 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
-import { and, eq } from "drizzle-orm";
+import { and, asc, desc, eq, sql } from "drizzle-orm";
 import { db } from "@/db";
 import { actionReceipts, watchCandidates, watchJobs, watchRuns } from "@/db/schema";
 import { requireWatchtowerWorker } from "@/lib/watchtower/worker-auth";
 import { currentWatchtowerRuntimeId } from "@/lib/watchtower/runtime-id";
 import {
+  evaluateHarnessEnvironmentSnapshot,
+  evaluateHarnessResultEffects,
+  evaluateHarnessTargetJob,
+  evaluateHarnessWatcherSnapshot,
   evaluateR0Job,
   evaluateRunFinalizationState,
-  evaluateHarnessResultEffects,
+  WATCHTOWER_HARNESS_ADVISORY_LOCK_KEY_1,
+  WATCHTOWER_HARNESS_ADVISORY_LOCK_KEY_2,
 } from "@/lib/watchtower/policy";
 
 const FINAL_STATUSES = new Set(["PASS", "NO_MATERIAL_CHANGE", "FAILED", "BLOCKED"]);
@@ -30,6 +35,16 @@ function safeSourceUrl(value: unknown) {
   if (!raw) return "";
   if (!/^https?:\/\//i.test(raw)) return "";
   return raw.slice(0, 1000);
+}
+
+function currentHarnessEnvironment() {
+  return evaluateHarnessEnvironmentSnapshot({
+    queueEnabled: process.env.NORVANA_WATCHTOWER_QUEUE_ENABLED === "true",
+    executorEnabled: process.env.NORVANA_WATCHTOWER_EXECUTOR_ENABLED === "true",
+    fulfillmentEnabled: process.env.NORVANA_EXTERNAL_FULFILLMENT_ENABLED === "true",
+    supplierConnectorsEnabled: process.env.NORVANA_SUPPLIER_CONNECTORS_ENABLED === "true",
+    federationEnabled: process.env.IGNIAQUA_FEDERATION_ENABLED === "true",
+  });
 }
 
 type CandidateInput = {
@@ -70,12 +85,12 @@ export async function POST(
     );
   }
 
-  const [run] = await db.select().from(watchRuns).where(eq(watchRuns.id, runId)).limit(1);
-  if (!run) {
+  const [initialRun] = await db.select().from(watchRuns).where(eq(watchRuns.id, runId)).limit(1);
+  if (!initialRun) {
     return NextResponse.json({ error: "Watch run not found." }, { status: 404 });
   }
 
-  if (run.trigger === "HARNESS_TEST" && requestedMode !== "harness") {
+  if (initialRun.trigger === "HARNESS_TEST" && requestedMode !== "harness") {
     return NextResponse.json(
       {
         error: "HARNESS_TEST results require authenticated harness mode.",
@@ -85,49 +100,11 @@ export async function POST(
     );
   }
 
-  if (requestedMode === "harness" && run.trigger !== "HARNESS_TEST") {
+  if (requestedMode === "harness" && initialRun.trigger !== "HARNESS_TEST") {
     return NextResponse.json(
       {
         error: "Harness mode may finalize HARNESS_TEST runs only.",
         code: "WATCHTOWER_HARNESS_MODE_RESULT_SCOPE_VIOLATION",
-      },
-      { status: 409 }
-    );
-  }
-
-  if (run.runtimeId !== runtimeId) {
-    return NextResponse.json(
-      {
-        error: "Watch run belongs to a different deployment and cannot be finalized here.",
-        code: "WATCHTOWER_STALE_RUNTIME_RUN",
-      },
-      { status: 409 }
-    );
-  }
-
-  const stateDecision = evaluateRunFinalizationState(run.status);
-  if (!stateDecision.ok) {
-    return NextResponse.json(
-      {
-        error: stateDecision.reason,
-        code: stateDecision.code,
-        currentStatus: run.status,
-      },
-      { status: 409 }
-    );
-  }
-
-  const [job] = await db.select().from(watchJobs).where(eq(watchJobs.id, run.jobId)).limit(1);
-  if (!job) {
-    return NextResponse.json({ error: "Watch job not found." }, { status: 409 });
-  }
-
-  const policy = evaluateR0Job(job.authority, job.budgetCents);
-  if (!policy.ok) {
-    return NextResponse.json(
-      {
-        error: policy.reason,
-        code: policy.code,
       },
       { status: 409 }
     );
@@ -168,15 +145,14 @@ export async function POST(
       { status: 400 }
     );
   }
+
   const requestedStatus = String(body.status || "").toUpperCase();
   if (!FINAL_STATUSES.has(requestedStatus)) {
     return NextResponse.json({ error: "Invalid final run status." }, { status: 400 });
   }
 
-  const rawEstimatedCost = body.estimatedCostCents === undefined
-    ? 0
-    : Number(body.estimatedCostCents);
-
+  const rawEstimatedCost =
+    body.estimatedCostCents === undefined ? 0 : Number(body.estimatedCostCents);
   if (
     !Number.isFinite(rawEstimatedCost) ||
     rawEstimatedCost < 0 ||
@@ -192,32 +168,164 @@ export async function POST(
   }
 
   const estimatedCostCents = rawEstimatedCost;
-  const budgetExceeded = estimatedCostCents > job.budgetCents;
-  const status = budgetExceeded ? "FAILED" : requestedStatus;
-  const completedAt = new Date();
-
   const findings = objectRecords(body.findings, MAX_FINDINGS);
   const evidenceRefs = objectRecords(body.evidenceRefs, MAX_EVIDENCE_REFS);
-
   const candidates = objectRecords(body.candidates, 100) as CandidateInput[];
 
   const harnessEffectDecision = evaluateHarnessResultEffects({
-    trigger: run.trigger,
+    trigger: initialRun.trigger,
     estimatedCostCents,
     candidateCount: candidates.length,
   });
-
   if (!harnessEffectDecision.ok) {
     return NextResponse.json(
-      {
-        error: harnessEffectDecision.reason,
-        code: harnessEffectDecision.code,
-      },
+      { error: harnessEffectDecision.reason, code: harnessEffectDecision.code },
       { status: 409 }
     );
   }
 
-  const finalized = await db.transaction(async (tx) => {
+  if (requestedMode === "harness") {
+    const environment = currentHarnessEnvironment();
+    if (!environment.ok) {
+      return NextResponse.json(
+        { error: environment.reason, code: environment.code },
+        { status: 409 }
+      );
+    }
+  }
+
+  const outcome = await db.transaction(async (tx) => {
+    if (requestedMode === "harness") {
+      await tx.execute(
+        sql`select pg_advisory_xact_lock(${WATCHTOWER_HARNESS_ADVISORY_LOCK_KEY_1}, ${WATCHTOWER_HARNESS_ADVISORY_LOCK_KEY_2})`
+      );
+    }
+
+    const [run] = await tx.select().from(watchRuns).where(eq(watchRuns.id, runId)).limit(1);
+    if (!run) {
+      return { error: "Watch run not found.", status: 404 } as const;
+    }
+
+    if (run.runtimeId !== runtimeId) {
+      return {
+        error: "Watch run belongs to a different deployment and cannot be finalized here.",
+        code: "WATCHTOWER_STALE_RUNTIME_RUN",
+        status: 409,
+      } as const;
+    }
+
+    const stateDecision = evaluateRunFinalizationState(run.status);
+    if (!stateDecision.ok) {
+      return {
+        error: stateDecision.reason,
+        code: stateDecision.code,
+        currentStatus: run.status,
+        status: 409,
+      } as const;
+    }
+
+    if (requestedMode === "harness" && run.trigger !== "HARNESS_TEST") {
+      return {
+        error: "Harness mode may finalize HARNESS_TEST runs only.",
+        code: "WATCHTOWER_HARNESS_MODE_RESULT_SCOPE_VIOLATION",
+        status: 409,
+      } as const;
+    }
+
+    const [job] = await tx.select().from(watchJobs).where(eq(watchJobs.id, run.jobId)).limit(1);
+    if (!job) {
+      return { error: "Watch job not found.", status: 409 } as const;
+    }
+
+    if (requestedMode === "harness") {
+      const blockForSafetyDrift = async (code: string, reason: string) => {
+        const [blocked] = await tx
+          .update(watchRuns)
+          .set({
+            status: "BLOCKED",
+            errorMessage: reason,
+            summary: "HARNESS_TEST finalization blocked because required safety state drifted.",
+            completedAt: new Date(),
+          })
+          .where(and(eq(watchRuns.id, run.id), eq(watchRuns.status, "RUNNING")))
+          .returning();
+
+        if (blocked) {
+          await tx.insert(actionReceipts).values({
+            actionType: "WATCH_HARNESS_RESULT_SAFETY_BLOCKED",
+            authorityClass: "OBSERVE",
+            subjectType: "watch_run",
+            subjectId: String(blocked.id),
+            status: "BLOCKED",
+            actor: "watchtower-harness-result",
+            details: {
+              code,
+              reason,
+              runtimeId,
+              estimatedCostCents: 0,
+              candidateCount: 0,
+              safetyLock: "WATCHTOWER_HARNESS_GLOBAL",
+            },
+          });
+        }
+
+        return { error: reason, code, status: 409 } as const;
+      };
+
+      const [controlProof] = await tx
+        .select({ id: watchRuns.id })
+        .from(watchRuns)
+        .where(
+          and(
+            eq(watchRuns.trigger, "CONTROL_TEST"),
+            eq(watchRuns.status, "PASS"),
+            eq(watchRuns.runtimeId, runtimeId)
+          )
+        )
+        .orderBy(desc(watchRuns.completedAt))
+        .limit(1);
+
+      const [workerProof] = await tx
+        .select({ id: watchRuns.id })
+        .from(watchRuns)
+        .where(
+          and(
+            eq(watchRuns.trigger, "WORKER_TEST"),
+            eq(watchRuns.status, "PASS"),
+            eq(watchRuns.runtimeId, runtimeId)
+          )
+        )
+        .orderBy(desc(watchRuns.completedAt))
+        .limit(1);
+
+      if (!controlProof || !workerProof) {
+        return blockForSafetyDrift(
+          "WATCHTOWER_HARNESS_PREREQUISITES_STALE",
+          "Current-runtime Control Proof and Worker Proof are required at finalization time."
+        );
+      }
+
+      const jobs = await tx.select().from(watchJobs).orderBy(asc(watchJobs.id));
+      const watcherDecision = evaluateHarnessWatcherSnapshot(jobs);
+      if (!watcherDecision.ok) {
+        return blockForSafetyDrift(watcherDecision.code, watcherDecision.reason);
+      }
+
+      const targetDecision = evaluateHarnessTargetJob(job.authority, job.budgetCents);
+      if (!targetDecision.ok) {
+        return blockForSafetyDrift(targetDecision.code, targetDecision.reason);
+      }
+    } else {
+      const policy = evaluateR0Job(job.authority, job.budgetCents);
+      if (!policy.ok) {
+        return { error: policy.reason, code: policy.code, status: 409 } as const;
+      }
+    }
+
+    const budgetExceeded = estimatedCostCents > job.budgetCents;
+    const status = budgetExceeded ? "FAILED" : requestedStatus;
+    const completedAt = new Date();
+
     const [finalizedRun] = await tx
       .update(watchRuns)
       .set({
@@ -237,7 +345,13 @@ export async function POST(
       .where(and(eq(watchRuns.id, run.id), eq(watchRuns.status, "RUNNING")))
       .returning();
 
-    if (!finalizedRun) return null;
+    if (!finalizedRun) {
+      return {
+        error: "Watch run was already finalized by another worker response.",
+        code: "WATCH_RUN_ALREADY_FINALIZED",
+        status: 409,
+      } as const;
+    }
 
     let insertedCandidateCount = 0;
 
@@ -294,30 +408,39 @@ export async function POST(
         runtimeId,
         workerMode: requestedMode,
         authMode: requestedMode === "harness" ? "GITHUB_OIDC" : "WORKER_SECRET",
+        ...(requestedMode === "harness"
+          ? {
+              globalWatcherSnapshot: "ALL_PAUSED_R0_ZERO_BUDGET",
+              safetyLock: "WATCHTOWER_HARNESS_GLOBAL",
+            }
+          : {}),
       },
     });
 
     return {
       run: finalizedRun,
       candidateCount: insertedCandidateCount,
-    };
+      budgetExceeded,
+      status,
+    } as const;
   });
 
-  if (!finalized) {
+  if ("error" in outcome) {
     return NextResponse.json(
       {
-        error: "Watch run was already finalized by another worker response.",
-        code: "WATCH_RUN_ALREADY_FINALIZED",
+        error: outcome.error,
+        ...("code" in outcome ? { code: outcome.code } : {}),
+        ...("currentStatus" in outcome ? { currentStatus: outcome.currentStatus } : {}),
       },
-      { status: 409 }
+      { status: outcome.status }
     );
   }
 
   return NextResponse.json({
     accepted: true,
-    runId: finalized.run.id,
-    status,
-    budgetExceeded,
-    candidateCount: finalized.candidateCount,
+    runId: outcome.run.id,
+    status: outcome.status,
+    budgetExceeded: outcome.budgetExceeded,
+    candidateCount: outcome.candidateCount,
   });
 }

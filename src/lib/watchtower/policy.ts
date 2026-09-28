@@ -236,3 +236,89 @@ export function evaluateGitHubHarnessClaims(claims: Record<string, unknown>): R0
 
   return { ok: true };
 }
+
+
+export const WATCHTOWER_HARNESS_ADVISORY_LOCK_KEY_1 = 20_260_928;
+export const WATCHTOWER_HARNESS_ADVISORY_LOCK_KEY_2 = 1_705;
+
+export function evaluateHarnessEnvironmentSnapshot(input: {
+  queueEnabled: boolean;
+  executorEnabled: boolean;
+  fulfillmentEnabled: boolean;
+  supplierConnectorsEnabled: boolean;
+  federationEnabled: boolean;
+}): R0GateDecision {
+  if (
+    input.queueEnabled ||
+    input.executorEnabled ||
+    input.fulfillmentEnabled ||
+    input.supplierConnectorsEnabled ||
+    input.federationEnabled
+  ) {
+    return {
+      ok: false,
+      code: "WATCHTOWER_HARNESS_ENVIRONMENT_NOT_LOCKED",
+      reason:
+        "Harness execution requires queue, executor, fulfillment, supplier connectors, and federation to remain disabled.",
+    };
+  }
+
+  return { ok: true };
+}
+
+export function evaluateHarnessWatcherSnapshot(
+  jobs: Array<{ status: string; authority: string; budgetCents: number }>
+): R0GateDecision {
+  if (!jobs.length) {
+    return {
+      ok: false,
+      code: "WATCHTOWER_HARNESS_WATCHERS_MISSING",
+      reason: "Harness execution requires initialized real watchers.",
+    };
+  }
+
+  const nonPaused = jobs.find((job) => job.status !== "PAUSED");
+  if (nonPaused) {
+    return {
+      ok: false,
+      code: "WATCHTOWER_HARNESS_REAL_WATCHER_NOT_PAUSED",
+      reason: "Every real watcher must remain PAUSED for harness execution.",
+    };
+  }
+
+  for (const job of jobs) {
+    const decision = evaluateR0Job(job.authority, job.budgetCents);
+    if (!decision.ok) {
+      return {
+        ok: false,
+        code: "WATCHTOWER_HARNESS_REAL_WATCHER_POLICY_DRIFT",
+        reason: "Every real watcher must remain inside R0 authority and zero-budget policy.",
+      };
+    }
+  }
+
+  return { ok: true };
+}
+
+export function evaluateHarnessTargetJob(
+  authority: string,
+  budgetCents: number
+): R0GateDecision {
+  if (authority !== "OBSERVE") {
+    return {
+      ok: false,
+      code: "WATCHTOWER_HARNESS_REQUIRES_OBSERVE",
+      reason: "Harness execution requires an OBSERVE target job.",
+    };
+  }
+
+  if (budgetCents !== 0) {
+    return {
+      ok: false,
+      code: "WATCHTOWER_HARNESS_REQUIRES_ZERO_BUDGET",
+      reason: "Harness execution requires a zero-dollar target job.",
+    };
+  }
+
+  return { ok: true };
+}
