@@ -4,6 +4,7 @@ import {
   evaluateR0Job,
   evaluateRunFinalizationState,
   evaluateStaleHarnessRetirement,
+  evaluateActiveHarnessInvariant,
   evaluateHarnessEnvironmentSnapshot,
   evaluateHarnessResultEffects,
   evaluateHarnessTargetJob,
@@ -306,4 +307,117 @@ test("watcher safety mutations atomically invalidate active harness runs", async
   assert.match(source, /HARNESS_TEST/);
   assert.match(source, /WATCH_HARNESS_INVALIDATED_BY_WATCHER_MUTATION/);
   assert.match(source, /inArray\(watchRuns\.status, \["QUEUED", "RUNNING"\]\)/);
+});
+
+
+test("active harness execution invariant requires exactly one expected run", () => {
+  assert.deepEqual(
+    evaluateActiveHarnessInvariant({
+      activeRuns: [{ id: 15, status: "QUEUED" }],
+      expectedRunId: 15,
+      expectedStatus: "QUEUED",
+    }),
+    { ok: true }
+  );
+
+  assert.deepEqual(
+    evaluateActiveHarnessInvariant({
+      activeRuns: [{ id: 15, status: "RUNNING" }],
+      expectedRunId: 15,
+      expectedStatus: "RUNNING",
+    }),
+    { ok: true }
+  );
+
+  for (const activeRuns of [
+    [
+      { id: 15, status: "QUEUED" },
+      { id: 16, status: "QUEUED" },
+    ],
+    [
+      { id: 15, status: "RUNNING" },
+      { id: 16, status: "QUEUED" },
+    ],
+    [
+      { id: 15, status: "RUNNING" },
+      { id: 16, status: "RUNNING" },
+    ],
+  ]) {
+    const result = evaluateActiveHarnessInvariant({
+      activeRuns,
+      expectedRunId: 15,
+      expectedStatus: activeRuns[0].status as "QUEUED" | "RUNNING",
+    });
+    assert.equal(result.ok, false);
+    if (!result.ok) {
+      assert.equal(result.code, "WATCHTOWER_HARNESS_ACTIVE_CARDINALITY_INVALID");
+    }
+  }
+
+  const wrongRun = evaluateActiveHarnessInvariant({
+    activeRuns: [{ id: 16, status: "RUNNING" }],
+    expectedRunId: 15,
+    expectedStatus: "RUNNING",
+  });
+  assert.equal(wrongRun.ok, false);
+  if (!wrongRun.ok) {
+    assert.equal(wrongRun.code, "WATCHTOWER_HARNESS_ACTIVE_RUN_MISMATCH");
+  }
+
+  const wrongState = evaluateActiveHarnessInvariant({
+    activeRuns: [{ id: 15, status: "RUNNING" }],
+    expectedRunId: 15,
+    expectedStatus: "QUEUED",
+  });
+  assert.equal(wrongState.ok, false);
+  if (!wrongState.ok) {
+    assert.equal(wrongState.code, "WATCHTOWER_HARNESS_ACTIVE_STATE_MISMATCH");
+  }
+});
+
+test("claim and finalization fail closed on active harness multiplicity", async () => {
+  const { readFile } = await import("node:fs/promises");
+  const claimSource = await readFile(
+    new URL("../src/app/api/watchtower/runs/claim/route.ts", import.meta.url),
+    "utf8"
+  );
+  const resultSource = await readFile(
+    new URL("../src/app/api/watchtower/runs/[id]/result/route.ts", import.meta.url),
+    "utf8"
+  );
+
+  for (const source of [claimSource, resultSource]) {
+    assert.match(source, /evaluateActiveHarnessInvariant/);
+    assert.match(source, /WATCHTOWER_HARNESS_ACTIVE_CARDINALITY_INVALID/);
+    assert.match(source, /WATCH_HARNESS_MULTIPLICITY_BLOCKED/);
+    assert.match(source, /inArray\(watchRuns\.status, \["QUEUED", "RUNNING"\]\)/);
+  }
+});
+
+test("concurrent harness claim/finalization ordering preserves uniqueness checks", async () => {
+  const { readFile } = await import("node:fs/promises");
+  const claimSource = await readFile(
+    new URL("../src/app/api/watchtower/runs/claim/route.ts", import.meta.url),
+    "utf8"
+  );
+  const resultSource = await readFile(
+    new URL("../src/app/api/watchtower/runs/[id]/result/route.ts", import.meta.url),
+    "utf8"
+  );
+
+  const claimLock = claimSource.indexOf("pg_advisory_xact_lock");
+  const claimInvariant = claimSource.indexOf("evaluateActiveHarnessInvariant");
+  const claimTransition = claimSource.indexOf('set({ status: "RUNNING"');
+
+  assert.ok(claimLock >= 0);
+  assert.ok(claimInvariant > claimLock);
+  assert.ok(claimTransition > claimInvariant);
+
+  const resultLock = resultSource.indexOf("pg_advisory_xact_lock");
+  const resultInvariant = resultSource.indexOf("evaluateActiveHarnessInvariant");
+  const resultTransition = resultSource.indexOf(".set({\n        status,");
+
+  assert.ok(resultLock >= 0);
+  assert.ok(resultInvariant > resultLock);
+  assert.ok(resultTransition > resultInvariant);
 });

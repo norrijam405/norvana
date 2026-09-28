@@ -322,3 +322,38 @@ export function evaluateHarnessTargetJob(
 
   return { ok: true };
 }
+
+
+export function evaluateActiveHarnessInvariant(input: {
+  activeRuns: Array<{ id: number; status: string }>;
+  expectedRunId?: number;
+  expectedStatus?: "QUEUED" | "RUNNING";
+}): R0GateDecision {
+  if (input.activeRuns.length !== 1) {
+    return {
+      ok: false,
+      code: "WATCHTOWER_HARNESS_ACTIVE_CARDINALITY_INVALID",
+      reason: "Harness execution requires exactly one active HARNESS_TEST.",
+    };
+  }
+
+  const [active] = input.activeRuns;
+
+  if (input.expectedRunId !== undefined && active.id !== input.expectedRunId) {
+    return {
+      ok: false,
+      code: "WATCHTOWER_HARNESS_ACTIVE_RUN_MISMATCH",
+      reason: "The active HARNESS_TEST does not match the requested run.",
+    };
+  }
+
+  if (input.expectedStatus !== undefined && active.status !== input.expectedStatus) {
+    return {
+      ok: false,
+      code: "WATCHTOWER_HARNESS_ACTIVE_STATE_MISMATCH",
+      reason: `The active HARNESS_TEST must be ${input.expectedStatus} at this execution boundary.`,
+    };
+  }
+
+  return { ok: true };
+}

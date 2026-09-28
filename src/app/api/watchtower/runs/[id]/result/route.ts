@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
-import { and, asc, desc, eq, sql } from "drizzle-orm";
+import { and, asc, desc, eq, inArray, sql } from "drizzle-orm";
 import { db } from "@/db";
 import { actionReceipts, watchCandidates, watchJobs, watchRuns } from "@/db/schema";
 import { requireWatchtowerWorker } from "@/lib/watchtower/worker-auth";
 import { currentWatchtowerRuntimeId } from "@/lib/watchtower/runtime-id";
 import {
+  evaluateActiveHarnessInvariant,
   evaluateHarnessEnvironmentSnapshot,
   evaluateHarnessResultEffects,
   evaluateHarnessTargetJob,
@@ -212,6 +213,81 @@ export async function POST(
         code: "WATCHTOWER_STALE_RUNTIME_RUN",
         httpStatus: 409,
       } as const;
+    }
+
+    if (requestedMode === "harness") {
+      const activeHarnesses = await tx
+        .select({ id: watchRuns.id, status: watchRuns.status })
+        .from(watchRuns)
+        .where(
+          and(
+            eq(watchRuns.trigger, "HARNESS_TEST"),
+            inArray(watchRuns.status, ["QUEUED", "RUNNING"])
+          )
+        )
+        .orderBy(asc(watchRuns.createdAt));
+
+      if (activeHarnesses.length > 1) {
+        const observedActiveHarnessIds = activeHarnesses.map((active) => active.id);
+        const blockedHarnesses = await tx
+          .update(watchRuns)
+          .set({
+            status: "BLOCKED",
+            errorMessage:
+              "HARNESS_TEST finalization blocked because multiple active harness runs were present.",
+            summary:
+              "Harness proof invalidated because active HARNESS_TEST cardinality was greater than one.",
+            completedAt: new Date(),
+          })
+          .where(
+            and(
+              eq(watchRuns.trigger, "HARNESS_TEST"),
+              inArray(watchRuns.status, ["QUEUED", "RUNNING"])
+            )
+          )
+          .returning();
+
+        for (const blocked of blockedHarnesses) {
+          await tx.insert(actionReceipts).values({
+            actionType: "WATCH_HARNESS_MULTIPLICITY_BLOCKED",
+            authorityClass: "OBSERVE",
+            subjectType: "watch_run",
+            subjectId: String(blocked.id),
+            status: "BLOCKED",
+            actor: "watchtower-harness-result",
+            details: {
+              stage: "FINALIZATION",
+              observedActiveHarnessIds,
+              observedActiveHarnessCount: activeHarnesses.length,
+              requestedRunId: run.id,
+              runtimeId,
+              estimatedCostCents: 0,
+              candidateCount: 0,
+              safetyLock: "WATCHTOWER_HARNESS_GLOBAL",
+            },
+          });
+        }
+
+        return {
+          error: "Harness finalization requires exactly one active HARNESS_TEST.",
+          code: "WATCHTOWER_HARNESS_ACTIVE_CARDINALITY_INVALID",
+          httpStatus: 409,
+        } as const;
+      }
+
+      const activeInvariant = evaluateActiveHarnessInvariant({
+        activeRuns: activeHarnesses,
+        expectedRunId: run.id,
+        expectedStatus: "RUNNING",
+      });
+
+      if (!activeInvariant.ok) {
+        return {
+          error: activeInvariant.reason,
+          code: activeInvariant.code,
+          httpStatus: 409,
+        } as const;
+      }
     }
 
     const stateDecision = evaluateRunFinalizationState(run.status);

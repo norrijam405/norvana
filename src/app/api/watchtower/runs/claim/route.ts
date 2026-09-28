@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
-import { and, asc, desc, eq, ne, sql } from "drizzle-orm";
+import { and, asc, desc, eq, inArray, ne, sql } from "drizzle-orm";
 import { db } from "@/db";
 import { actionReceipts, watchJobs, watchRuns } from "@/db/schema";
 import { requireWatchtowerWorker } from "@/lib/watchtower/worker-auth";
 import { ownerCredentialState } from "@/lib/admin-identity";
 import {
+  evaluateActiveHarnessInvariant,
   evaluateHarnessEnvironmentSnapshot,
   evaluateHarnessTargetJob,
   evaluateHarnessWatcherSnapshot,
@@ -103,15 +104,80 @@ export async function POST(req: NextRequest) {
         sql`select pg_advisory_xact_lock(${WATCHTOWER_HARNESS_ADVISORY_LOCK_KEY_1}, ${WATCHTOWER_HARNESS_ADVISORY_LOCK_KEY_2})`
       );
 
-      const [candidate] = await tx
+      const activeHarnesses = await tx
         .select()
         .from(watchRuns)
-        .where(and(eq(watchRuns.status, "QUEUED"), eq(watchRuns.trigger, "HARNESS_TEST")))
-        .orderBy(asc(watchRuns.createdAt))
-        .limit(1);
+        .where(
+          and(
+            eq(watchRuns.trigger, "HARNESS_TEST"),
+            inArray(watchRuns.status, ["QUEUED", "RUNNING"])
+          )
+        )
+        .orderBy(asc(watchRuns.createdAt));
 
-      if (!candidate) {
+      if (!activeHarnesses.length) {
         return { noContent: true, status: 204 } as const;
+      }
+
+      if (activeHarnesses.length > 1) {
+        const observedActiveHarnessIds = activeHarnesses.map((run) => run.id);
+        const blockedHarnesses = await tx
+          .update(watchRuns)
+          .set({
+            status: "BLOCKED",
+            errorMessage:
+              "HARNESS_TEST execution blocked because multiple active harness runs were present.",
+            summary:
+              "Harness proof invalidated because active HARNESS_TEST cardinality was greater than one.",
+            completedAt: new Date(),
+          })
+          .where(
+            and(
+              eq(watchRuns.trigger, "HARNESS_TEST"),
+              inArray(watchRuns.status, ["QUEUED", "RUNNING"])
+            )
+          )
+          .returning();
+
+        for (const blocked of blockedHarnesses) {
+          await tx.insert(actionReceipts).values({
+            actionType: "WATCH_HARNESS_MULTIPLICITY_BLOCKED",
+            authorityClass: "OBSERVE",
+            subjectType: "watch_run",
+            subjectId: String(blocked.id),
+            status: "BLOCKED",
+            actor: "watchtower-harness-claim",
+            details: {
+              stage: "CLAIM",
+              observedActiveHarnessIds,
+              observedActiveHarnessCount: activeHarnesses.length,
+              runtimeId,
+              estimatedCostCents: 0,
+              safetyLock: "WATCHTOWER_HARNESS_GLOBAL",
+            },
+          });
+        }
+
+        return {
+          error: "Harness execution requires exactly one active HARNESS_TEST.",
+          code: "WATCHTOWER_HARNESS_ACTIVE_CARDINALITY_INVALID",
+          status: 409,
+        } as const;
+      }
+
+      const [candidate] = activeHarnesses;
+      const activeInvariant = evaluateActiveHarnessInvariant({
+        activeRuns: activeHarnesses.map((run) => ({ id: run.id, status: run.status })),
+        expectedRunId: candidate.id,
+        expectedStatus: "QUEUED",
+      });
+
+      if (!activeInvariant.ok) {
+        return {
+          error: activeInvariant.reason,
+          code: activeInvariant.code,
+          status: 409,
+        } as const;
       }
 
       const blockCandidate = async (code: string, reason: string) => {
