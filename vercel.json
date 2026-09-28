@@ -4,7 +4,10 @@
     "iad1"
   ],
   "git": {
-    "deploymentEnabled": false
+    "deploymentEnabled": {
+      "*": false,
+      "recovery/2026-09-26-norvana-modernization-r0": true
+    }
   },
   "env": {
     "NEXT_TELEMETRY_DISABLED": "1"
