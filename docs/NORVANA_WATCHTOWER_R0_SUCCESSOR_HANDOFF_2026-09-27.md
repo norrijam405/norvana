@@ -176,6 +176,43 @@ Watcher enablement requires:
 4. OBSERVE/RECOMMEND authority
 5. $0 budget
 
+## Controlled recovery Preview deployment — 2026-09-28
+
+A controlled recovery-branch Preview is now READY.
+
+Deployment:
+`dpl_3hor9daDE1hi1sun9mU48pA68vPb`
+
+Preview URL:
+`https://norvana-jftmx158e-norrijam405-2107s-projects.vercel.app`
+
+Persistent recovery-branch alias:
+`https://norvana-git-recovery-2026-09-e017ff-norrijam405-2107s-projects.vercel.app`
+
+Deployed Git source:
+`2c8c32c8bc9f28d80cb1f8935f96d04263534b3c`
+
+Recovery CI #189 on that exact deployed source:
+`SUCCESS`
+
+The deployed source differs from executable candidate `bf08615c9e5ec4ad139b783de012b5632fa04ee6` only by:
+- this successor handoff documentation update
+- the temporary `vercel.json` branch-specific deployment gate used to create the one Preview
+
+No Watchtower application implementation files differ from the repaired executable candidate.
+
+After the Preview reached READY, the recovery branch was immediately refrozen:
+`b185ffb65211a0a9e8c90e11c6a34f81dd44c58c`
+
+Recovery CI #190 on the refrozen head:
+`SUCCESS`
+
+`vercel.json -> git.deploymentEnabled=false` is restored.
+
+Vercel was rechecked after refreeze and showed no second recovery deployment. All real watchers remain PAUSED by doctrine; no executor, supplier, fulfillment, spending, publishing, or IgniAqua federation authorization was granted.
+
+The next proof gate requires founder owner-session authentication on this deployment. Do not request or expose the founder password. The founder should sign in normally, then run current-deployment Control Proof followed by Worker Contract Proof. Only after both are PASS for the current deployment may a single `HARNESS_TEST` be queued.
+
 ## Deployment/runtime proof binding
 
 watch_runs now carry runtime_id.
