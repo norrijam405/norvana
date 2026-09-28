@@ -1,6 +1,7 @@
 const baseUrl = (process.env.NORVANA_WATCHTOWER_BASE_URL || "").replace(/\/+$/, "");
 const secret = process.env.NORVANA_WATCHTOWER_WORKER_SECRET || "";
 const enabled = process.env.NORVANA_WATCHTOWER_HARNESS_ENABLED === "true";
+const vercelOidcToken = process.env.NORVANA_VERCEL_OIDC_TOKEN || "";
 
 function fail(message) {
   throw new Error(message);
@@ -15,6 +16,9 @@ const claim = await fetch(`${baseUrl}/api/watchtower/runs/claim`, {
   headers: {
     "x-norvana-watchtower-worker-secret": secret,
     "x-norvana-worker-mode": "harness",
+    ...(vercelOidcToken
+      ? { "x-vercel-trusted-oidc-idp-token": vercelOidcToken }
+      : {}),
   },
 });
 
@@ -49,6 +53,9 @@ const result = await fetch(`${baseUrl}/api/watchtower/runs/${runId}/result`, {
   headers: {
     "content-type": "application/json",
     "x-norvana-watchtower-worker-secret": secret,
+    ...(vercelOidcToken
+      ? { "x-vercel-trusted-oidc-idp-token": vercelOidcToken }
+      : {}),
   },
   body: JSON.stringify({
     status: "NO_MATERIAL_CHANGE",
