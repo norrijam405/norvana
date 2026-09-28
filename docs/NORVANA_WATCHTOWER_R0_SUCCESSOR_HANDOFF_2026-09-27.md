@@ -458,6 +458,47 @@ Current main manual harness workflow:
 Next gate:
 on the new current Preview using founder owner session, retire the old-runtime queued HARNESS_TEST, generate current-runtime Control Proof + Worker Proof, and queue exactly one fresh HARNESS_TEST. Then execute one NEW manual workflow dispatch from main.
 
+## OIDC-hardened current-runtime recovery chain — 2026-09-28 16:10Z
+
+Founder browser execution on the current persistent recovery alias completed the owner-session recovery chain against deployment:
+`dpl_G1DUppPKP7QyDv2ncz4pAJJ5ruDq`
+
+Browser evidence explicitly showed:
+- `RETIRE OLD HARNESS 200`
+- retired run id: `9`
+- retirement receipt id: `19`
+- retired status: `BLOCKED`
+- stale runtime: `dpl_5vdCEVR6j7gY71mTVaiAcCNQQ6r1`
+- current runtime: `dpl_G1DUppPKP7QyDv2ncz4pAJJ5ruDq`
+- estimated cost: `0`
+- executor enabled: `false`
+- external actions enabled: `false`
+- queue enabled: `false`
+- all real watchers paused: `true`
+
+Independent Vercel runtime logs on exact current deployment confirm:
+1. `16:10:50 POST /api/watchtower/harness/retire-stale 200`
+2. `16:10:51 POST /api/watchtower/self-test 200`
+3. `16:10:51 POST /api/watchtower/worker-self-test 200`
+4. `16:10:51 POST /api/watchtower/harness/queue 200`
+
+The browser script is fail-fast on any non-2xx response, and server logs independently prove all four ordered mutations returned 200.
+
+Current truth state:
+`OIDC_HARDENED_PREVIEW_READY + CURRENT_RUNTIME_CONTROL_PROOF_PASS + CURRENT_RUNTIME_WORKER_PROOF_PASS + EXACTLY_ONE_FRESH_HARNESS_TEST_QUEUED`
+
+Safety state:
+- 5 real watchers
+- 0 enabled
+- 0 candidates
+- authority locked
+- $0 automation budget
+- no real executor
+- no external commerce actions
+
+Next gate:
+one NEW manual `Norvana Watchtower External Harness` workflow dispatch from `main` using the current workflow at `a81c64c1852d6685375d43aeeb6da33e658c68e0`, with confirmation `RUN_DETERMINISTIC_HARNESS`. Do not rerun a historical workflow run.
+
 ## Deployment/runtime proof binding
 
 watch_runs now carry runtime_id.
