@@ -499,6 +499,60 @@ Safety state:
 Next gate:
 one NEW manual `Norvana Watchtower External Harness` workflow dispatch from `main` using the current workflow at `a81c64c1852d6685375d43aeeb6da33e658c68e0`, with confirmation `RUN_DETERMINISTIC_HARNESS`. Do not rerun a historical workflow run.
 
+## Vercel-reserved OIDC header stripping + forwarded-header remediation — 2026-09-28
+
+Correct OIDC-hardened harness dispatch:
+- GitHub run: `36452222079`
+- main workflow source: `a81c64c1852d6685375d43aeeb6da33e658c68e0`
+- explicit confirmation: PASS
+- GitHub OIDC mint: PASS
+- exact OIDC client checkout `b51b16c8...`: PASS
+- Vercel Trusted Sources: PASS
+- Norvana claim: HTTP 401 `WATCHTOWER_HARNESS_OIDC_REQUIRED`
+
+Independent Vercel runtime evidence on `dpl_G1DUppPKP7QyDv2ncz4pAJJ5ruDq`:
+`16:36:17 POST /api/watchtower/runs/claim 401`
+
+Interpretation:
+Vercel consumed the reserved `x-vercel-trusted-oidc-idp-token` header at Deployment Protection and did not forward that reserved header into the application request. Therefore the previous design could pass Vercel protection while Norvana itself saw no token.
+
+The HARNESS_TEST was not claimed; no run result, candidate, spend, publish, supplier, fulfillment, or other external action occurred.
+
+Remediation:
+- harness now sends the same ephemeral GitHub OIDC token in two headers:
+  1. reserved `x-vercel-trusted-oidc-idp-token` for Vercel Deployment Protection;
+  2. Norvana-owned `x-norvana-github-oidc-token` for application-level verification.
+- Norvana reads only the Norvana-owned forwarding header for its independent JWT/JWKS verification.
+- all prior exact GitHub claim binding, Preview-only restriction, zero-effect HARNESS_TEST constraints, and standard worker-secret auth remain unchanged.
+
+Exact forwarded-header implementation:
+`3df5b173b67459af648deb09c3436f3eed69eb83`
+
+Recovery CI `36452625673`: SUCCESS
+- dependency/security gates PASS
+- policy tests PASS
+- typecheck PASS
+- lint PASS
+- production build PASS
+
+Controlled forwarded-OIDC Preview:
+- deployment: `dpl_8x2cGxz52kDwbiJPMyFBPjGv5wMv`
+- unique URL: `https://norvana-lgue82el4-norrijam405-2107s-projects.vercel.app`
+- deployed source: `6b57a0bc024b81374259e086ac8febca80ac0573`
+- deployment-source CI `36452772016`: SUCCESS
+- refreeze: `904b46e9ebe0433b24fa9f892998030f9c5a5742`
+- refreeze CI `36452871777`: SUCCESS
+- exactly one Vercel deployment created by this gate.
+
+Current main manual harness workflow:
+- commit `b50e02045565f20da8a071ab9d8fe3ef35ec08b6`
+- target pinned to `https://norvana-lgue82el4-norrijam405-2107s-projects.vercel.app`
+- checkout pinned to `3df5b173...`
+- main remains Vercel deployment-frozen.
+
+Next gate:
+founder owner-session recovery chain on the new runtime: retire the stale queued HARNESS_TEST from `dpl_G1DUpp...`, run current Control Proof, run current Worker Proof, queue exactly one new HARNESS_TEST. Then one NEW manual workflow dispatch from main.
+
 ## Deployment/runtime proof binding
 
 watch_runs now carry runtime_id.
