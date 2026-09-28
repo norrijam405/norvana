@@ -4,10 +4,7 @@
     "iad1"
   ],
   "git": {
-    "deploymentEnabled": {
-      "*": false,
-      "watchtower-harness-bf08615c-preview": true
-    }
+    "deploymentEnabled": false
   },
   "env": {
     "NEXT_TELEMETRY_DISABLED": "1"
