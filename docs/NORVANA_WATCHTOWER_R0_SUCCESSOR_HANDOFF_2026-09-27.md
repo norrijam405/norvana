@@ -213,6 +213,36 @@ Vercel was rechecked after refreeze and showed no second recovery deployment. Al
 
 The next proof gate requires founder owner-session authentication on this deployment. Do not request or expose the founder password. The founder should sign in normally, then run current-deployment Control Proof followed by Worker Contract Proof. Only after both are PASS for the current deployment may a single `HARNESS_TEST` be queued.
 
+## Founder-authenticated current-deployment proofs — 2026-09-28
+
+Founder browser evidence on the recovery Preview shows:
+- proof scope: `CURRENT DEPLOYMENT`
+- Control proof: `PASS`
+- Worker proof: `PASS`
+- owner credential: `PERMANENT`
+- 5 real watchers remain present and paused
+- 0 watchers enabled
+- 0 candidates
+- authority remains locked
+- executor disabled
+- external actions disabled
+- default automation budget $0
+
+Visible durable proof examples included:
+- Control proof run #1 / receipt #1: PASS, 5 paused watchers
+- Worker proof run #2: PASS, 3 durable receipts
+- repeat Worker proof run #3: PASS, 3 durable receipts
+- repeat Control proof run #4 / receipt #8: PASS
+
+Vercel runtime logs for deployment `dpl_3hor9daDE1hi1sun9mU48pA68vPb` independently show HTTP 200 responses for:
+- `POST /api/watchtower/self-test`
+- `POST /api/watchtower/worker-self-test`
+including repeat invocations between 04:24:56Z and 04:25:09Z.
+
+Truth state: `CONTROL_PROOF_PASS + WORKER_PROOF_PASS`.
+
+Next allowed gate is exactly one owner-authenticated `HARNESS_TEST` queue operation. Do not enable any real watcher or normal executor.
+
 ## Deployment/runtime proof binding
 
 watch_runs now carry runtime_id.
