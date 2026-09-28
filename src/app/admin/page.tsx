@@ -1,882 +1,466 @@
-"use client";
+import type { ReactNode } from "react";
+import Link from "next/link";
+import { cookies } from "next/headers";
+import { redirect } from "next/navigation";
+import { and, asc, desc, eq } from "drizzle-orm";
+import { db } from "@/db";
+import { watchCandidates, watchJobs, watchRuns } from "@/db/schema";
+import {
+  ADMIN_SESSION_COOKIE,
+  adminSessionConfigured,
+  verifyCurrentAdminSessionToken,
+} from "@/lib/admin-session";
+import { WATCHTOWER_JOB_TEMPLATES } from "@/lib/watchtower/default-jobs";
+import { JobToggle, WatchtowerControls } from "@/components/admin/watchtower-controls";
+import { WatchtowerSelfTest } from "@/components/admin/watchtower-self-test";
+import { WatchtowerWorkerSelfTest } from "@/components/admin/watchtower-worker-self-test";
+import { ownerCredentialState } from "@/lib/admin-identity";
+import { currentWatchtowerRuntimeId } from "@/lib/watchtower/runtime-id";
 
-import { useState, useEffect, useCallback } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { ADMIN_PASSWORD, SCOUT_PRODUCTS } from "@/lib/constants";
+export const dynamic = "force-dynamic";
 
-type Tab = "scout" | "distributors" | "orders" | "payments" | "analytics" | "progress" | "debugger";
+function cadenceLabel(minutes: number) {
+  if (minutes % 10080 === 0) return `Every ${minutes / 10080} week${minutes === 10080 ? "" : "s"}`;
+  if (minutes % 1440 === 0) return `Every ${minutes / 1440} day${minutes === 1440 ? "" : "s"}`;
+  if (minutes % 60 === 0) return `Every ${minutes / 60} hour${minutes === 60 ? "" : "s"}`;
+  return `Every ${minutes} min`;
+}
 
-// ---- Types ----
-type Supplier = {
-  id: number;
-  name: string;
-  type: string;
-  platform: string | null;
-  url: string;
-  contactEmail: string;
-  notes: string;
-  niches: string[];
-  isActive: boolean;
-  autoFulfill: boolean;
-};
-type Order = {
-  id: number;
-  orderNumber: string;
-  customerName: string;
-  customerEmail: string;
-  total: number;
-  status: string;
-  paymentStatus: string;
-  items: { name: string; quantity: number; price: number }[];
-  createdAt: string;
-};
-type ProgressNote = { id: number; type: string; title: string; content: string; status: string; priority: string; category: string; dueDate: string | null; createdAt: string };
-type ScanResult = { scanId: string; status: string; summary: string; issues: string[]; backupCreated: boolean; fixesApplied: number; duration: number; createdAt?: string };
-type AnalyticsData = { products: number; orders: number; subscribers: number; revenue: number; nicheBreakdown: { niche: string; product_count: number; total_value: number }[] };
-type ScoutProduct = typeof SCOUT_PRODUCTS[number];
-type Platform = { id: string; name: string; description: string; logo: string; requiredFields: string[]; niches: string[] };
+export default async function AdminPage() {
+  const setupHelperAvailable = process.env.VERCEL_ENV !== "production";
 
-export default function AdminPage() {
-  const [authed, setAuthed] = useState(false);
-  const [password, setPassword] = useState("");
-  const [tab, setTab] = useState<Tab>("scout");
-
-  const handleLogin = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (password === ADMIN_PASSWORD) setAuthed(true);
-  };
-
-  if (!authed) {
+  if (!adminSessionConfigured()) {
     return (
-      <div className="min-h-screen bg-obsidian flex items-center justify-center px-4">
-        <motion.div
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
-          className="w-full max-w-sm bg-white/5 border border-white/10 rounded-2xl p-8"
-        >
-          <h1 className="font-display text-2xl font-bold text-white text-center">🔐 Engine Room</h1>
-          <p className="text-white/50 text-sm text-center mt-2">Enter password to access admin</p>
-          <form onSubmit={handleLogin} className="mt-6 space-y-4">
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="Password"
-              className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-lg text-white placeholder:text-white/30 focus:outline-none focus:ring-2 focus:ring-indigo-accent font-mono"
-            />
-            <button type="submit" className="btn-primary w-full">
-              Enter
-            </button>
-          </form>
-        </motion.div>
-      </div>
+      <main className="min-h-screen bg-bone px-4 py-16 text-obsidian">
+        <div className="mx-auto max-w-3xl">
+          <section className="overflow-hidden rounded-3xl bg-gradient-to-br from-obsidian via-gray-900 to-obsidian p-8 text-white shadow-xl md:p-12">
+            <p className="text-xs font-medium tracking-[0.28em] text-indigo-light">NORVANA / WATCHTOWER</p>
+            <h1 className="mt-4 font-display text-4xl font-bold">Owner login needs configuration</h1>
+            <p className="mt-5 max-w-2xl leading-7 text-white/60">
+              The historical browser password is retired. Watchtower now uses a server-side
+              owner credential and signed session.
+            </p>
+            <div className="mt-8 rounded-2xl border border-amber-300/20 bg-amber-300/10 p-5 text-sm text-amber-100">
+              No default password exists in source code, and historical passwords are not accepted.
+            </div>
+            <div className="mt-6 flex flex-wrap gap-3">
+              {setupHelperAvailable ? (
+                <Link href="/admin/setup" className="btn-primary">
+                  Generate Preview setup values
+                </Link>
+              ) : null}
+              <Link href="/" className="inline-flex items-center justify-center rounded-lg border border-white/20 px-6 py-3 font-medium text-white transition-colors hover:bg-white/10">
+                Return to storefront
+              </Link>
+            </div>
+          </section>
+        </div>
+      </main>
     );
   }
 
-  const tabs: { id: Tab; label: string; icon: string }[] = [
-    { id: "scout", label: "AI Scout", icon: "🔍" },
-    { id: "distributors", label: "Distributors", icon: "🏭" },
-    { id: "orders", label: "Orders", icon: "📦" },
-    { id: "payments", label: "Payments", icon: "💳" },
-    { id: "analytics", label: "Analytics", icon: "📊" },
-    { id: "progress", label: "Progress", icon: "📝" },
-    { id: "debugger", label: "Debugger", icon: "🔧" },
-  ];
+  const cookieStore = await cookies();
+  const session = await verifyCurrentAdminSessionToken(
+    cookieStore.get(ADMIN_SESSION_COOKIE)?.value
+  );
+  if (!session) redirect("/admin/login");
+
+  const runtimeId = currentWatchtowerRuntimeId();
+
+  let initialized = false;
+  let jobs: (typeof watchJobs.$inferSelect)[] = [];
+  let runs: (typeof watchRuns.$inferSelect)[] = [];
+  let candidates: (typeof watchCandidates.$inferSelect)[] = [];
+
+  try {
+    jobs = await db.select().from(watchJobs).orderBy(asc(watchJobs.name));
+    runs = await db.select().from(watchRuns).orderBy(desc(watchRuns.createdAt)).limit(8);
+    candidates = await db
+      .select()
+      .from(watchCandidates)
+      .orderBy(desc(watchCandidates.createdAt))
+      .limit(8);
+    initialized = true;
+  } catch {
+    initialized = false;
+  }
+
+  const ownerCredential = await ownerCredentialState();
+
+  let controlProofPassed = false;
+  let workerProofPassed = false;
+
+  if (initialized && runtimeId) {
+    try {
+      const [controlProof] = await db
+        .select({ id: watchRuns.id })
+        .from(watchRuns)
+        .where(
+          and(
+            eq(watchRuns.trigger, "CONTROL_TEST"),
+            eq(watchRuns.status, "PASS"),
+            eq(watchRuns.runtimeId, runtimeId)
+          )
+        )
+        .limit(1);
+
+      const [workerProof] = await db
+        .select({ id: watchRuns.id })
+        .from(watchRuns)
+        .where(
+          and(
+            eq(watchRuns.trigger, "WORKER_TEST"),
+            eq(watchRuns.status, "PASS"),
+            eq(watchRuns.runtimeId, runtimeId)
+          )
+        )
+        .limit(1);
+
+      controlProofPassed = Boolean(controlProof);
+      workerProofPassed = Boolean(workerProof);
+    } catch {
+      controlProofPassed = false;
+      workerProofPassed = false;
+    }
+  }
+  const enabledJobs = jobs.filter((job) => job.status === "ENABLED").length;
+  const unresolvedCandidates = candidates.filter((candidate) => candidate.status === "NEW").length;
+  const schedulerConfigured = Boolean(process.env.NORVANA_WATCHTOWER_CRON_SECRET);
+  const executorEnabled = process.env.NORVANA_WATCHTOWER_EXECUTOR_ENABLED === "true";
+  const externalActionsEnabled =
+    process.env.NORVANA_EXTERNAL_FULFILLMENT_ENABLED === "true" ||
+    process.env.NORVANA_SUPPLIER_CONNECTORS_ENABLED === "true";
+  const federationConfigured =
+    process.env.IGNIAQUA_FEDERATION_ENABLED === "true" &&
+    Boolean(process.env.IGNIAQUA_FEDERATION_BASE_URL);
 
   return (
-    <div className="min-h-screen bg-obsidian text-white font-mono">
-      {/* Top Bar */}
-      <header className="border-b border-white/10 px-6 py-4 flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <span className="font-display text-lg font-bold tracking-wider">NORVANA</span>
-          <span className="text-xs text-white/30 bg-white/5 px-2 py-1 rounded">ENGINE ROOM</span>
-        </div>
-        <a href="/" className="text-xs text-white/40 hover:text-white transition-colors">
-          ← Back to Store
-        </a>
+    <main className="min-h-screen bg-bone text-obsidian">
+      <header className="sticky top-0 z-40 border-b border-border bg-bone/85 backdrop-blur-md">
+        <nav className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
+          <Link href="/" className="font-display text-xl font-bold tracking-wider text-obsidian">
+            NORVANA
+          </Link>
+
+          <div className="hidden items-center gap-7 md:flex">
+            <Link href="/" className="text-sm font-medium text-muted transition-colors hover:text-obsidian">
+              Home
+            </Link>
+            <Link href="/shop" className="text-sm font-medium text-muted transition-colors hover:text-obsidian">
+              Shop
+            </Link>
+            <Link href="/archive" className="text-sm font-medium text-muted transition-colors hover:text-obsidian">
+              Archive
+            </Link>
+            <span className="text-sm font-semibold text-indigo-accent">Watchtower</span>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <Link href="/admin/account" className="rounded-lg px-3 py-2 text-sm font-medium text-muted transition-colors hover:bg-surface-hover hover:text-obsidian">
+              Account
+            </Link>
+            <WatchtowerControls initialized={initialized} />
+          </div>
+        </nav>
       </header>
 
-      <div className="flex">
-        {/* Sidebar */}
-        <aside className="w-16 md:w-56 border-r border-white/10 min-h-[calc(100vh-57px)] p-3">
-          <nav className="space-y-1">
-            {tabs.map((t) => (
-              <button
-                key={t.id}
-                onClick={() => setTab(t.id)}
-                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all ${
-                  tab === t.id
-                    ? "bg-indigo-accent text-white"
-                    : "text-white/50 hover:bg-white/5 hover:text-white"
-                }`}
-              >
-                <span>{t.icon}</span>
-                <span className="hidden md:inline">{t.label}</span>
-              </button>
-            ))}
-          </nav>
-        </aside>
-
-        {/* Content */}
-        <main className="flex-1 p-6 overflow-y-auto max-h-[calc(100vh-57px)]">
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={tab}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-              transition={{ duration: 0.2 }}
-            >
-              {tab === "scout" && <ScoutTab />}
-              {tab === "distributors" && <DistributorsTab />}
-              {tab === "orders" && <OrdersTab />}
-              {tab === "payments" && <PaymentsTab />}
-              {tab === "analytics" && <AnalyticsTab />}
-              {tab === "progress" && <ProgressTab />}
-              {tab === "debugger" && <DebuggerTab />}
-            </motion.div>
-          </AnimatePresence>
-        </main>
-      </div>
-    </div>
-  );
-}
-
-// ============ AI SCOUT TAB ============
-function ScoutTab() {
-  const [message, setMessage] = useState("");
-  const [chat, setChat] = useState<{ role: string; content: string }[]>([]);
-  const [recommendations, setRecommendations] = useState<ScoutProduct[]>(SCOUT_PRODUCTS);
-  const [loading, setLoading] = useState(false);
-
-  const handleSend = async () => {
-    if (!message.trim()) return;
-    setChat((prev) => [...prev, { role: "user", content: message }]);
-    setLoading(true);
-    try {
-      const res = await fetch("/api/scout", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message }),
-      });
-      const data = await res.json();
-      setChat((prev) => [...prev, { role: "assistant", content: data.response }]);
-      setRecommendations(data.recommendations);
-    } catch {
-      setChat((prev) => [...prev, { role: "assistant", content: "Error connecting to scout." }]);
-    }
-    setMessage("");
-    setLoading(false);
-  };
-
-  const handleAddToCatalog = async (product: ScoutProduct) => {
-    const slug = product.name.toLowerCase().replace(/\s+/g, "-");
-    await fetch("/api/products", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        name: product.name,
-        slug,
-        description: `Trending ${product.category} item with a ${product.margin} profit margin.`,
-        price: 39.99,
-        niche: product.category.toLowerCase().replace(/\s+/g, "-"),
-        volumeNumber: 3,
-        tags: [product.category.toLowerCase(), product.badge || "scout"].filter(Boolean),
-      }),
-    });
-    alert(`${product.name} added to catalog!`);
-  };
-
-  return (
-    <div>
-      <h2 className="font-display text-xl font-bold mb-6">🔍 AI Scout</h2>
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Chat */}
-        <div className="bg-white/5 rounded-xl border border-white/10 flex flex-col h-[500px]">
-          <div className="p-4 border-b border-white/10">
-            <p className="text-xs text-white/50">Ask about trending products, margins, or bestsellers</p>
-          </div>
-          <div className="flex-1 overflow-y-auto p-4 space-y-3">
-            {chat.map((msg, i) => (
-              <div key={i} className={`text-sm ${msg.role === "user" ? "text-indigo-light text-right" : "text-white/70"}`}>
-                <span className="text-xs text-white/30 block mb-1">{msg.role === "user" ? "You" : "Scout"}</span>
-                {msg.content}
+      <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+        <section className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-obsidian via-gray-900 to-obsidian px-6 py-10 text-white shadow-lg md:px-10 md:py-12">
+          <div
+            className="absolute inset-0 opacity-10"
+            style={{
+              backgroundImage:
+                "radial-gradient(circle at 20% 20%, #6366F1 0%, transparent 42%), radial-gradient(circle at 80% 80%, #6366F1 0%, transparent 42%)",
+            }}
+          />
+          <div className="relative grid gap-8 lg:grid-cols-[1.5fr_1fr] lg:items-end">
+            <div>
+              <p className="text-xs font-medium tracking-[0.28em] text-indigo-light">NORVANA / OWNER CONTROL ROOM</p>
+              <h1 className="mt-3 font-display text-3xl font-bold md:text-5xl">Watchtower</h1>
+              <p className="mt-4 max-w-2xl text-sm leading-6 text-white/60 md:text-base">
+                Monitor sourcing, operating opportunities, and evidence without giving automation
+                authority to spend, publish, order, or activate suppliers.
+              </p>
+              <div className="mt-6 flex flex-wrap gap-2 text-xs">
+                <StatusChip tone="green">OBSERVE</StatusChip>
+                <StatusChip tone="indigo">RECOMMEND</StatusChip>
+                <StatusChip tone="muted">ACT LOCKED</StatusChip>
+                <StatusChip tone="muted">{"$"}0 DEFAULT BUDGET</StatusChip>
               </div>
-            ))}
-            {loading && <p className="text-xs text-white/30 animate-pulse">Thinking...</p>}
+            </div>
+
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-2">
+              <HeroMetric label="Watchers" value={initialized ? String(jobs.length) : "—"} />
+              <HeroMetric label="Enabled" value={String(enabledJobs)} />
+              <HeroMetric label="Candidates" value={String(unresolvedCandidates)} />
+              <HeroMetric label="Authority" value="Locked" />
+            </div>
           </div>
-          <div className="p-4 border-t border-white/10 flex gap-2">
-            <input
-              type="text"
-              value={message}
-              onChange={(e) => setMessage(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && handleSend()}
-              placeholder="Ask the scout..."
-              className="flex-1 px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-sm text-white placeholder:text-white/30 focus:outline-none focus:ring-1 focus:ring-indigo-accent"
+        </section>
+
+        <section className="mt-8 grid gap-4 md:grid-cols-3">
+          <InfoCard eyebrow="SYSTEM" title="Truth state">
+            <StatusRow label="Database" value={initialized ? "READY" : "NOT INITIALIZED"} good={initialized} />
+            <StatusRow
+              label="Scheduler secret"
+              value={schedulerConfigured ? "CONFIGURED" : "NOT CONFIGURED"}
+              good={schedulerConfigured}
             />
-            <button onClick={handleSend} className="px-4 py-2 bg-indigo-accent rounded-lg text-sm hover:bg-indigo-dark transition-colors">
-              Send
-            </button>
-          </div>
-        </div>
-
-        {/* Recommendations */}
-        <div className="space-y-3 max-h-[500px] overflow-y-auto">
-          {recommendations.map((product, i) => (
-            <div key={i} className="bg-white/5 rounded-xl border border-white/10 p-4 flex items-center gap-4">
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2">
-                  <span className="font-semibold text-sm truncate">{product.name}</span>
-                  {product.badge && (
-                    <span className={`badge text-xs ${
-                      product.badge === "bestseller" ? "bg-yellow-500/20 text-yellow-400" : "bg-green-500/20 text-green-400"
-                    }`}>
-                      {product.badge}
-                    </span>
-                  )}
-                </div>
-                <div className="flex items-center gap-4 mt-1 text-xs text-white/40">
-                  <span>Score: {product.trendScore}</span>
-                  <span>Margin: {product.margin}</span>
-                  <span>{product.supplierCount} suppliers</span>
-                </div>
-              </div>
-              <div className="text-right shrink-0">
-                <div className="w-10 h-10 rounded-full bg-indigo-accent/20 flex items-center justify-center text-indigo-light font-bold text-sm">
-                  {product.trendScore}
-                </div>
-              </div>
-              <button
-                onClick={() => handleAddToCatalog(product)}
-                className="text-xs text-indigo-light hover:text-white transition-colors shrink-0"
+            <StatusRow label="Executor" value={executorEnabled ? "CONFIGURED" : "DISABLED"} good={!executorEnabled} />
+            <StatusRow
+              label="External actions"
+              value={externalActionsEnabled ? "ENABLED" : "DISABLED"}
+              good={!externalActionsEnabled}
+            />
+            <StatusRow label="IgniAqua federation" value={federationConfigured ? "CONFIGURED" : "PLANNED"} good={!federationConfigured} />
+            <StatusRow
+              label="Proof scope"
+              value={runtimeId ? "CURRENT DEPLOYMENT" : "UNBOUND"}
+              good={Boolean(runtimeId)}
+            />
+            <StatusRow
+              label="Control proof"
+              value={controlProofPassed ? "PASS" : "REQUIRED"}
+              good={controlProofPassed}
+            />
+            <StatusRow
+              label="Worker proof"
+              value={workerProofPassed ? "PASS" : "REQUIRED"}
+              good={workerProofPassed}
+            />
+            <StatusRow
+              label="Owner credential"
+              value={ownerCredential.rotated ? "PERMANENT" : "ROTATION REQUIRED"}
+              good={ownerCredential.rotated}
+            />
+            {!ownerCredential.rotated ? (
+              <Link
+                href="/admin/account"
+                className="mt-4 inline-flex rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-semibold text-amber-700 hover:bg-amber-100"
               >
-                + Add
-              </button>
+                Replace temporary owner password
+              </Link>
+            ) : null}
+            <WatchtowerSelfTest />
+            <WatchtowerWorkerSelfTest controlProofPassed={controlProofPassed} />
+          </InfoCard>
+
+          <InfoCard eyebrow="AUTHORITY" title="Bounded by design">
+            <p className="text-sm leading-6 text-muted">
+              Watchtower R0 can observe and recommend. Spending, bidding, publishing, supplier
+              activation, refunds, and fulfillment remain outside its authority.
+            </p>
+            <div className="mt-5 rounded-2xl bg-surface-hover p-4">
+              <p className="text-xs font-medium uppercase tracking-wider text-muted">Current ceiling</p>
+              <p className="mt-2 font-display text-xl font-bold">Recommend only</p>
             </div>
-          ))}
-        </div>
-      </div>
-    </div>
-  );
-}
+          </InfoCard>
 
-// ============ DISTRIBUTORS TAB ============
-function DistributorsTab() {
-  const [suppliers, setSuppliers] = useState<Supplier[]>([]);
-  const [platforms, setPlatforms] = useState<Platform[]>([]);
-  const [showAddModal, setShowAddModal] = useState(false);
-  const [showConnectModal, setShowConnectModal] = useState<Supplier | null>(null);
-  const [form, setForm] = useState({
-    name: "", type: "manual", platform: "", url: "", contactEmail: "", notes: "", niches: [] as string[], autoFulfill: false
-  });
-  const [credentials, setCredentials] = useState({ apiKey: "", apiSecret: "", accessToken: "", shopDomain: "" });
-  const [connectionStatus, setConnectionStatus] = useState<{ success: boolean; message: string } | null>(null);
-
-  const load = useCallback(async () => {
-    const [suppRes, platRes] = await Promise.all([
-      fetch("/api/suppliers"),
-      fetch("/api/platforms"),
-    ]);
-    setSuppliers(await suppRes.json());
-    setPlatforms(await platRes.json());
-  }, []);
-
-  useEffect(() => { load(); }, [load]);
-
-  const niches = ["home-fragrance", "kitchen", "home-decor", "workspace", "art", "garden", "wellness", "bath", "stationery"];
-
-  const handleAdd = async (e: React.FormEvent) => {
-    e.preventDefault();
-    await fetch("/api/suppliers", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(form),
-    });
-    setShowAddModal(false);
-    setForm({ name: "", type: "manual", platform: "", url: "", contactEmail: "", notes: "", niches: [], autoFulfill: false });
-    load();
-  };
-
-  const handleConnect = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!showConnectModal) return;
-    setConnectionStatus(null);
-
-    const res = await fetch(`/api/suppliers/${showConnectModal.id}/credentials`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(credentials),
-    });
-    const data = await res.json();
-    if (data.connectionTest) {
-      setConnectionStatus(data.connectionTest);
-    } else {
-      setConnectionStatus({ success: true, message: "Credentials saved" });
-    }
-    load();
-  };
-
-  const handleSync = async (supplierId: number) => {
-    const res = await fetch(`/api/suppliers/${supplierId}/sync`, { method: "POST" });
-    const data = await res.json();
-    alert(data.success ? `Synced ${data.synced} products!` : `Sync failed: ${data.error}`);
-  };
-
-  const toggleActive = async (supplier: Supplier) => {
-    await fetch(`/api/suppliers/${supplier.id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ...supplier, isActive: !supplier.isActive }),
-    });
-    load();
-  };
-
-  return (
-    <div>
-      <div className="flex items-center justify-between mb-6">
-        <h2 className="font-display text-xl font-bold">🏭 Distributors & Suppliers</h2>
-        <button onClick={() => setShowAddModal(true)} className="px-4 py-2 bg-indigo-accent rounded-lg text-sm hover:bg-indigo-dark transition-colors">
-          + Add Distributor
-        </button>
-      </div>
-
-      {/* Platform Grid */}
-      <div className="mb-8">
-        <h3 className="text-sm font-semibold text-white/50 mb-3">Supported Platforms</h3>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          {platforms.map((p) => (
-            <div key={p.id} className="bg-white/5 rounded-xl border border-white/10 p-4 text-center">
-              <span className="text-2xl">{p.logo}</span>
-              <p className="text-sm font-semibold mt-2">{p.name}</p>
-              <p className="text-xs text-white/40 mt-1 line-clamp-2">{p.description}</p>
+          <InfoCard eyebrow="OPERATING DOCTRINE" title="Closest-to-$0">
+            <p className="text-sm leading-6 text-muted">
+              Every watcher starts at a {"$"}0 automation budget. Paid data, APIs, models, or
+              subscriptions require evidence that the expense saves more or materially lowers risk.
+            </p>
+            <div className="mt-5 flex items-center justify-between rounded-2xl border border-border p-4">
+              <span className="text-sm text-muted">Default budget</span>
+              <span className="font-display text-xl font-bold text-indigo-accent">{"$"}0</span>
             </div>
-          ))}
-        </div>
-      </div>
+          </InfoCard>
+        </section>
 
-      {/* Connected Suppliers */}
-      <div className="space-y-3">
-        {suppliers.map((supplier) => (
-          <div key={supplier.id} className="bg-white/5 rounded-xl border border-white/10 p-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <span className="text-xl">{platforms.find(p => p.id === supplier.platform)?.logo || "📋"}</span>
-                <div>
-                  <div className="flex items-center gap-2">
-                    <span className="font-semibold">{supplier.name}</span>
-                    <span className={`badge text-xs ${supplier.isActive ? "bg-green-500/20 text-green-400" : "bg-red-500/20 text-red-400"}`}>
-                      {supplier.isActive ? "Active" : "Inactive"}
-                    </span>
-                    <span className="badge text-xs bg-white/10 text-white/50">{supplier.type}</span>
-                    {supplier.autoFulfill && <span className="badge text-xs bg-indigo-500/20 text-indigo-400">Auto-fulfill</span>}
-                  </div>
-                  <p className="text-xs text-white/40 mt-1">
-                    {supplier.platform || "Manual"} • {supplier.niches?.length || 0} niches
-                    {supplier.url && <> • <a href={supplier.url} target="_blank" rel="noreferrer" className="text-indigo-light hover:underline">{supplier.url}</a></>}
-                  </p>
-                </div>
-              </div>
-              <div className="flex items-center gap-2">
-                {supplier.type !== "manual" && (
-                  <>
-                    <button onClick={() => { setShowConnectModal(supplier); setCredentials({ apiKey: "", apiSecret: "", accessToken: "", shopDomain: "" }); setConnectionStatus(null); }} className="text-xs px-3 py-1.5 bg-white/5 rounded-lg text-white/50 hover:text-white transition-colors">
-                      🔑 Connect
-                    </button>
-                    <button onClick={() => handleSync(supplier.id)} className="text-xs px-3 py-1.5 bg-white/5 rounded-lg text-white/50 hover:text-white transition-colors">
-                      🔄 Sync
-                    </button>
-                  </>
-                )}
-                <button onClick={() => toggleActive(supplier)} className="text-xs px-3 py-1.5 bg-white/5 rounded-lg text-white/50 hover:text-white transition-colors">
-                  {supplier.isActive ? "Disable" : "Enable"}
-                </button>
-              </div>
+        <section className="mt-8 rounded-3xl border border-border bg-surface p-5 shadow-sm md:p-7">
+          <div className="flex flex-wrap items-end justify-between gap-4">
+            <div>
+              <p className="text-xs font-medium uppercase tracking-[0.2em] text-indigo-accent">Automation</p>
+              <h2 className="mt-2 font-display text-2xl font-bold">Watchers</h2>
+              <p className="mt-2 max-w-2xl text-[15px] leading-6 text-muted">
+                These lanes watch Norvana&apos;s market and operating surface. They begin paused and stay bounded by the authority ceiling.
+              </p>
             </div>
-          </div>
-        ))}
-        {suppliers.length === 0 && (
-          <p className="text-center text-white/30 py-8">No distributors added yet. Add one to get started!</p>
-        )}
-      </div>
-
-      {/* Add Modal */}
-      {showAddModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-obsidian border border-white/10 rounded-2xl p-6 w-full max-w-lg max-h-[90vh] overflow-y-auto">
-            <h3 className="font-display text-lg font-bold mb-4">Add Distributor</h3>
-            <form onSubmit={handleAdd} className="space-y-4">
-              <input className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-sm text-white placeholder:text-white/30" placeholder="Name *" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required />
-              <div className="grid grid-cols-2 gap-3">
-                <select className="px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-sm text-white" value={form.type} onChange={(e) => setForm({ ...form, type: e.target.value })}>
-                  <option value="manual">Manual</option>
-                  <option value="api">API Connected</option>
-                  <option value="dropship">Dropship</option>
-                  <option value="wholesale">Wholesale</option>
-                </select>
-                <select className="px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-sm text-white" value={form.platform} onChange={(e) => setForm({ ...form, platform: e.target.value })}>
-                  <option value="">Select Platform</option>
-                  {platforms.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
-                </select>
-              </div>
-              <input className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-sm text-white placeholder:text-white/30" placeholder="Website URL" value={form.url} onChange={(e) => setForm({ ...form, url: e.target.value })} />
-              <input className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-sm text-white placeholder:text-white/30" placeholder="Contact Email" value={form.contactEmail} onChange={(e) => setForm({ ...form, contactEmail: e.target.value })} />
-              <div>
-                <label className="text-xs text-white/50 mb-2 block">Niches</label>
-                <div className="flex flex-wrap gap-2">
-                  {niches.map((n) => (
-                    <button key={n} type="button" onClick={() => setForm({ ...form, niches: form.niches.includes(n) ? form.niches.filter(x => x !== n) : [...form.niches, n] })} className={`badge text-xs cursor-pointer ${form.niches.includes(n) ? "bg-indigo-accent text-white" : "bg-white/5 text-white/50"}`}>
-                      {n}
-                    </button>
-                  ))}
-                </div>
-              </div>
-              <label className="flex items-center gap-2 text-sm text-white/70">
-                <input type="checkbox" checked={form.autoFulfill} onChange={(e) => setForm({ ...form, autoFulfill: e.target.checked })} className="rounded" />
-                Auto-fulfill orders (automatically send to supplier)
-              </label>
-              <textarea className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-sm text-white placeholder:text-white/30 min-h-[60px]" placeholder="Notes..." value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} />
-              <div className="flex gap-3">
-                <button type="submit" className="flex-1 px-4 py-2 bg-indigo-accent rounded-lg text-sm hover:bg-indigo-dark transition-colors">Add Distributor</button>
-                <button type="button" onClick={() => setShowAddModal(false)} className="px-4 py-2 bg-white/5 rounded-lg text-sm hover:bg-white/10 transition-colors">Cancel</button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* Connect Modal */}
-      {showConnectModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-obsidian border border-white/10 rounded-2xl p-6 w-full max-w-md">
-            <h3 className="font-display text-lg font-bold mb-4">Connect {showConnectModal.name}</h3>
-            <form onSubmit={handleConnect} className="space-y-4">
-              {showConnectModal.platform === "shopify" && (
-                <input className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-sm text-white placeholder:text-white/30" placeholder="Shop Domain (e.g., myshop.myshopify.com)" value={credentials.shopDomain} onChange={(e) => setCredentials({ ...credentials, shopDomain: e.target.value })} />
-              )}
-              <input className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-sm text-white placeholder:text-white/30" placeholder="API Key" value={credentials.apiKey} onChange={(e) => setCredentials({ ...credentials, apiKey: e.target.value })} />
-              <input type="password" className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-sm text-white placeholder:text-white/30" placeholder="API Secret (optional)" value={credentials.apiSecret} onChange={(e) => setCredentials({ ...credentials, apiSecret: e.target.value })} />
-              <input className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-sm text-white placeholder:text-white/30" placeholder="Access Token" value={credentials.accessToken} onChange={(e) => setCredentials({ ...credentials, accessToken: e.target.value })} />
-              {connectionStatus && (
-                <div className={`p-3 rounded-lg text-sm ${connectionStatus.success ? "bg-green-500/20 text-green-400" : "bg-red-500/20 text-red-400"}`}>
-                  {connectionStatus.success ? "✅" : "❌"} {connectionStatus.message}
-                </div>
-              )}
-              <div className="flex gap-3">
-                <button type="submit" className="flex-1 px-4 py-2 bg-indigo-accent rounded-lg text-sm hover:bg-indigo-dark transition-colors">Test & Save</button>
-                <button type="button" onClick={() => setShowConnectModal(null)} className="px-4 py-2 bg-white/5 rounded-lg text-sm hover:bg-white/10 transition-colors">Cancel</button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
-
-// ============ ORDERS TAB ============
-function OrdersTab() {
-  const [orders, setOrders] = useState<Order[]>([]);
-  const [filter, setFilter] = useState("");
-
-  const load = useCallback(async () => {
-    const res = await fetch("/api/orders");
-    setOrders(await res.json());
-  }, []);
-
-  useEffect(() => { load(); }, [load]);
-
-  const updateStatus = async (id: number, status: string) => {
-    await fetch(`/api/orders/${id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ status }),
-    });
-    load();
-  };
-
-  const fulfillOrder = async (id: number) => {
-    const res = await fetch(`/api/orders/${id}/fulfill`, { method: "POST" });
-    const data = await res.json();
-    if (data.error) {
-      alert(`Fulfillment failed: ${data.error}`);
-    } else {
-      alert(`Order sent to suppliers!`);
-      load();
-    }
-  };
-
-  const filtered = filter ? orders.filter((o) => o.status === filter) : orders;
-  const revenue = orders.filter(o => o.paymentStatus === "paid").reduce((sum, o) => sum + o.total, 0);
-  const paidCount = orders.filter(o => o.paymentStatus === "paid").length;
-
-  return (
-    <div>
-      <h2 className="font-display text-xl font-bold mb-2">📦 Orders</h2>
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-        <div className="bg-white/5 rounded-xl border border-white/10 p-4 text-center">
-          <p className="text-2xl font-bold text-indigo-light">{orders.length}</p>
-          <p className="text-xs text-white/40">Total Orders</p>
-        </div>
-        <div className="bg-white/5 rounded-xl border border-white/10 p-4 text-center">
-          <p className="text-2xl font-bold text-green-400">${revenue.toFixed(2)}</p>
-          <p className="text-xs text-white/40">Paid Revenue</p>
-        </div>
-        <div className="bg-white/5 rounded-xl border border-white/10 p-4 text-center">
-          <p className="text-2xl font-bold text-green-400">{paidCount}</p>
-          <p className="text-xs text-white/40">Paid</p>
-        </div>
-        <div className="bg-white/5 rounded-xl border border-white/10 p-4 text-center">
-          <p className="text-2xl font-bold text-yellow-400">{orders.filter((o) => o.status === "pending").length}</p>
-          <p className="text-xs text-white/40">Pending</p>
-        </div>
-      </div>
-
-      <div className="flex gap-2 mb-4 flex-wrap">
-        {["", "pending", "processing", "shipped", "delivered"].map((s) => (
-          <button key={s} onClick={() => setFilter(s)} className={`text-xs px-3 py-1.5 rounded-lg transition-colors ${filter === s ? "bg-indigo-accent text-white" : "bg-white/5 text-white/50 hover:text-white"}`}>
-            {s || "All"}
-          </button>
-        ))}
-      </div>
-
-      <div className="space-y-2">
-        {filtered.map((o) => (
-          <div key={o.id} className="bg-white/5 rounded-xl border border-white/10 p-4">
-            <div className="flex items-center justify-between flex-wrap gap-2">
-              <div>
-                <span className="font-mono text-sm text-indigo-light">{o.orderNumber}</span>
-                <span className="text-xs text-white/40 ml-3">{o.customerName}</span>
-                <span className={`ml-3 badge text-xs ${o.paymentStatus === "paid" ? "bg-green-500/20 text-green-400" : o.paymentStatus === "failed" ? "bg-red-500/20 text-red-400" : "bg-yellow-500/20 text-yellow-400"}`}>
-                  {o.paymentStatus}
-                </span>
-              </div>
-              <div className="flex items-center gap-3">
-                <span className="text-sm font-semibold">${o.total.toFixed(2)}</span>
-                {o.paymentStatus === "paid" && o.status === "processing" && (
-                  <button onClick={() => fulfillOrder(o.id)} className="text-xs px-3 py-1.5 bg-indigo-accent/20 text-indigo-light rounded-lg hover:bg-indigo-accent/30 transition-colors">
-                    🚀 Fulfill
-                  </button>
-                )}
-                <select
-                  value={o.status}
-                  onChange={(e) => updateStatus(o.id, e.target.value)}
-                  className="text-xs bg-white/5 border border-white/10 rounded px-2 py-1 text-white focus:outline-none"
-                >
-                  <option value="pending">Pending</option>
-                  <option value="processing">Processing</option>
-                  <option value="shipped">Shipped</option>
-                  <option value="delivered">Delivered</option>
-                  <option value="cancelled">Cancelled</option>
-                </select>
-              </div>
-            </div>
-          </div>
-        ))}
-        {filtered.length === 0 && <p className="text-sm text-white/30 text-center py-8">No orders found.</p>}
-      </div>
-    </div>
-  );
-}
-
-// ============ PAYMENTS TAB ============
-function PaymentsTab() {
-  const hasStripe = true; // In production, check process.env.NEXT_PUBLIC_HAS_STRIPE
-
-  return (
-    <div>
-      <h2 className="font-display text-xl font-bold mb-6">💳 Payments & Stripe</h2>
-
-      {/* Stripe Setup Guide */}
-      <div className="bg-white/5 rounded-xl border border-white/10 p-6 mb-6">
-        <div className="flex items-start gap-4">
-          <span className="text-3xl">💳</span>
-          <div className="flex-1">
-            <h3 className="font-semibold text-lg">Stripe Integration</h3>
-            <p className="text-sm text-white/50 mt-1">Accept credit cards, Apple Pay, Google Pay, and more.</p>
-            
-            <div className="mt-4 space-y-3">
-              <div className="flex items-center gap-3">
-                <span className="w-6 h-6 rounded-full bg-indigo-accent/20 text-indigo-light text-xs font-bold flex items-center justify-center">1</span>
-                <p className="text-sm text-white/70">Create a <a href="https://dashboard.stripe.com/register" target="_blank" rel="noreferrer" className="text-indigo-light hover:underline">Stripe account</a></p>
-              </div>
-              <div className="flex items-center gap-3">
-                <span className="w-6 h-6 rounded-full bg-indigo-accent/20 text-indigo-light text-xs font-bold flex items-center justify-center">2</span>
-                <p className="text-sm text-white/70">Get your API keys from <a href="https://dashboard.stripe.com/apikeys" target="_blank" rel="noreferrer" className="text-indigo-light hover:underline">Stripe Dashboard</a></p>
-              </div>
-              <div className="flex items-center gap-3">
-                <span className="w-6 h-6 rounded-full bg-indigo-accent/20 text-indigo-light text-xs font-bold flex items-center justify-center">3</span>
-                <p className="text-sm text-white/70">Add environment variables:</p>
-              </div>
-            </div>
-
-            <div className="mt-4 bg-black/30 rounded-lg p-4 font-mono text-xs text-white/70">
-              <p className="text-white/40"># Add to .env file:</p>
-              <p className="mt-1">STRIPE_SECRET_KEY=sk_live_xxxx</p>
-              <p>STRIPE_WEBHOOK_SECRET=whsec_xxxx</p>
-              <p>NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_live_xxxx</p>
-            </div>
-
-            <div className="mt-4 flex items-center gap-3">
-              <span className="w-6 h-6 rounded-full bg-indigo-accent/20 text-indigo-light text-xs font-bold flex items-center justify-center">4</span>
-              <p className="text-sm text-white/70">Set up webhook endpoint: <code className="bg-black/30 px-1 rounded">/api/webhooks/stripe</code></p>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Payment Features */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-        <div className="bg-white/5 rounded-xl border border-white/10 p-4">
-          <span className="text-2xl">💵</span>
-          <h4 className="font-semibold mt-2">Credit Cards</h4>
-          <p className="text-xs text-white/40 mt-1">Visa, Mastercard, Amex, Discover</p>
-        </div>
-        <div className="bg-white/5 rounded-xl border border-white/10 p-4">
-          <span className="text-2xl">📱</span>
-          <h4 className="font-semibold mt-2">Digital Wallets</h4>
-          <p className="text-xs text-white/40 mt-1">Apple Pay, Google Pay</p>
-        </div>
-        <div className="bg-white/5 rounded-xl border border-white/10 p-4">
-          <span className="text-2xl">🔒</span>
-          <h4 className="font-semibold mt-2">Secure Checkout</h4>
-          <p className="text-xs text-white/40 mt-1">PCI-compliant, 3D Secure</p>
-        </div>
-      </div>
-
-      {/* Webhook Events */}
-      <div className="bg-white/5 rounded-xl border border-white/10 p-6">
-        <h3 className="font-semibold mb-4">Webhook Events Handled</h3>
-        <div className="space-y-2 text-sm">
-          {[
-            { event: "checkout.session.completed", desc: "Order marked as paid, begins processing" },
-            { event: "payment_intent.succeeded", desc: "Receipt URL captured" },
-            { event: "payment_intent.payment_failed", desc: "Order marked as payment failed" },
-            { event: "charge.refunded", desc: "Order cancelled, payment marked refunded" },
-          ].map((e) => (
-            <div key={e.event} className="flex items-center justify-between py-2 border-b border-white/5 last:border-0">
-              <code className="text-indigo-light text-xs">{e.event}</code>
-              <span className="text-xs text-white/40">{e.desc}</span>
-            </div>
-          ))}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// ============ ANALYTICS TAB ============
-function AnalyticsTab() {
-  const [data, setData] = useState<AnalyticsData | null>(null);
-
-  useEffect(() => {
-    fetch("/api/analytics").then((r) => r.json()).then(setData);
-  }, []);
-
-  if (!data) return <p className="text-white/30 text-sm">Loading analytics...</p>;
-
-  const maxValue = Math.max(...(data.nicheBreakdown?.map((n: AnalyticsData["nicheBreakdown"][0]) => n.total_value) || [1]));
-
-  return (
-    <div>
-      <h2 className="font-display text-xl font-bold mb-6">📊 Analytics</h2>
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-        {[
-          { label: "Products", value: data.products, color: "text-indigo-light" },
-          { label: "Orders", value: data.orders, color: "text-green-400" },
-          { label: "Subscribers", value: data.subscribers, color: "text-yellow-400" },
-          { label: "Revenue", value: `$${Number(data.revenue).toFixed(2)}`, color: "text-purple-400" },
-        ].map((s) => (
-          <div key={s.label} className="bg-white/5 rounded-xl border border-white/10 p-4 text-center">
-            <p className={`text-2xl font-bold ${s.color}`}>{s.value}</p>
-            <p className="text-xs text-white/40">{s.label}</p>
-          </div>
-        ))}
-      </div>
-
-      <h3 className="font-semibold text-sm mb-4">Sales by Niche</h3>
-      <div className="space-y-3">
-        {data.nicheBreakdown?.map((niche: AnalyticsData["nicheBreakdown"][0]) => (
-          <div key={niche.niche} className="bg-white/5 rounded-xl border border-white/10 p-4">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-sm">{niche.niche}</span>
-              <span className="text-xs text-white/40">{niche.product_count} products • ${Number(niche.total_value).toFixed(0)}</span>
-            </div>
-            <div className="h-2 bg-white/5 rounded-full overflow-hidden">
-              <div className="h-full bg-indigo-accent rounded-full transition-all" style={{ width: `${(niche.total_value / maxValue) * 100}%` }} />
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-// ============ PROGRESS TAB ============
-function ProgressTab() {
-  const [notes, setNotes] = useState<ProgressNote[]>([]);
-  const [form, setForm] = useState({ type: "task", title: "", content: "", priority: "medium", category: "general" });
-
-  const load = useCallback(async () => {
-    const res = await fetch("/api/progress");
-    setNotes(await res.json());
-  }, []);
-
-  useEffect(() => { load(); }, [load]);
-
-  const handleAdd = async (e: React.FormEvent) => {
-    e.preventDefault();
-    await fetch("/api/progress", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(form),
-    });
-    setForm({ type: "task", title: "", content: "", priority: "medium", category: "general" });
-    load();
-  };
-
-  const updateStatus = async (id: number, status: string) => {
-    await fetch(`/api/progress/${id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ status }),
-    });
-    load();
-  };
-
-  const deleteNote = async (id: number) => {
-    await fetch(`/api/progress/${id}`, { method: "DELETE" });
-    load();
-  };
-
-  const handleExport = (format: string) => {
-    window.open(`/api/progress/export?format=${format}`, "_blank");
-  };
-
-  const priorityColors: Record<string, string> = { high: "text-red-400", medium: "text-yellow-400", low: "text-green-400" };
-
-  return (
-    <div>
-      <div className="flex items-center justify-between mb-6">
-        <h2 className="font-display text-xl font-bold">📝 Progress</h2>
-        <div className="flex gap-2">
-          <button onClick={() => handleExport("json")} className="text-xs px-3 py-1.5 bg-white/5 rounded-lg text-white/50 hover:text-white transition-colors">Export JSON</button>
-          <button onClick={() => handleExport("markdown")} className="text-xs px-3 py-1.5 bg-white/5 rounded-lg text-white/50 hover:text-white transition-colors">Export MD</button>
-        </div>
-      </div>
-
-      <form onSubmit={handleAdd} className="bg-white/5 rounded-xl border border-white/10 p-4 mb-6 space-y-3">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-          <input className="px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-sm text-white placeholder:text-white/30 focus:outline-none" placeholder="Title" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} required />
-          <select className="px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-sm text-white focus:outline-none" value={form.type} onChange={(e) => setForm({ ...form, type: e.target.value })}>
-            <option value="task">Task</option>
-            <option value="note">Note</option>
-            <option value="milestone">Milestone</option>
-          </select>
-          <select className="px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-sm text-white focus:outline-none" value={form.priority} onChange={(e) => setForm({ ...form, priority: e.target.value })}>
-            <option value="high">High</option>
-            <option value="medium">Medium</option>
-            <option value="low">Low</option>
-          </select>
-        </div>
-        <textarea className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-sm text-white placeholder:text-white/30 focus:outline-none min-h-[60px]" placeholder="Content..." value={form.content} onChange={(e) => setForm({ ...form, content: e.target.value })} />
-        <button type="submit" className="px-4 py-2 bg-indigo-accent rounded-lg text-sm hover:bg-indigo-dark transition-colors">Add Note</button>
-      </form>
-
-      <div className="space-y-2">
-        {notes.map((note) => (
-          <div key={note.id} className="bg-white/5 rounded-xl border border-white/10 p-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <span className="text-xs uppercase text-white/30">{note.type}</span>
-                <span className={`text-xs ${priorityColors[note.priority] || "text-white/40"}`}>● {note.priority}</span>
-                <span className="font-semibold text-sm">{note.title}</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <select value={note.status} onChange={(e) => updateStatus(note.id, e.target.value)} className="text-xs bg-white/5 border border-white/10 rounded px-2 py-1 text-white focus:outline-none">
-                  <option value="open">Open</option>
-                  <option value="in-progress">In Progress</option>
-                  <option value="done">Done</option>
-                </select>
-                <button onClick={() => deleteNote(note.id)} className="text-xs text-red-400 hover:text-red-300">✕</button>
-              </div>
-            </div>
-            {note.content && <p className="text-xs text-white/40 mt-2">{note.content}</p>}
-          </div>
-        ))}
-        {notes.length === 0 && <p className="text-sm text-white/30 text-center py-8">No notes yet.</p>}
-      </div>
-    </div>
-  );
-}
-
-// ============ DEBUGGER TAB ============
-function DebuggerTab() {
-  const [scanning, setScanning] = useState(false);
-  const [result, setResult] = useState<ScanResult | null>(null);
-  const [history, setHistory] = useState<ScanResult[]>([]);
-
-  const loadHistory = useCallback(async () => {
-    const res = await fetch("/api/debugger/history");
-    setHistory(await res.json());
-  }, []);
-
-  useEffect(() => { loadHistory(); }, [loadHistory]);
-
-  const runScan = async () => {
-    setScanning(true);
-    const res = await fetch("/api/debugger/scan", { method: "POST" });
-    const data = await res.json();
-    setResult(data);
-    setScanning(false);
-    loadHistory();
-  };
-
-  const statusColors: Record<string, string> = { passed: "text-green-400", warnings: "text-yellow-400", errors: "text-red-400" };
-
-  return (
-    <div>
-      <h2 className="font-display text-xl font-bold mb-6">🔧 Self-Healing Debugger</h2>
-      <button onClick={runScan} disabled={scanning} className="px-6 py-3 bg-indigo-accent rounded-lg text-sm hover:bg-indigo-dark transition-colors disabled:opacity-50 mb-6">
-        {scanning ? "⏳ Scanning..." : "▶ Run Diagnostic Scan"}
-      </button>
-
-      {result && (
-        <div className="bg-white/5 rounded-xl border border-white/10 p-6 mb-6">
-          <div className="flex items-center gap-3 mb-3">
-            <span className={`text-lg font-bold ${statusColors[result.status]}`}>
-              {result.status === "passed" ? "✅" : result.status === "warnings" ? "⚠️" : "❌"} {result.status.toUpperCase()}
+            <span className={executorEnabled
+              ? "badge bg-emerald-50 text-success"
+              : "badge bg-surface-hover text-muted"
+            }>
+              {executorEnabled ? "Executor configured" : "Executor disabled"}
             </span>
-            <span className="text-xs text-white/30">Scan ID: {result.scanId.slice(0, 8)}</span>
           </div>
-          <p className="text-sm text-white/60">{result.summary}</p>
-          {result.issues.length > 0 && (
-            <ul className="mt-3 space-y-1">
-              {result.issues.map((issue, i) => (
-                <li key={i} className="text-xs text-yellow-400">• {issue}</li>
-              ))}
-            </ul>
-          )}
-          <div className="flex gap-6 mt-4 text-xs text-white/30">
-            <span>Duration: {result.duration}ms</span>
-            <span>Fixes: {result.fixesApplied}</span>
-            <span>Backup: {result.backupCreated ? "Yes" : "No"}</span>
-          </div>
-        </div>
-      )}
 
-      <h3 className="font-semibold text-sm mb-3">Scan History</h3>
-      <div className="space-y-2">
-        {history.map((scan) => (
-          <div key={scan.scanId} className="bg-white/5 rounded-xl border border-white/10 p-3 flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <span className={`text-xs font-bold ${statusColors[scan.status]}`}>{scan.status}</span>
-              <span className="text-xs text-white/30 font-mono">{scan.scanId.slice(0, 8)}</span>
-            </div>
-            <span className="text-xs text-white/30">{scan.issues.length} issues • {scan.duration}ms</span>
+          <div className="mt-6 grid gap-4 lg:grid-cols-2">
+            {(initialized ? jobs : WATCHTOWER_JOB_TEMPLATES).map((job) => {
+              const id = "id" in job ? job.id : null;
+              const status = "status" in job ? job.status : "PLANNED";
+
+              return (
+                <article
+                  key={job.slug}
+                  className="rounded-2xl border border-border bg-bone p-5 transition-shadow hover:shadow-sm"
+                >
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="min-w-0">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <h3 className="font-display text-lg font-semibold">{job.name}</h3>
+                        <span className="badge bg-indigo-accent/10 font-mono text-[10px] text-indigo-dark">
+                          {job.authority}
+                        </span>
+                        <span className="badge bg-surface text-[10px] uppercase text-muted">
+                          {job.category}
+                        </span>
+                      </div>
+                      <p className="mt-3 text-[15px] leading-6 text-muted">{job.description}</p>
+                      <p className="mt-4 text-sm text-muted">
+                        {cadenceLabel(job.cadenceMinutes)} · budget ceiling {"$"}{(job.budgetCents / 100).toFixed(2)}
+                      </p>
+                    </div>
+
+                    {initialized && id ? (
+                      <JobToggle job={{ id, status }} />
+                    ) : (
+                      <span className="badge bg-surface text-muted">Planned</span>
+                    )}
+                  </div>
+                </article>
+              );
+            })}
           </div>
-        ))}
-        {history.length === 0 && <p className="text-sm text-white/30 text-center py-4">No scans yet.</p>}
+        </section>
+
+        <section className="mt-8 grid gap-6 lg:grid-cols-2">
+          <DataPanel eyebrow="OPERATIONS" title="Recent runs">
+            {runs.length ? (
+              <div className="space-y-3">
+                {runs.map((run) => (
+                  <div key={run.id} className="rounded-2xl border border-border bg-bone p-4">
+                    <div className="flex justify-between gap-4">
+                      <span className="font-medium">Run #{run.id}</span>
+                      <span className="font-mono text-xs text-muted">{run.status}</span>
+                    </div>
+                    <p className="mt-2 text-sm text-muted">{run.summary || "No summary yet."}</p>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <Empty>No Watchtower executions have been recorded yet.</Empty>
+            )}
+          </DataPanel>
+
+          <DataPanel eyebrow="SCOUT" title="Candidate inbox">
+            {candidates.length ? (
+              <div className="space-y-3">
+                {candidates.map((candidate) => (
+                  <div key={candidate.id} className="rounded-2xl border border-border bg-bone p-4">
+                    <div className="flex justify-between gap-4">
+                      <span className="font-medium">{candidate.title}</span>
+                      <span className="font-mono text-xs text-muted">{candidate.truthState}</span>
+                    </div>
+                    <p className="mt-2 text-sm text-muted">
+                      {candidate.sourceName || "Unknown source"} · {candidate.lane}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <Empty>No sourcing or operating candidates have been recorded yet.</Empty>
+            )}
+          </DataPanel>
+        </section>
+
+        <footer className="mt-10 flex flex-wrap items-center gap-2 border-t border-border py-7 text-xs text-muted">
+          <span>Norvana owns business state.</span>
+          <span>•</span>
+          <span>IgniAqua services remain authority-bounded.</span>
+          <span>•</span>
+          <Link href="/" className="font-medium text-indigo-accent hover:underline">Storefront</Link>
+        </footer>
       </div>
+    </main>
+  );
+}
+
+function HeroMetric({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-2xl border border-white/10 bg-white/[0.06] p-4 backdrop-blur-sm">
+      <p className="text-[10px] uppercase tracking-[0.16em] text-white/40">{label}</p>
+      <p className="mt-2 font-display text-2xl font-bold">{value}</p>
     </div>
+  );
+}
+
+function StatusChip({
+  tone,
+  children,
+}: {
+  tone: "green" | "indigo" | "muted";
+  children: ReactNode;
+}) {
+  const classes =
+    tone === "green"
+      ? "border-emerald-400/20 bg-emerald-400/10 text-emerald-200"
+      : tone === "indigo"
+        ? "border-indigo-300/20 bg-indigo-300/10 text-indigo-200"
+        : "border-white/10 bg-white/5 text-white/50";
+
+  return <span className={`rounded-full border px-3 py-1.5 font-medium ${classes}`}>{children}</span>;
+}
+
+function InfoCard({
+  eyebrow,
+  title,
+  children,
+}: {
+  eyebrow: string;
+  title: string;
+  children: ReactNode;
+}) {
+  return (
+    <section className="rounded-3xl border border-border bg-surface p-6 shadow-sm">
+      <p className="text-xs font-medium uppercase tracking-[0.18em] text-indigo-accent">{eyebrow}</p>
+      <h2 className="mt-2 font-display text-xl font-bold">{title}</h2>
+      <div className="mt-5">{children}</div>
+    </section>
+  );
+}
+
+function DataPanel({
+  eyebrow,
+  title,
+  children,
+}: {
+  eyebrow: string;
+  title: string;
+  children: ReactNode;
+}) {
+  return (
+    <section className="rounded-3xl border border-border bg-surface p-6 shadow-sm">
+      <p className="text-xs font-medium uppercase tracking-[0.18em] text-indigo-accent">{eyebrow}</p>
+      <h2 className="mt-2 font-display text-xl font-bold">{title}</h2>
+      <div className="mt-5">{children}</div>
+    </section>
+  );
+}
+
+function StatusRow({
+  label,
+  value,
+  good,
+}: {
+  label: string;
+  value: string;
+  good?: boolean;
+}) {
+  return (
+    <div className="flex items-center justify-between gap-4 border-b border-border py-2.5 text-sm last:border-0">
+      <span className="text-muted">{label}</span>
+      <span className={good ? "font-mono text-[11px] text-success" : "font-mono text-[11px] text-muted"}>
+        {value}
+      </span>
+    </div>
+  );
+}
+
+function Empty({ children }: { children: ReactNode }) {
+  return (
+    <p className="rounded-2xl border border-dashed border-border bg-bone p-5 text-sm text-muted">
+      {children}
+    </p>
   );
 }

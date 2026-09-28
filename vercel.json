@@ -1,6 +1,11 @@
 {
   "framework": "nextjs",
-  "regions": ["iad1"],
+  "regions": [
+    "iad1"
+  ],
+  "git": {
+    "deploymentEnabled": false
+  },
   "env": {
     "NEXT_TELEMETRY_DISABLED": "1"
   }

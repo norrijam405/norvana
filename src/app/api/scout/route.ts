@@ -1,7 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { SCOUT_PRODUCTS } from "@/lib/constants";
+import { requireCurrentRecoveryAdmin } from "@/lib/admin-guard";
 
 export async function POST(req: NextRequest) {
+  const gate = await requireCurrentRecoveryAdmin(req);
+  if (gate) return gate;
+
   try {
     const { message } = await req.json();
 

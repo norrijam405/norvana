@@ -1,4 +1,4 @@
-# 🚀 NORVANA Deployment to IONOS
+> **Recovery notice (2026-09-26):** This is historical deployment lineage, not proof of a current live deployment. Historical credentials must not be reused. The browser-password Engine Room is disabled on the modernization branch.\n\n# 🚀 NORVANA Deployment to IONOS
 
 This guide walks you through deploying your NORVANA store to your IONOS account.
 
@@ -331,7 +331,7 @@ sudo certbot renew
 
 | Credentials | Value |
 |-------------|-------|
-| Admin Password | `norvana` |
+| Admin access | Disabled during recovery; rebuild with server-side identity/session |
 | Database | `norvana_db` |
 | Database User | `norvana` |
 

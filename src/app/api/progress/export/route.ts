@@ -2,8 +2,12 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db";
 import { progressNotes } from "@/db/schema";
 import { desc } from "drizzle-orm";
+import { requireCurrentRecoveryAdmin } from "@/lib/admin-guard";
 
 export async function GET(req: NextRequest) {
+  const gate = await requireCurrentRecoveryAdmin(req);
+  if (gate) return gate;
+
   try {
     const format = req.nextUrl.searchParams.get("format") || "json";
     const all = await db.select().from(progressNotes).orderBy(desc(progressNotes.createdAt));

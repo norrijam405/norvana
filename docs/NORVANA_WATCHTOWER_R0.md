@@ -1,0 +1,273 @@
+# Norvana Watchtower R0
+
+**Status:** implementation candidate  
+**Owner:** Norvana  
+**Role of IgniAqua:** bounded service provider / intelligence layer
+
+## Purpose
+
+Watchtower moves recurring Norvana monitoring out of ChatGPT task limits and into Norvana-owned backend state.
+
+Norvana owns:
+
+- job definitions;
+- schedules/cadence;
+- authority ceilings;
+- run history;
+- candidate findings;
+- evidence references;
+- cost accounting;
+- action receipts;
+- notification state.
+
+AI/model/search providers are replaceable execution dependencies, not the canonical home of Norvana's jobs.
+
+## R0 control panel
+
+`/admin` becomes the Watchtower Control Panel.
+
+R0 shows:
+
+- Watchers;
+- enabled/paused state;
+- cadence;
+- budget ceiling;
+- authority;
+- Watchtower truth state;
+- recent runs;
+- candidate inbox;
+- scheduler/executor/federation configuration state.
+
+The historical client-side password is retired.
+
+## Authentication
+
+Owner access uses:
+
+- a temporary server-side bootstrap password hash for first access;
+- PBKDF2-SHA256 verification for current owner credentials, with legacy scrypt verification retained only for backward-compatible recovery;
+- durable salted owner password hash in Norvana's database after first successful bootstrap;
+- in-app owner password rotation;
+- server-only session secret;
+- signed HttpOnly cookie;
+- no password literal in browser source.
+
+There is no default password. After the database owner identity exists, the old bootstrap credential is no longer accepted as an alternate password.
+
+## R0 watchers
+
+1. Free Supplier Watch
+2. Global & Resale Sourcing Watch
+3. Local Producer Watch
+4. Closest-to-$0 Operations Watch
+5. Drop Opportunity Watch
+
+All defaults begin PAUSED until the founder initializes Watchtower.
+
+## Authority
+
+R0 supports:
+
+- OBSERVE
+- RECOMMEND
+
+ACT is represented in the data model but locked from ordinary R0 controls.
+
+Watchtower must not autonomously:
+
+- spend money;
+- bid at auctions;
+- place supplier orders;
+- publish products;
+- change prices;
+- activate suppliers/producers;
+- enroll a customer in financing;
+- issue refunds;
+- deploy production changes.
+
+## Execution design
+
+The job registry and run history live in Norvana.
+
+Execution is provider-neutral and may later be performed by:
+
+- an IgniAqua service;
+- a Norvana worker process;
+- qualified source-specific connectors;
+- an external model/search provider;
+- deterministic code where AI is unnecessary.
+
+The executor must return structured findings/evidence rather than only prose.
+
+## Closest-to-$0 execution rule
+
+Use deterministic code, feeds, APIs, RSS, cached data, and targeted source checks before paying for AI inference.
+
+When AI/search is useful, choose the lowest-cost qualified provider for the job.
+
+A $0 provider is not automatically preferred if it creates materially worse reliability, evidence quality, latency, security, or operating loss.
+
+## Truth states
+
+A job being ENABLED does not mean it executed successfully.
+
+Runs use explicit states such as:
+
+- QUEUED
+- RUNNING
+- PASS
+- NO_MATERIAL_CHANGE
+- BLOCKED
+- FAILED
+
+Candidate findings should preserve:
+
+- source;
+- observed-at time;
+- provenance/evidence;
+- economics;
+- risk flags;
+- confidence/uncertainty;
+- recommendation;
+- disposition.
+
+## Promotion gates
+
+Before Watchtower is considered live:
+
+1. CI/typecheck/lint pass.
+2. admin session verified in deployed environment.
+3. Watchtower tables initialized.
+4. scheduler endpoint/worker verified.
+5. at least one OBSERVE job produces a durable receipt.
+6. at least one RECOMMEND job produces a candidate with evidence.
+7. failure/timeout behavior verified.
+8. no ACT path can bypass the R0 authority ceiling.
+
+
+## Scheduler and worker protocol
+
+The initial scheduler may use GitHub Actions as a low-fixed-cost wake-up mechanism.
+
+Canonical schedules remain in `watch_jobs`; GitHub does not own job truth.
+
+### Queue flow
+
+1. GitHub Actions calls the protected Watchtower tick endpoint.
+2. The tick endpoint identifies due ENABLED jobs.
+3. A durable `watch_runs` record is created as QUEUED.
+4. A qualified worker claims one queued run with the worker secret.
+5. Norvana returns the job instructions, source policy, budget ceiling and hard authority limits.
+6. The worker returns structured findings, evidence references and candidate records.
+7. Norvana stores the result and an action receipt.
+
+Queueing and execution remain independently disabled by default.
+
+### Worker replacement
+
+The worker protocol is provider-neutral. A worker can be replaced without moving:
+
+- schedules;
+- job instructions;
+- run history;
+- candidate state;
+- evidence;
+- budget;
+- authority;
+- receipts.
+
+### R0 hard limits returned to workers
+
+- maySpendMoney = false
+- mayPublishProducts = false
+- mayPlaceOrders = false
+- mayChangePrices = false
+- mayActivateSuppliers = false
+- mayIssueRefunds = false
+
+A worker response cannot grant itself additional authority.
+
+
+## Owner recovery
+
+Forgotten-password recovery is a separate authority path from normal owner login.
+
+- recovery is disabled by default;
+- a server-side recovery credential is required;
+- recovery can only reset the durable owner password;
+- it does not unlock Watchtower ACT authority or business actions;
+- the recovery credential is never embedded in browser source;
+- after a successful recovery, the recovery gate should be disabled again.
+
+This exists specifically so Norvana does not fall back to a hard-coded browser password when the owner forgets a credential.
+
+
+## Browser-local bootstrap helper
+
+The recovery Preview exposes `/admin/setup` as a client-only credential generator.
+
+It:
+
+- creates a random temporary bootstrap password;
+- derives a PBKDF2-SHA256 password hash in the browser;
+- generates fresh session, recovery, scheduler and worker secrets in the browser;
+- outputs environment-variable entries for Vercel Preview;
+- defaults queue, executor, fulfillment, supplier connectors, recovery and IgniAqua federation to disabled;
+- does not transmit generated values to Norvana or an API.
+
+The helper is not an authentication endpoint and cannot mutate Norvana state.
+
+## Non-secret setup preflight
+
+`/api/admin/setup-status` exposes only safe configuration booleans and readiness state.
+
+It must never return secret values.
+
+The preflight is intended to verify:
+
+- database reachability;
+- owner identity presence;
+- bootstrap/session/recovery configuration presence;
+- scheduler/worker configuration presence;
+- whether queue/executor or consequential-action flags remain disabled.
+
+
+## Safe control-plane self-test
+
+Before any watcher may be enabled, Watchtower requires a durable control-plane self-test.
+
+The self-test:
+
+- requires all jobs to remain PAUSED;
+- requires queueing and execution to remain disabled;
+- requires external fulfillment and supplier connectors to remain disabled;
+- requires every R0 job budget to equal $0;
+- requires every R0 job authority to remain OBSERVE or RECOMMEND;
+- performs no source research and no external commerce action;
+- writes a CONTROL_TEST run and an action receipt;
+- reads both records back before returning PASS.
+
+A control-plane PASS is necessary but not sufficient to enable a watcher.
+
+## R0 watcher enable gates
+
+A watcher may transition from PAUSED to ENABLED only when:
+
+1. the owner credential has been rotated away from the temporary bootstrap-derived credential;
+2. the safe control-plane self-test has a durable PASS;
+3. the job authority is OBSERVE or RECOMMEND;
+4. the job budget is exactly $0.
+
+These gates are enforced server-side.
+
+## Worker state discipline
+
+Worker execution uses an explicit one-way state transition:
+
+`QUEUED -> RUNNING -> FINAL`
+
+Final statuses are PASS, NO_MATERIAL_CHANGE, FAILED, or BLOCKED.
+
+A worker result is accepted only while the run is RUNNING. Finalization uses a conditional atomic update so concurrent or repeated result submissions cannot both win and duplicate candidates/receipts.
+
+The scheduler and worker independently re-evaluate R0 authority and budget limits. A malformed or directly injected queued run cannot grant itself ACT authority or a paid automation budget.

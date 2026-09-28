@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db";
 import { orders } from "@/db/schema";
 import { desc } from "drizzle-orm";
+import { requireCurrentRecoveryAdmin } from "@/lib/admin-guard";
 
 function generateOrderNumber() {
   const prefix = "NRV";
@@ -9,7 +10,10 @@ function generateOrderNumber() {
   return `${prefix}-${num}`;
 }
 
-export async function GET() {
+export async function GET(req: NextRequest) {
+  const gate = await requireCurrentRecoveryAdmin(req);
+  if (gate) return gate;
+
   try {
     const all = await db.select().from(orders).orderBy(desc(orders.createdAt));
     return NextResponse.json(all);
@@ -20,6 +24,9 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
+  const gate = await requireCurrentRecoveryAdmin(req);
+  if (gate) return gate;
+
   try {
     const body = await req.json();
     const orderNumber = generateOrderNumber();

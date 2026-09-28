@@ -2,11 +2,15 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db";
 import { orders } from "@/db/schema";
 import { eq } from "drizzle-orm";
+import { requireCurrentRecoveryAdmin } from "@/lib/admin-guard";
 
 export async function PATCH(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const gate = await requireCurrentRecoveryAdmin(req);
+  if (gate) return gate;
+
   try {
     const { id } = await params;
     const body = await req.json();

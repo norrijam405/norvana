@@ -2,11 +2,15 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db";
 import { suppliers, supplierCredentials } from "@/db/schema";
 import { eq } from "drizzle-orm";
+import { requireCurrentRecoveryAdmin } from "@/lib/admin-guard";
 
 export async function GET(
-  _req: NextRequest,
+  req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const gate = await requireCurrentRecoveryAdmin(req);
+  if (gate) return gate;
+
   try {
     const { id } = await params;
     const [supplier] = await db.select().from(suppliers).where(eq(suppliers.id, parseInt(id)));
@@ -39,6 +43,9 @@ export async function PATCH(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const gate = await requireCurrentRecoveryAdmin(req);
+  if (gate) return gate;
+
   try {
     const { id } = await params;
     const body = await req.json();
@@ -72,9 +79,12 @@ export async function PATCH(
 }
 
 export async function DELETE(
-  _req: NextRequest,
+  req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const gate = await requireCurrentRecoveryAdmin(req);
+  if (gate) return gate;
+
   try {
     const { id } = await params;
     

@@ -32,14 +32,17 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const saved = localStorage.getItem("norvana-cart");
-    if (saved) {
-      try {
-        setItems(JSON.parse(saved));
-      } catch {
-        // ignore
+
+    queueMicrotask(() => {
+      if (saved) {
+        try {
+          setItems(JSON.parse(saved));
+        } catch {
+          // Ignore malformed historical cart state.
+        }
       }
-    }
-    setLoaded(true);
+      setLoaded(true);
+    });
   }, []);
 
   useEffect(() => {

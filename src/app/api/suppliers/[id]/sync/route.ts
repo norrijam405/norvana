@@ -3,11 +3,17 @@ import { db } from "@/db";
 import { suppliers, supplierCredentials, supplierProducts } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { createSupplierConnector, type SupplierPlatform } from "@/lib/supplier-integrations";
+import { requireCurrentRecoveryAdmin, requireSupplierConnectorsEnabled } from "@/lib/admin-guard";
 
 export async function POST(
-  _req: NextRequest,
+  req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const gate = await requireCurrentRecoveryAdmin(req);
+  if (gate) return gate;
+  const connectorGate = requireSupplierConnectorsEnabled();
+  if (connectorGate) return connectorGate;
+
   try {
     const { id } = await params;
     const supplierId = parseInt(id);

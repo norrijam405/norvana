@@ -1,46 +1,84 @@
-# NORVANA — Curated Commerce Platform
+# NORVANA
 
-A fullstack e-commerce platform built with Next.js, PostgreSQL, and Stripe.
+Norvana is a curated commerce platform being recovered and modernized from its original dropshipping storefront.
 
-## Features
+## Product direction
 
-- 🛒 **Shop** — Filterable product catalog with search
-- 🛍️ **Cart** — Slide-out drawer with localStorage persistence  
-- 💳 **Payments** — Stripe Checkout integration
-- 📦 **Orders** — Order management with status tracking
-- 🏭 **Suppliers** — Multi-distributor integration system
-- 🔐 **Admin** — Password-protected dashboard
+Norvana is evolving into three connected commerce lanes:
 
-## Tech Stack
+- **Norvana Drops** — the founder's rotating discovery storefront, starting from an approximately two-week niche cadence.
+- **Norvana Local** — persistent, seasonal local-farm and local-maker commerce.
+- **Norvana World** — future global discovery and qualified cross-border commerce.
 
-- **Framework:** Next.js 16 (App Router)
-- **Database:** PostgreSQL + Drizzle ORM
-- **Styling:** Tailwind CSS v4
-- **Animations:** Framer Motion
-- **Payments:** Stripe
+The Archive preserves retired Drops instead of turning Norvana into an infinite catalog.
 
-## Environment Variables
+See [docs/NORVANA_PRODUCT_CHARTER_R0.md](docs/NORVANA_PRODUCT_CHARTER_R0.md).
 
-```env
-DATABASE_URL=postgresql://user:password@host:5432/database
-STRIPE_SECRET_KEY=sk_live_...
-STRIPE_WEBHOOK_SECRET=whsec_...
-```
+Founder-approved decisions are preserved in [docs/NORVANA_DECISION_LEDGER_R0.md](docs/NORVANA_DECISION_LEDGER_R0.md). Successor workers should reconcile that ledger before material Norvana work.
 
-## Getting Started
+Norvana-owned recurring monitoring and the rebuilt admin control plane are defined in [docs/NORVANA_WATCHTOWER_R0.md](docs/NORVANA_WATCHTOWER_R0.md).
+
+Global, liquidation and resale sourcing rules are in [docs/NORVANA_GLOBAL_RESALE_SOURCING_R0.md](docs/NORVANA_GLOBAL_RESALE_SOURCING_R0.md).
+
+## Closest-to-$0 Finance
+
+Norvana's finance objective is to help eligible customers minimize verified total financing cost. It is not a promise that financing will literally cost $0.
+
+The comparison layer is intended to normalize APR, fees, down payment, term, promotional conditions, total of payments and total financing cost, then surface the lowest-cost verified path without favoring a provider because it pays Norvana more.
+
+Essential groceries should not default to debt promotion.
+
+## IgniAqua federation
+
+Norvana remains the canonical owner of its catalog, customers, orders, payments, suppliers, inventory, storefront and product decisions.
+
+IgniAqua may provide bounded services such as Scout research, evidence/provenance, connector qualification, Workforce/Green Room qualification, model routing, continuity/recovery and Darwin recommendations.
+
+**Shared service does not imply shared authority.**
+
+## Recovery security state
+
+This branch intentionally fails closed while historical security shortcuts are removed.
+
+- Historical browser-only admin password: disabled.
+- Privileged mutations: protected by a temporary server-to-server recovery gate.
+- Supplier connector execution: disabled by default.
+- External supplier fulfillment: disabled by default.
+- Raw supplier-secret storage: disabled.
+- Checkout prices/totals: recalculated from server-side catalog data.
+- Historical/static Scout: internal and explicitly non-live.
+- Debugger/progress/admin data: internal.
+- Historical credentials: treat as compromised if still valid and rotate/revoke at the provider.
+
+See [docs/SECURITY_RECOVERY_R0.md](docs/SECURITY_RECOVERY_R0.md).
+
+## Local development
 
 ```bash
 npm install
+cp .env.example .env.local
 npm run dev
 ```
 
-## Admin Access
+Required configuration is documented in `.env.example`. Never commit real secrets.
 
-- **URL:** `/admin`
-- **Password:** `norvana`
+## Verification
 
-## Deployment
+Before promotion, run:
 
-Deploy to Vercel with one click:
+```bash
+npm run typecheck
+npm run lint
+npm run build
+```
 
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/YOUR_USERNAME/norvana)
+Recovery work is not equivalent to production readiness. Supplier ordering, live financing, autonomous publishing and deployment require separate verification and authorization.
+
+
+### Watchtower Preview bootstrap
+
+Browser-local Preview setup helper: `/admin/setup`
+
+The helper generates bootstrap/security values locally in the browser. Generated secrets must go directly into Vercel Preview environment variables and must never be committed or pasted into chat.
+
+Safe configuration-state probe: `/api/admin/setup-status`

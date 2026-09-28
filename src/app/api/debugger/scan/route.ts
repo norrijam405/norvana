@@ -1,9 +1,13 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db";
 import { debugLogs } from "@/db/schema";
 import { runDiagnosticScan } from "@/lib/debugger";
+import { requireCurrentRecoveryAdmin } from "@/lib/admin-guard";
 
-export async function POST() {
+export async function POST(req: NextRequest) {
+  const gate = await requireCurrentRecoveryAdmin(req);
+  if (gate) return gate;
+
   try {
     const result = runDiagnosticScan();
     await db.insert(debugLogs).values({
