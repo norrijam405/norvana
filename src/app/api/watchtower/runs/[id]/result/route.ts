@@ -49,7 +49,8 @@ export async function POST(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const gate = requireWatchtowerWorker(req);
+  const requestedMode = (req.headers.get("x-norvana-worker-mode") || "standard").toLowerCase();
+  const gate = await requireWatchtowerWorker(req);
   if (gate) return gate;
 
   const { id } = await params;
@@ -72,6 +73,26 @@ export async function POST(
   const [run] = await db.select().from(watchRuns).where(eq(watchRuns.id, runId)).limit(1);
   if (!run) {
     return NextResponse.json({ error: "Watch run not found." }, { status: 404 });
+  }
+
+  if (run.trigger === "HARNESS_TEST" && requestedMode !== "harness") {
+    return NextResponse.json(
+      {
+        error: "HARNESS_TEST results require authenticated harness mode.",
+        code: "WATCHTOWER_HARNESS_RESULT_REQUIRES_HARNESS_MODE",
+      },
+      { status: 409 }
+    );
+  }
+
+  if (requestedMode === "harness" && run.trigger !== "HARNESS_TEST") {
+    return NextResponse.json(
+      {
+        error: "Harness mode may finalize HARNESS_TEST runs only.",
+        code: "WATCHTOWER_HARNESS_MODE_RESULT_SCOPE_VIOLATION",
+      },
+      { status: 409 }
+    );
   }
 
   if (run.runtimeId !== runtimeId) {
@@ -271,6 +292,8 @@ export async function POST(
         budgetCents: job.budgetCents,
         candidateCount: insertedCandidateCount,
         runtimeId,
+        workerMode: requestedMode,
+        authMode: requestedMode === "harness" ? "GITHUB_OIDC" : "WORKER_SECRET",
       },
     });
 

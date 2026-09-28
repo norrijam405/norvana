@@ -15,10 +15,9 @@ function r0ExternalActionsDisabled() {
 }
 
 export async function POST(req: NextRequest) {
-  const gate = requireWatchtowerWorker(req);
-  if (gate) return gate;
-
   const requestedMode = (req.headers.get("x-norvana-worker-mode") || "standard").toLowerCase();
+  const gate = await requireWatchtowerWorker(req);
+  if (gate) return gate;
   const executorGate = evaluateWorkerModeExecutorState(
     requestedMode,
     process.env.NORVANA_WATCHTOWER_EXECUTOR_ENABLED === "true"
@@ -237,7 +236,12 @@ export async function POST(req: NextRequest) {
     subjectId: String(run.id),
     status: "RUNNING",
     actor: "watchtower-worker",
-    details: { jobId: job.id, jobSlug: job.slug, workerMode: requestedMode },
+    details: {
+      jobId: job.id,
+      jobSlug: job.slug,
+      workerMode: requestedMode,
+      authMode: requestedMode === "harness" ? "GITHUB_OIDC" : "WORKER_SECRET",
+    },
   });
 
   return NextResponse.json({

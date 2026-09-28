@@ -168,3 +168,71 @@ export function evaluateHarnessResultEffects(input: {
 
   return { ok: true };
 }
+
+
+export function evaluateGitHubHarnessClaims(claims: Record<string, unknown>): R0GateDecision {
+  const audience = Array.isArray(claims.aud)
+    ? claims.aud.map((value) => String(value))
+    : [String(claims.aud || "")];
+
+  if (String(claims.iss || "") !== "https://token.actions.githubusercontent.com") {
+    return {
+      ok: false,
+      code: "WATCHTOWER_HARNESS_OIDC_ISSUER_MISMATCH",
+      reason: "Harness OIDC issuer is not GitHub Actions.",
+    };
+  }
+
+  if (!audience.includes("https://github.com/norrijam405")) {
+    return {
+      ok: false,
+      code: "WATCHTOWER_HARNESS_OIDC_AUDIENCE_MISMATCH",
+      reason: "Harness OIDC audience does not match the Norvana GitHub owner.",
+    };
+  }
+
+  if (String(claims.repository || "") !== "norrijam405/norvana") {
+    return {
+      ok: false,
+      code: "WATCHTOWER_HARNESS_OIDC_REPOSITORY_MISMATCH",
+      reason: "Harness OIDC repository does not match Norvana.",
+    };
+  }
+
+  if (String(claims.ref || "") !== "refs/heads/main") {
+    return {
+      ok: false,
+      code: "WATCHTOWER_HARNESS_OIDC_REF_MISMATCH",
+      reason: "Harness OIDC ref must be the main branch.",
+    };
+  }
+
+  if (String(claims.event_name || "") !== "workflow_dispatch") {
+    return {
+      ok: false,
+      code: "WATCHTOWER_HARNESS_OIDC_EVENT_MISMATCH",
+      reason: "Harness OIDC event must be workflow_dispatch.",
+    };
+  }
+
+  if (
+    String(claims.workflow_ref || "") !==
+    "norrijam405/norvana/.github/workflows/watchtower-worker-harness.yml@refs/heads/main"
+  ) {
+    return {
+      ok: false,
+      code: "WATCHTOWER_HARNESS_OIDC_WORKFLOW_MISMATCH",
+      reason: "Harness OIDC workflow identity does not match the approved workflow.",
+    };
+  }
+
+  if (String(claims.runner_environment || "") !== "github-hosted") {
+    return {
+      ok: false,
+      code: "WATCHTOWER_HARNESS_OIDC_RUNNER_MISMATCH",
+      reason: "Harness OIDC token must originate from a GitHub-hosted runner.",
+    };
+  }
+
+  return { ok: true };
+}

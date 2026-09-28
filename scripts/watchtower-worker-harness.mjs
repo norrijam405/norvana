@@ -1,5 +1,4 @@
 const baseUrl = (process.env.NORVANA_WATCHTOWER_BASE_URL || "").replace(/\/+$/, "");
-const secret = process.env.NORVANA_WATCHTOWER_WORKER_SECRET || "";
 const enabled = process.env.NORVANA_WATCHTOWER_HARNESS_ENABLED === "true";
 const vercelOidcToken = process.env.NORVANA_VERCEL_OIDC_TOKEN || "";
 
@@ -9,17 +8,16 @@ function fail(message) {
 
 if (!enabled) fail("Deterministic Watchtower harness is not enabled.");
 if (!baseUrl.startsWith("https://")) fail("Harness base URL must use HTTPS.");
-if (!secret) fail("Harness worker secret is not configured.");
+if (!vercelOidcToken) fail("GitHub OIDC token is not configured for the harness.");
+
+const authHeaders = {
+  "x-norvana-worker-mode": "harness",
+  "x-vercel-trusted-oidc-idp-token": vercelOidcToken,
+};
 
 const claim = await fetch(`${baseUrl}/api/watchtower/runs/claim`, {
   method: "POST",
-  headers: {
-    "x-norvana-watchtower-worker-secret": secret,
-    "x-norvana-worker-mode": "harness",
-    ...(vercelOidcToken
-      ? { "x-vercel-trusted-oidc-idp-token": vercelOidcToken }
-      : {}),
-  },
+  headers: authHeaders,
 });
 
 if (claim.status === 204) fail("No queued HARNESS_TEST run is available.");
@@ -51,18 +49,15 @@ const runId = payload.run.id;
 const result = await fetch(`${baseUrl}/api/watchtower/runs/${runId}/result`, {
   method: "POST",
   headers: {
+    ...authHeaders,
     "content-type": "application/json",
-    "x-norvana-watchtower-worker-secret": secret,
-    ...(vercelOidcToken
-      ? { "x-vercel-trusted-oidc-idp-token": vercelOidcToken }
-      : {}),
   },
   body: JSON.stringify({
     status: "NO_MATERIAL_CHANGE",
     summary:
       "External deterministic worker harness completed. No source research, model call, candidate emission, spend, publishing, supplier action, or fulfillment occurred.",
     findings: [
-      { check: "worker_secret_auth", result: "PASS" },
+      { check: "github_oidc_auth", result: "PASS" },
       { check: "harness_trigger_isolation", result: "PASS" },
       { check: "hard_limits", result: "PASS" },
       { check: "external_research", result: "PASS", performed: false },
@@ -91,6 +86,7 @@ if (completed?.candidateCount !== 0 || completed?.budgetExceeded) {
 console.log(
   JSON.stringify({
     result: "PASS",
+    authMode: "GITHUB_OIDC",
     runId,
     status: completed.status,
     candidateCount: completed.candidateCount,

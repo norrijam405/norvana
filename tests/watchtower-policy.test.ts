@@ -5,6 +5,7 @@ import {
   evaluateRunFinalizationState,
   evaluateStaleHarnessRetirement,
   evaluateHarnessResultEffects,
+  evaluateGitHubHarnessClaims,
   evaluateWatcherEnable,
   evaluateWorkerModeExecutorState,
   isR0Authority,
@@ -184,4 +185,32 @@ test("HARNESS_TEST results are zero-effect only", () => {
     }),
     { ok: true }
   );
+});
+
+
+test("GitHub harness claims are bound to the approved repo workflow and branch", () => {
+  const valid = {
+    iss: "https://token.actions.githubusercontent.com",
+    aud: "https://github.com/norrijam405",
+    repository: "norrijam405/norvana",
+    ref: "refs/heads/main",
+    event_name: "workflow_dispatch",
+    workflow_ref:
+      "norrijam405/norvana/.github/workflows/watchtower-worker-harness.yml@refs/heads/main",
+    runner_environment: "github-hosted",
+  };
+
+  assert.deepEqual(evaluateGitHubHarnessClaims(valid), { ok: true });
+
+  for (const [key, value] of [
+    ["iss", "https://example.invalid"],
+    ["aud", "https://github.com/other"],
+    ["repository", "norrijam405/other"],
+    ["ref", "refs/heads/other"],
+    ["event_name", "push"],
+    ["workflow_ref", "norrijam405/norvana/.github/workflows/other.yml@refs/heads/main"],
+    ["runner_environment", "self-hosted"],
+  ] as const) {
+    assert.equal(evaluateGitHubHarnessClaims({ ...valid, [key]: value }).ok, false);
+  }
 });
