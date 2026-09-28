@@ -1,4 +1,4 @@
-import { createPublicKey, timingSafeEqual, verify } from "node:crypto";
+import { createPublicKey, timingSafeEqual, verify, type JsonWebKeyInput } from "node:crypto";
 import { NextRequest, NextResponse } from "next/server";
 import { evaluateGitHubHarnessClaims } from "@/lib/watchtower/policy";
 
@@ -113,7 +113,7 @@ async function verifyGitHubHarnessOidc(token: string) {
 
   let signatureValid = false;
   try {
-    const key = createPublicKey({ key: jwk, format: "jwk" });
+    const key = createPublicKey({ key: jwk, format: "jwk" } as JsonWebKeyInput);
     signatureValid = verify(
       "RSA-SHA256",
       Buffer.from(`${encodedHeader}.${encodedPayload}`),
