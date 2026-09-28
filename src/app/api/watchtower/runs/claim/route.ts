@@ -4,7 +4,7 @@ import { db } from "@/db";
 import { actionReceipts, watchJobs, watchRuns } from "@/db/schema";
 import { requireWatchtowerWorker } from "@/lib/watchtower/worker-auth";
 import { ownerCredentialState } from "@/lib/admin-identity";
-import { evaluateR0Job } from "@/lib/watchtower/policy";
+import { evaluateR0Job, evaluateWorkerModeExecutorState } from "@/lib/watchtower/policy";
 import { currentWatchtowerRuntimeId } from "@/lib/watchtower/runtime-id";
 
 function r0ExternalActionsDisabled() {
@@ -18,10 +18,37 @@ export async function POST(req: NextRequest) {
   const gate = requireWatchtowerWorker(req);
   if (gate) return gate;
 
-  if (process.env.NORVANA_WATCHTOWER_EXECUTOR_ENABLED !== "true") {
+  const requestedMode = (req.headers.get("x-norvana-worker-mode") || "standard").toLowerCase();
+  const executorGate = evaluateWorkerModeExecutorState(
+    requestedMode,
+    process.env.NORVANA_WATCHTOWER_EXECUTOR_ENABLED === "true"
+  );
+  if (!executorGate.ok) {
+    const status =
+      executorGate.code === "WATCHTOWER_INVALID_WORKER_MODE"
+        ? 400
+        : executorGate.code === "WATCHTOWER_EXECUTOR_DISABLED"
+          ? 503
+          : 409;
+
     return NextResponse.json(
-      { error: "Watchtower execution is disabled.", code: "WATCHTOWER_EXECUTOR_DISABLED" },
-      { status: 503 }
+      { error: executorGate.reason, code: executorGate.code },
+      { status }
+    );
+  }
+
+  if (
+    requestedMode === "harness" &&
+    (process.env.NORVANA_WATCHTOWER_QUEUE_ENABLED === "true" ||
+      process.env.IGNIAQUA_FEDERATION_ENABLED === "true")
+  ) {
+    return NextResponse.json(
+      {
+        error:
+          "Harness worker mode requires the normal queue and IgniAqua federation to remain disabled.",
+        code: "WATCHTOWER_HARNESS_REQUIRES_EXTERNAL_LOCK",
+      },
+      { status: 409 }
     );
   }
 
@@ -103,14 +130,6 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const requestedMode = (req.headers.get("x-norvana-worker-mode") || "standard").toLowerCase();
-  if (requestedMode !== "standard" && requestedMode !== "harness") {
-    return NextResponse.json(
-      { error: "Invalid worker mode.", code: "WATCHTOWER_INVALID_WORKER_MODE" },
-      { status: 400 }
-    );
-  }
-
   const candidateWhere =
     requestedMode === "harness"
       ? and(eq(watchRuns.status, "QUEUED"), eq(watchRuns.trigger, "HARNESS_TEST"))
@@ -151,6 +170,16 @@ export async function POST(req: NextRequest) {
       .where(and(eq(watchRuns.id, candidate.id), eq(watchRuns.status, "QUEUED")));
 
     return NextResponse.json({ error: "Watch job not found." }, { status: 409 });
+  }
+
+  if (requestedMode === "harness" && job.authority !== "OBSERVE") {
+    return NextResponse.json(
+      {
+        error: "Harness worker mode accepts OBSERVE authority only.",
+        code: "WATCHTOWER_HARNESS_REQUIRES_OBSERVE",
+      },
+      { status: 409 }
+    );
   }
 
   const policy = evaluateR0Job(job.authority, job.budgetCents);

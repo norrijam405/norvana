@@ -33,6 +33,39 @@ export function evaluateR0Job(
   return { ok: true };
 }
 
+export function evaluateWorkerModeExecutorState(
+  mode: string,
+  executorEnabled: boolean
+): R0GateDecision {
+  if (mode === "standard") {
+    if (!executorEnabled) {
+      return {
+        ok: false,
+        code: "WATCHTOWER_EXECUTOR_DISABLED",
+        reason: "Watchtower execution is disabled.",
+      };
+    }
+    return { ok: true };
+  }
+
+  if (mode === "harness") {
+    if (executorEnabled) {
+      return {
+        ok: false,
+        code: "WATCHTOWER_HARNESS_REQUIRES_EXECUTOR_DISABLED",
+        reason: "Harness worker mode requires the normal executor to remain disabled.",
+      };
+    }
+    return { ok: true };
+  }
+
+  return {
+    ok: false,
+    code: "WATCHTOWER_INVALID_WORKER_MODE",
+    reason: "Invalid worker mode.",
+  };
+}
+
 export function evaluateWatcherEnable(input: {
   ownerCredentialRotated: boolean;
   controlSelfTestPassed: boolean;

@@ -4,6 +4,7 @@ import {
   evaluateR0Job,
   evaluateRunFinalizationState,
   evaluateWatcherEnable,
+  evaluateWorkerModeExecutorState,
   isR0Authority,
 } from "../src/lib/watchtower/policy.ts";
 
@@ -18,6 +19,26 @@ test("R0 rejects any nonzero automation budget", () => {
   assert.deepEqual(evaluateR0Job("OBSERVE", 0), { ok: true });
   assert.equal(evaluateR0Job("OBSERVE", 1).ok, false);
   assert.equal(evaluateR0Job("RECOMMEND", 500).ok, false);
+});
+
+test("worker mode keeps the real executor locked during harness proof", () => {
+  assert.deepEqual(evaluateWorkerModeExecutorState("standard", true), { ok: true });
+
+  const standardOff = evaluateWorkerModeExecutorState("standard", false);
+  assert.equal(standardOff.ok, false);
+  if (!standardOff.ok) assert.equal(standardOff.code, "WATCHTOWER_EXECUTOR_DISABLED");
+
+  assert.deepEqual(evaluateWorkerModeExecutorState("harness", false), { ok: true });
+
+  const harnessOn = evaluateWorkerModeExecutorState("harness", true);
+  assert.equal(harnessOn.ok, false);
+  if (!harnessOn.ok) {
+    assert.equal(harnessOn.code, "WATCHTOWER_HARNESS_REQUIRES_EXECUTOR_DISABLED");
+  }
+
+  const invalid = evaluateWorkerModeExecutorState("other", false);
+  assert.equal(invalid.ok, false);
+  if (!invalid.ok) assert.equal(invalid.code, "WATCHTOWER_INVALID_WORKER_MODE");
 });
 
 test("watcher enable requires permanent owner credential", () => {
