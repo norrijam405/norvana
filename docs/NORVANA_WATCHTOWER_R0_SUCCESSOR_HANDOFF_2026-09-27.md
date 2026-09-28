@@ -1,3 +1,17 @@
+## Norvana federation/persona contract adoption — 2026-09-28
+
+Norvana product-level adoption of `IGNIAQUA ENTERPRISE FEDERATION + PERSONA GOVERNANCE CONTRACT v0.2.1` is recorded at:
+
+`docs/NORVANA_IGNIAQUA_FEDERATION_CONTRACT_ATTESTATION_v0.2.1_2026-09-28.md`
+
+Institution: `norvana`  
+Product: `NORVANA`  
+Truth state: `ACCEPTED_WITH_NO_CONFLICT`  
+Contract SHA-256: `ba8b5751423125c0967d3132664533e7bc50b02dced2bc9707185f395a3f49b4`  
+Norvana product state reconciled: `df0a672da693a6493b030fb5df8b1eb04123d577`
+
+This adoption grants no new credentials, data access, commerce authority, supplier authority, publishing authority, fulfillment authority, canonical-database authority, or consequential ACT authority. IgniAqua federation activation remains gated.
+
 # Norvana Watchtower R0 — Successor Handoff
 Date: 2026-09-27
 
