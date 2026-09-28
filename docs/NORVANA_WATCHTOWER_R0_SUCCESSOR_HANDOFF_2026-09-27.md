@@ -243,6 +243,37 @@ Truth state: `CONTROL_PROOF_PASS + WORKER_PROOF_PASS`.
 
 Next allowed gate is exactly one owner-authenticated `HARNESS_TEST` queue operation. Do not enable any real watcher or normal executor.
 
+## External harness dispatch attempt — 2026-09-28
+
+Manual GitHub Actions run:
+`36383767703`
+
+Workflow:
+`Norvana Watchtower External Harness`
+
+Disposition:
+`FAIL_CLOSED`
+
+Failure point:
+`Verify explicit harness gate`
+
+Exact cause:
+GitHub Actions secret `NORVANA_WATCHTOWER_WORKER_SECRET` was empty/unconfigured in the GitHub Actions secret scope.
+
+The founder confirmation phrase matched and the workflow target URL matched the exact READY Preview. The job failed before checkout and before the harness client ran.
+
+Vercel Preview preflight independently reports:
+- `workerSecretConfigured: true`
+- queue disabled
+- executor disabled
+- external fulfillment disabled
+- supplier connectors disabled
+- IgniAqua federation disabled
+
+Vercel runtime logs after the failed dispatch show no `/api/watchtower/runs/claim` or `/result` request. Therefore the queued `HARNESS_TEST` was not consumed and no external harness execution occurred.
+
+Do not queue another HARNESS_TEST. Remediation is to provision the same worker secret into GitHub Actions secret `NORVANA_WATCHTOWER_WORKER_SECRET`, then re-run the existing manual workflow. Preserve this failed run as evidence.
+
 ## Deployment/runtime proof binding
 
 watch_runs now carry runtime_id.
