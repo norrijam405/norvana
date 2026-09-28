@@ -13,6 +13,7 @@ if (!vercelOidcToken) fail("GitHub OIDC token is not configured for the harness.
 const authHeaders = {
   "x-norvana-worker-mode": "harness",
   "x-vercel-trusted-oidc-idp-token": vercelOidcToken,
+  "x-norvana-github-oidc-token": vercelOidcToken,
 };
 
 const claim = await fetch(`${baseUrl}/api/watchtower/runs/claim`, {

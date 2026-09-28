@@ -169,11 +169,11 @@ export async function requireWatchtowerWorker(req: NextRequest): Promise<NextRes
       );
     }
 
-    const token = req.headers.get("x-vercel-trusted-oidc-idp-token");
+    const token = req.headers.get("x-norvana-github-oidc-token");
     if (!token) {
       return NextResponse.json(
         {
-          error: "GitHub OIDC harness token is required.",
+          error: "GitHub OIDC harness token is required in the Norvana forwarding header.",
           code: "WATCHTOWER_HARNESS_OIDC_REQUIRED",
         },
         { status: 401 }
