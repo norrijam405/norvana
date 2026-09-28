@@ -6,10 +6,32 @@ PR: `#1`
 Branch: `recovery/2026-09-26-norvana-modernization-r0`
 
 Exact executable candidate:
-`78a0f9e46a455413550a190ddc4f9663fb2f556c`
+`bf08615c9e5ec4ad139b783de012b5632fa04ee6`
 
 Recovery CI:
-`#187 — SUCCESS`
+`#188 — SUCCESS`
+
+## 2026-09-28 continuation update
+
+The executor contradiction preserved later in this handoff is now **REMEDIATED** in the exact executable candidate above and retained below only as failure lineage.
+
+Narrow remediation now enforced:
+- standard worker mode still requires `NORVANA_WATCHTOWER_EXECUTOR_ENABLED=true`
+- harness worker mode requires the normal executor to remain OFF
+- harness mode remains worker-secret authenticated
+- harness mode can claim only `HARNESS_TEST`
+- standard mode excludes `HARNESS_TEST`
+- current-runtime Control Proof + Worker Proof are still required
+- harness claim refuses a live normal queue or IgniAqua federation
+- harness job authority must be exactly `OBSERVE`
+- R0 policy still requires a $0 budget and external fulfillment/supplier actions disabled
+
+Recovery CI #188 passed deterministic install, runtime dependency audit, the full high-severity dependency gate, current-tree secret regression checks, Watchtower policy tests, TypeScript, ESLint, and the production Next.js build.
+
+Vercel auto-deployment remains frozen. The repaired candidate is **not deployed**. The newest known READY recovery Preview remains `ee21301e949497ac49dda056c447b6833a061a2f` / `dpl_DEkHuAvCuyzbRdjNSLYcGwnc6ByZ`.
+
+Do not run the external harness against the older deployment. The next live gate is one exact Preview deployment of the repaired candidate, followed by current-deployment Control Proof and Worker Proof before queueing `HARNESS_TEST`.
+
 
 Do not ask Norris to reconstruct history already preserved in GitHub, PR comments, or this handoff.
 Do not merge PR #1 merely because CI is green.
