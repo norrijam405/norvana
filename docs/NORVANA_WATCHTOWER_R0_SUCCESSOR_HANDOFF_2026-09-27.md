@@ -365,6 +365,32 @@ Truth state:
 Next gate:
 single external deterministic GitHub harness execution against exact deployment `dpl_5vdCEVR6j7gY71mTVaiAcCNQQ6r1`, with worker-secret auth + Vercel Trusted Sources OIDC, followed by verification of zero candidates, $0 spend, no external action, and durable final receipt.
 
+## Old workflow rerun — fail-closed / no state change — 2026-09-28 15:26Z
+
+GitHub Actions run `36383767703` was re-run from its original historical workflow definition.
+
+Latest attempt result:
+- confirmation phrase: PASS
+- worker secret presence: PASS
+- checkout: PASS
+- target: old Preview `https://norvana-jftmx158e-norrijam405-2107s-projects.vercel.app`
+- checkout source: old `2c8c32c8bc9f28d80cb1f8935f96d04263534b3c`
+- no OIDC token step was present because GitHub reruns preserve the original workflow definition
+- deterministic harness step: FAIL before Watchtower API execution
+- failure: Vercel Deployment Protection returned HTML, causing JSON parsing to fail
+
+Independent Vercel runtime log checks for both the old deployment `dpl_3hor9daDE1hi1sun9mU48pA68vPb` and current deployment `dpl_5vdCEVR6j7gY71mTVaiAcCNQQ6r1` show no runtime requests in the corresponding 14:57Z-15:27Z window.
+
+Therefore:
+- fresh current-runtime HARNESS_TEST was not claimed;
+- no result was submitted;
+- no candidate was emitted;
+- no spend occurred;
+- no external action occurred;
+- current truth state remains `FRESH_HARNESS_TEST_QUEUED`.
+
+Next action must be a NEW manual dispatch from the current `Norvana Watchtower External Harness` workflow on `main`, not a rerun of historical run `36383767703`.
+
 ## Deployment/runtime proof binding
 
 watch_runs now carry runtime_id.
