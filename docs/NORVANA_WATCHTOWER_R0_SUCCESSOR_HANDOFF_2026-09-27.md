@@ -340,6 +340,31 @@ Vercel Settings -> Deployment Protection -> Trusted Sources -> External Services
 
 After that, on the current recovery Preview using the founder owner session, execute the owner-only stale harness retirement route, then current-runtime Control Proof, Worker Proof, and exactly one fresh HARNESS_TEST queue operation. Do not enable a real watcher.
 
+## Current-runtime recovery chain proof — 2026-09-28 14:05Z
+
+Founder browser evidence showed the scripted recovery chain reached:
+`WATCHTOWER RECOVERY CHAIN COMPLETE`
+
+Visible browser results included:
+- Control Proof: HTTP 200
+- Worker Proof: HTTP 200
+
+Independent Vercel runtime logs for exact deployment `dpl_5vdCEVR6j7gY71mTVaiAcCNQQ6r1` at 14:05:19Z confirm all four ordered owner-session mutations returned HTTP 200:
+1. `POST /api/watchtower/harness/retire-stale` -> 200
+2. `POST /api/watchtower/self-test` -> 200
+3. `POST /api/watchtower/worker-self-test` -> 200
+4. `POST /api/watchtower/harness/queue` -> 200
+
+Because the browser loop throws immediately on any non-2xx response and reached the final completion message, the ordered recovery chain completed successfully. The old-runtime queued HARNESS_TEST was retired through the owner-only recovery path, new current-runtime Control + Worker proofs passed, and exactly one fresh current-runtime HARNESS_TEST was queued.
+
+No real watcher was enabled. Executor/external-action authority remain locked.
+
+Truth state:
+`CURRENT_RUNTIME_CONTROL_PROOF_PASS + CURRENT_RUNTIME_WORKER_PROOF_PASS + FRESH_HARNESS_TEST_QUEUED`
+
+Next gate:
+single external deterministic GitHub harness execution against exact deployment `dpl_5vdCEVR6j7gY71mTVaiAcCNQQ6r1`, with worker-secret auth + Vercel Trusted Sources OIDC, followed by verification of zero candidates, $0 spend, no external action, and durable final receipt.
+
 ## Deployment/runtime proof binding
 
 watch_runs now carry runtime_id.
