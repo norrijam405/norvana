@@ -274,6 +274,34 @@ Vercel runtime logs after the failed dispatch show no `/api/watchtower/runs/clai
 
 Do not queue another HARNESS_TEST. Remediation is to provision the same worker secret into GitHub Actions secret `NORVANA_WATCHTOWER_WORKER_SECRET`, then re-run the existing manual workflow. Preserve this failed run as evidence.
 
+## Worker-secret recovery candidate — 2026-09-28
+
+Exact recovery candidate:
+`62dfa76436315c4f26be7f6e797033e3faf75bee`
+
+Recovery CI:
+- run id: `36387013195`
+- run number: `191`
+- conclusion: `SUCCESS`
+- dependency audits: PASS
+- current-tree secret regression check: PASS
+- Watchtower policy tests: PASS
+- typecheck: PASS
+- lint: PASS
+- production build: PASS
+
+Recovery changes:
+- add owner-authenticated stale HARNESS_TEST retirement route;
+- retirement is permitted only for exactly one old-runtime `QUEUED` `HARNESS_TEST`;
+- queue, executor, fulfillment, supplier connectors, and IgniAqua federation must remain disabled;
+- all real watchers must remain PAUSED and inside R0 authority/$0 policy;
+- retirement writes a durable `WATCH_HARNESS_STALE_RUN_RETIRED` receipt;
+- HARNESS_TEST result finalization now rejects nonzero spend or any candidate emission;
+- external harness now requires every expected hard-limit flag to be explicitly present and false;
+- external harness acknowledgement must finish as `NO_MATERIAL_CHANGE`.
+
+The old sensitive worker secret is unrecoverable by design. Vercel CLI `env pull` returned `[SENSITIVE]`, so controlled rotation is required. Do not deploy this candidate until the same new worker secret is configured in Vercel Preview and GitHub Actions.
+
 ## Deployment/runtime proof binding
 
 watch_runs now carry runtime_id.
