@@ -584,6 +584,60 @@ Truth state:
 Next gate:
 one NEW manual dispatch of `Norvana Watchtower External Harness` from `main`, using current main workflow commit `b50e02045565f20da8a071ab9d8fe3ef35ec08b6` and exact confirmation `RUN_DETERMINISTIC_HARNESS`. Do not re-run any historical workflow attempt.
 
+## External deterministic harness PASS — 2026-09-28 17:05Z
+
+Exact GitHub Actions execution:
+- workflow: `Norvana Watchtower External Harness`
+- run: `36455613388`
+- job: `109041083231`
+- branch: `main`
+- workflow source: `b50e02045565f20da8a071ab9d8fe3ef35ec08b6`
+- explicit harness gate: PASS
+- GitHub OIDC mint: PASS
+- exact forwarded-OIDC client checkout: PASS
+- Node setup: PASS
+- deterministic external harness: PASS
+
+Exact harness output:
+`{"result":"PASS","authMode":"GITHUB_OIDC","runId":15,"status":"NO_MATERIAL_CHANGE","candidateCount":0,"estimatedCostCents":0}`
+
+Exact current Preview:
+- deployment: `dpl_8x2cGxz52kDwbiJPMyFBPjGv5wMv`
+- URL: `https://norvana-lgue82el4-norrijam405-2107s-projects.vercel.app`
+- deployed source: `6b57a0bc024b81374259e086ac8febca80ac0573`
+
+Independent Vercel runtime aggregation for `2026-09-28T17:05:00Z..17:05:20Z`, exact deployment + HTTP 200:
+- `/api/watchtower/runs/claim`: exactly 1
+- `/api/watchtower/runs/15/result`: exactly 1
+
+The deployed result path finalizes HARNESS_TEST only after:
+- current-runtime binding;
+- RUNNING-state check;
+- R0 authority / $0 job policy;
+- HARNESS_TEST zero-cost + zero-candidate server-side enforcement;
+- transactional finalization;
+- durable `WATCH_RUN_COMPLETED` receipt insertion.
+
+The public harness acknowledgement does not expose the database receipt ID, so no receipt ID is asserted here. Receipt existence is guaranteed by the same successful transaction that returned the accepted result for run 15; exact receipt ID remains unobserved through the current API surface.
+
+Truth state:
+`EXTERNAL_HARNESS_PASS`
+
+This is not yet institutional `BANKED` closure. Independent Challenger / Assurance review remains required before promotion beyond external-harness proof.
+
+Safety outcome:
+- run 15 final status: `NO_MATERIAL_CHANGE`
+- candidates: `0`
+- estimated cost: `0 cents`
+- no source research
+- no model call
+- no publish
+- no supplier activation
+- no order placement
+- no price changes
+- no refunds
+- no fulfillment action
+
 ## Deployment/runtime proof binding
 
 watch_runs now carry runtime_id.
