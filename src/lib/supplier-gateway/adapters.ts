@@ -6,6 +6,7 @@ import type {
   NormalizedShippingQuote,
   NormalizedSupplierProduct,
   NormalizedSupplierVariant,
+  NormalizedSupplierWarehouse,
   SupplierReadCapability,
   SupplierReadResult,
 } from "./types.ts";
@@ -68,6 +69,10 @@ export class UnboundReadOnlySupplierAdapter implements NorvanaReadOnlySupplierAd
 
   async readInventory(_supplierSku: string): Promise<SupplierReadResult<NormalizedSupplierVariant>> {
     return notBound(this.providerId, "inventory.read");
+  }
+
+  async readWarehouse(_supplierWarehouseId: string): Promise<SupplierReadResult<NormalizedSupplierWarehouse>> {
+    return notBound(this.providerId, "warehouse.read");
   }
 
   async quoteShipping(_input: {
