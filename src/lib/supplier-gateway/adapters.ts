@@ -1,5 +1,5 @@
-import { getSupplierRegistryProfile } from "./registry";
-import { evaluateSupplierReadiness } from "./policy";
+import { getSupplierRegistryProfile } from "./registry.ts";
+import { evaluateSupplierReadiness } from "./policy.ts";
 import type {
   NorvanaReadOnlySupplierAdapter,
   NormalizedReturnPolicy,
@@ -8,7 +8,7 @@ import type {
   NormalizedSupplierVariant,
   SupplierReadCapability,
   SupplierReadResult,
-} from "./types";
+} from "./types.ts";
 
 function notBound<T>(
   providerId: string,

@@ -3,7 +3,7 @@ import {
   SUPPLIER_READ_CAPABILITIES,
   type SupplierCapability,
   type SupplierRegistryProfile,
-} from "./types";
+} from "./types.ts";
 
 export type SupplierGateDecision =
   | { ok: true; mode: "READ_ONLY_R0" }

@@ -1,4 +1,4 @@
-import type { SupplierRegistryProfile } from "./types";
+import type { SupplierRegistryProfile } from "./types.ts";
 
 const observedAt = "2026-09-29";
 
