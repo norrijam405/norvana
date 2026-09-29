@@ -11,7 +11,8 @@
     "test:watchtower": "node --test --experimental-strip-types tests/watchtower-policy.test.ts",
     "test:suppliers": "node --test --experimental-strip-types tests/supplier-gateway.test.ts",
     "test:cj": "node --test --experimental-strip-types tests/cj-readonly.test.ts",
-    "test:cj:live": "node --test --experimental-strip-types tests/cj-live-read.test.ts"
+    "test:cj:live": "node --test --experimental-strip-types tests/cj-live-read.test.ts",
+    "prebuild": "node --experimental-strip-types scripts/cj-live-probe-build-once.mjs"
   },
   "dependencies": {
     "@stripe/stripe-js": "^9.10.0",
