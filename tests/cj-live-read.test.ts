@@ -32,16 +32,21 @@ test("CJ live read probe uses only token + admitted read endpoints and returns n
       success: true,
       message: "Success",
       data: {
-        pageNum: 1,
         pageSize: 1,
-        total: 1,
-        list: [
+        pageNumber: 1,
+        totalRecords: 1,
+        totalPages: 1,
+        content: [
           {
-            pid: "LIVE-TEST-PID",
-            productNameEn: "Live Test Product",
-            productSku: "LIVE-TEST-SKU",
-            productImage: "https://example.invalid/product.jpg",
-            sellPrice: 8.5,
+            productList: [
+              {
+                id: "LIVE-TEST-PID",
+                nameEn: "Live Test Product",
+                sku: "LIVE-TEST-SKU",
+                bigImage: "https://example.invalid/product.jpg",
+                sellPrice: "8.50",
+              },
+            ],
           },
         ],
       },
