@@ -49,9 +49,11 @@ function notBound<T>(
 
 export class UnboundReadOnlySupplierAdapter implements NorvanaReadOnlySupplierAdapter {
   readonly mode = "READ_ONLY_R0" as const;
+  readonly providerId: string;
   readonly capabilities: readonly SupplierReadCapability[];
 
-  constructor(readonly providerId: string) {
+  constructor(providerId: string) {
+    this.providerId = providerId;
     this.capabilities =
       getSupplierRegistryProfile(providerId)?.readCapabilities ?? [];
   }
