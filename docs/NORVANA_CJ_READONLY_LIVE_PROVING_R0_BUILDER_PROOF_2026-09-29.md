@@ -14,11 +14,11 @@ Branch:
 
 Final controlled Preview deployment:
 
-`dpl_3cK7C3NdTT3ptx6SYRCZwbd2HJEs`
+`dpl_EfUjDwjvi2aWchTorjetSvUndjXA`
 
 Exact deployment gate commit:
 
-`962b6fec458ca4db89ad359fa6de5100437a04c3`
+`e50a68ca6d2479f1262cb4b9c04b1273e9d9cf7a`
 
 Deployment state:
 
@@ -28,7 +28,7 @@ Region:
 
 `iad1`
 
-The one-shot probe is fail-closed: the Preview build exits non-zero if authentication, catalog, product detail, variant, stock, warehouse evidence normalization, freight quote, or final normalization fails.
+The strict one-shot probe is fail-closed: the Preview build exits non-zero if authentication, catalog, product detail, variant, stock, stock-origin warehouse evidence, a required non-empty freight quote, or final normalization fails.
 
 Because this exact deployment reached `READY`, the one-shot live sequence completed:
 
@@ -182,5 +182,14 @@ Not yet:
 - READ_ONLY_SHADOW_VERIFIED;
 - AWAITING_FOUNDER_ACT_AUTHORITY;
 - FULFILLMENT_APPROVED.
+
+Strict freight-proof hardening lineage:
+
+- strict source gate requires stock evidence;
+- strict source gate requires an origin country;
+- strict source gate requires at least one normalized freight quote;
+- strict Preview: `dpl_EfUjDwjvi2aWchTorjetSvUndjXA`;
+- strict gate: `e50a68ca6d2479f1262cb4b9c04b1273e9d9cf7a`;
+- state: `READY`.
 
 No ACT authority is granted by this proof.
