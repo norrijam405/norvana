@@ -183,3 +183,34 @@ test("legacy supplier create/update cannot enable auto fulfillment or activate a
   assert.match(item, /NORVANA_SUPPLIER_ACTIVATION_LOCKED_R0/);
   assert.match(item, /NORVANA_SUPPLIER_AUTO_FULFILL_LOCKED_R0/);
 });
+
+
+test("supplier lab candidates never assert live sale or supplier binding", async () => {
+  const { SUPPLIER_LAB_CANDIDATES } = await import(
+    "../src/lib/supplier-gateway/demo-products.ts"
+  );
+
+  assert.ok(SUPPLIER_LAB_CANDIDATES.length >= 8);
+  for (const candidate of SUPPLIER_LAB_CANDIDATES) {
+    assert.equal(candidate.truthState, "SIMULATED_CANDIDATE");
+    assert.equal(candidate.availability, "NOT_FOR_SALE");
+    assert.equal(candidate.supplierBinding, "UNBOUND");
+    assert.ok(candidate.targetRetailCents.min > 0);
+    assert.ok(candidate.targetRetailCents.max >= candidate.targetRetailCents.min);
+    assert.ok(candidate.riskFlags.length > 0);
+  }
+});
+
+test("supplier lab page exposes no checkout or add-to-cart action", async () => {
+  const { readFile } = await import("node:fs/promises");
+  const source = await readFile(
+    new URL("../src/app/supplier-lab/page.tsx", import.meta.url),
+    "utf8"
+  );
+
+  assert.match(source, /NOT FOR SALE/);
+  assert.match(source, /Live supplier SKUs/);
+  assert.doesNotMatch(source, /addToCart/);
+  assert.doesNotMatch(source, /checkout/);
+  assert.doesNotMatch(source, /Buy now/i);
+});

@@ -153,6 +153,9 @@ export default async function AdminPage() {
               Archive
             </Link>
             <span className="text-sm font-semibold text-indigo-accent">Watchtower</span>
+            <Link href="/supplier-lab" className="text-sm font-medium text-muted transition-colors hover:text-obsidian">
+              Supplier Lab
+            </Link>
           </div>
 
           <div className="flex items-center gap-2">
