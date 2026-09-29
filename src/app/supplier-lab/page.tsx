@@ -16,6 +16,11 @@ export default function SupplierLabPage() {
   );
   const pod = SUPPLIER_LAB_CANDIDATES.filter((candidate) => candidate.lane === "POD");
   const qualifying = SUPPLIER_REGISTRY_R0.filter((supplier) => supplier.disposition === "QUALIFY");
+  const provenReadProviders = qualifying.filter((supplier) =>
+    ["CATALOG_READ_PROVEN", "STOCK_READ_PROVEN", "FREIGHT_QUOTE_PROVEN", "WEBHOOK_PROVEN", "ORDER_SIMULATION_PROVEN", "READ_ONLY_SHADOW_VERIFIED"].includes(
+      supplier.qualificationState
+    )
+  );
 
   return (
     <main className="min-h-screen bg-bone text-obsidian">
@@ -53,7 +58,7 @@ export default function SupplierLabPage() {
               <Metric label="Candidates" value={String(SUPPLIER_LAB_CANDIDATES.length)} />
               <Metric label="Supplier pool" value={String(qualifying.length)} />
               <Metric label="Order authority" value="LOCKED" />
-              <Metric label="Live supplier SKUs" value="0" />
+              <Metric label="Live read providers" value={String(provenReadProviders.length)} />
             </div>
           </div>
         </section>
@@ -80,10 +85,10 @@ export default function SupplierLabPage() {
               <p className="text-xs font-semibold uppercase tracking-[0.2em] text-indigo-accent">
                 QUALIFICATION PIPELINE
               </p>
-              <h2 className="mt-2 font-display text-2xl font-bold">Supplier fit — not supplier truth</h2>
+              <h2 className="mt-2 font-display text-2xl font-bold">Supplier qualification truth</h2>
               <p className="mt-2 max-w-3xl text-sm leading-6 text-muted">
-                A supplier appearing here means it is in the qualification queue. It does not mean an account,
-                SKU, price, stock level or API entitlement has been proven.
+                This section shows the highest provider-level qualification state Norvana has actually proven.
+                It does not turn any merchandising candidate below into a live SKU or sellable product.
               </p>
             </div>
           </div>
@@ -104,14 +109,24 @@ export default function SupplierLabPage() {
                   <span className="badge bg-surface text-muted">{supplier.apiEntitlementState}</span>
                 </div>
                 <p className="mt-4 text-sm leading-6 text-muted">{supplier.notes[0]}</p>
+                {supplier.providerId === "cjdropshipping" && supplier.qualificationState === "FREIGHT_QUOTE_PROVEN" ? (
+                  <div className="mt-4 rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-emerald-950">
+                    <p className="text-[10px] font-bold uppercase tracking-[0.16em]">Live read proof</p>
+                    <p className="mt-2 text-xs leading-5">
+                      Authenticated CJ catalog, product, variant, stock, warehouse-origin evidence and a non-empty
+                      freight quote are proven. Order, publication, fulfillment, refund, repricing and spend remain locked.
+                    </p>
+                  </div>
+                ) : null}
               </article>
             ))}
           </div>
         </section>
 
         <footer className="mt-10 border-t border-border py-8 text-xs leading-6 text-muted">
-          Supplier Lab R0 contains no checkout, no supplier credentials, no live inventory,
-          no external order path and no claim of supplier availability.
+          Supplier Lab R0 contains no checkout, no client-visible supplier credentials and no external order path.
+          CJ provider-level read/freight capability is proven, but every merchandising candidate on this shelf remains
+          unbound and NOT FOR SALE until SKU-specific evidence is admitted.
         </footer>
       </div>
     </main>
@@ -208,9 +223,10 @@ function SafetyBanner() {
     <section className="mt-6 rounded-2xl border border-amber-200 bg-amber-50 p-5 text-amber-950">
       <p className="text-xs font-bold uppercase tracking-[0.18em]">Truth boundary</p>
       <p className="mt-2 text-sm leading-6">
-        This shelf is a merchandising/proving surface. Nothing here represents current supplier stock,
-        current wholesale pricing, current shipping cost or a sellable Norvana listing. Those facts remain
-        UNKNOWN until a qualified read-only supplier adapter proves them.
+        This shelf is a merchandising/proving surface. CJ now has provider-level authenticated read and freight proof,
+        but the candidate cards below are still synthetic and unbound. No candidate card represents a current supplier SKU,
+        current stock, current wholesale price, current shipping quote or a sellable Norvana listing until SKU-specific
+        evidence is attached to that candidate.
       </p>
     </section>
   );
