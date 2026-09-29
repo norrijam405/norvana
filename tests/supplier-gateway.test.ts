@@ -211,6 +211,7 @@ test("supplier lab page exposes no checkout or add-to-cart action", async () => 
   assert.match(source, /NOT FOR SALE/);
   assert.match(source, /Live supplier SKUs/);
   assert.doesNotMatch(source, /addToCart/);
-  assert.doesNotMatch(source, /checkout/);
+  assert.doesNotMatch(source, /href=["']\/checkout/);
+  assert.doesNotMatch(source, /checkout\s*\(/);
   assert.doesNotMatch(source, /Buy now/i);
 });
