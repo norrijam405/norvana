@@ -76,8 +76,10 @@ export type CJReadOnlyEndpoint =
   | "catalog.search"
   | "product.read"
   | "variant.read"
+  | "variant.detail"
   | "inventory.read"
   | "warehouse.read"
+  | "warehouse.list"
   | "shipping.quote"
   | "delivery.estimate";
 
@@ -85,8 +87,10 @@ export const CJ_READ_ONLY_ENDPOINTS: Record<CJReadOnlyEndpoint, string> = {
   "catalog.search": "/api2.0/v1/product/listV2",
   "product.read": "/api2.0/v1/product/query",
   "variant.read": "/api2.0/v1/product/variant/query",
+  "variant.detail": "/api2.0/v1/product/variant/queryByVid",
   "inventory.read": "/api2.0/v1/product/stock/queryByVid",
   "warehouse.read": "/api2.0/v1/warehouse/detail",
+  "warehouse.list": "/api2.0/v1/product/globalWarehouseList",
   "shipping.quote": "/api2.0/v1/logistic/freightCalculate",
   "delivery.estimate": "/api2.0/v1/logistic/freightCalculate",
 };
