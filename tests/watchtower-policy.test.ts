@@ -434,7 +434,7 @@ test("stale harness retirement binds safety proof and write under the common loc
   const lock = source.indexOf("pg_advisory_xact_lock");
   const watcherRead = source.indexOf("const jobs = await tx.select().from(watchJobs)");
   const activeRead = source.indexOf("const activeRuns = await tx");
-  const staleDecision = source.indexOf("evaluateStaleHarnessRetirement");
+  const staleDecision = source.indexOf("const decision = evaluateStaleHarnessRetirement");
   const guardedTransition = source.indexOf('eq(watchRuns.status, "QUEUED")');
   const receiptInsert = source.indexOf('actionType: "WATCH_HARNESS_STALE_RUN_RETIRED"');
 
