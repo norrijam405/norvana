@@ -53,6 +53,9 @@ try {
     code === "CJ_PRODUCT_DETAIL_MISSING" ? 42 :
     code === "CJ_PRODUCT_VARIANT_MISSING" ? 43 :
     code === "CJ_VARIANT_DETAIL_MISSING" ? 44 :
+    code === "CJ_STOCK_EVIDENCE_MISSING" ? 45 :
+    code === "CJ_STOCK_ORIGIN_COUNTRY_MISSING" ? 46 :
+    code === "CJ_FREIGHT_QUOTES_EMPTY" ? 47 :
     code.includes("/product/listV2") ? 61 :
     code.includes("/product/query") ? 62 :
     code.includes("/product/variant/queryByVid") ? 63 :
