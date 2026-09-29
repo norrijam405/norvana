@@ -33,11 +33,11 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          if grep -RInE --exclude-dir=.git --exclude-dir=node_modules --exclude-dir=.next --exclude='*.md' 'CJUserNum@api@|CJ-Access-Token:[[:space:]]*[A-Za-z0-9]' src tests scripts .github 2>/dev/null; then
+          if grep -RInE --exclude-dir=.git --exclude-dir=node_modules --exclude-dir=.next --exclude='*.md' 'CJUserNum@api@|CJ-Access-Token:[[:space:]]*[A-Za-z0-9]' src tests scripts 2>/dev/null; then
             echo "Potential CJ credential literal found."
             exit 1
           fi
-          if grep -RInE --exclude-dir=.git --exclude-dir=node_modules --exclude-dir=.next 'NEXT_PUBLIC_NORVANA_CJ_' src tests scripts .github 2>/dev/null; then
+          if grep -RInE --exclude-dir=.git --exclude-dir=node_modules --exclude-dir=.next 'NEXT_PUBLIC_NORVANA_CJ_' src tests scripts 2>/dev/null; then
             echo "CJ credential exposed to client namespace."
             exit 1
           fi
