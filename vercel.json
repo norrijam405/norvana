@@ -4,7 +4,7 @@
     "iad1"
   ],
   "git": {
-    "deploymentEnabled": true
+    "deploymentEnabled": false
   },
   "env": {
     "NEXT_TELEMETRY_DISABLED": "1"
