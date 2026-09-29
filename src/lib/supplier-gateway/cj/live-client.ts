@@ -203,7 +203,7 @@ export async function runCJLiveReadOnlyProbe(apiKey: string) {
   const catalog = await cjGet<CJProductListV2Data>(
     "/api2.0/v1/product/listV2",
     token.accessToken,
-    { page: "1", size: "1" }
+    { page: "1", size: "1", startWarehouseInventory: "1" }
   );
   const first = catalog.data?.content
     ?.flatMap((group) => group.productList ?? [])
@@ -234,6 +234,8 @@ export async function runCJLiveReadOnlyProbe(apiKey: string) {
   );
   const stocks = Array.isArray(stockEnvelope.data) ? stockEnvelope.data : [];
   const originCountry = chooseOriginCountry(stocks);
+  if (!stocks.length) throw new Error("CJ_STOCK_EVIDENCE_MISSING");
+  if (!originCountry) throw new Error("CJ_STOCK_ORIGIN_COUNTRY_MISSING");
 
   let freight:
     | {
@@ -265,13 +267,10 @@ export async function runCJLiveReadOnlyProbe(apiKey: string) {
         (a.shippingCostCents ?? Number.MAX_SAFE_INTEGER) -
         (b.shippingCostCents ?? Number.MAX_SAFE_INTEGER)
     );
+    if (!quotes.length) throw new Error("CJ_FREIGHT_QUOTES_EMPTY");
     freight = { quoteCount: quotes.length, cheapest: quotes[0] ?? null };
   } else {
-    freight = {
-      quoteCount: 0,
-      cheapest: null,
-      skippedReason: "NO_STOCK_ORIGIN_COUNTRY_RETURNED",
-    };
+    throw new Error("CJ_STOCK_ORIGIN_COUNTRY_MISSING");
   }
 
   const normalizedVariant = normalizeCJVariant(
