@@ -14,7 +14,6 @@ import type {
 
 const CJ_ORIGIN = "https://developers.cjdropshipping.com";
 const TOKEN_PATH = "/api2.0/v1/authentication/getAccessToken";
-const GLOBAL_WAREHOUSE_PATH = "/api2.0/v1/product/globalWarehouseList";
 
 type TokenData = {
   accessToken?: string;
@@ -41,15 +40,6 @@ type CJProductListV2Data = {
   }> | null;
 };
 
-type WarehouseListItem = {
-  areaEn?: string | null;
-  areaId?: string | number | null;
-  countryCode?: string | null;
-  nameEn?: string | null;
-  en?: string | null;
-  disabled?: boolean | null;
-};
-
 type VariantWithInventories = CJVariantDto & {
   inventories?: Array<{
     countryCode?: string | null;
@@ -70,8 +60,6 @@ function ensureCJUrl(url: URL, allowToken = false) {
   }
 
   if (allowToken && url.pathname === TOKEN_PATH) return;
-
-  if (url.pathname === GLOBAL_WAREHOUSE_PATH) return;
 
   const decision = evaluateCJEndpointR0(url.pathname);
   if (!decision.ok) {
@@ -180,22 +168,30 @@ function chooseOriginCountry(stocks: CJStockDto[]) {
   return positive?.countryCode ?? stocks.find((row) => row.countryCode)?.countryCode ?? null;
 }
 
-function summarizeWarehouse(
-  warehouses: WarehouseListItem[],
+function summarizeWarehouseFromStock(
+  stocks: CJStockDto[],
   countryCode: string | null
 ) {
+  const unique = new Map<string, CJStockDto>();
+  for (const row of stocks) {
+    const key = String(row.areaId ?? row.countryCode ?? row.areaEn ?? "");
+    if (key && !unique.has(key)) unique.set(key, row);
+  }
+
+  const warehouses = [...unique.values()];
   const matching = countryCode
-    ? warehouses.filter((row) => row.countryCode === countryCode && row.disabled !== true)
+    ? warehouses.filter((row) => row.countryCode === countryCode)
     : [];
 
   return {
     originCountryCode: countryCode,
-    availableWarehouseCount: warehouses.filter((row) => row.disabled !== true).length,
+    availableWarehouseCount: warehouses.length,
     matchingOriginWarehouses: matching.slice(0, 5).map((row) => ({
       areaId: row.areaId ?? null,
       countryCode: row.countryCode ?? null,
-      name: row.areaEn ?? row.nameEn ?? row.en ?? null,
+      name: row.areaEn ?? null,
     })),
+    evidenceSource: "inventory.read" as const,
   };
 }
 
@@ -238,14 +234,6 @@ export async function runCJLiveReadOnlyProbe(apiKey: string) {
   );
   const stocks = Array.isArray(stockEnvelope.data) ? stockEnvelope.data : [];
   const originCountry = chooseOriginCountry(stocks);
-
-  const warehousesEnvelope = await cjGet<WarehouseListItem[]>(
-    GLOBAL_WAREHOUSE_PATH,
-    token.accessToken
-  );
-  const warehouses = Array.isArray(warehousesEnvelope.data)
-    ? warehousesEnvelope.data
-    : [];
 
   let freight:
     | {
@@ -319,7 +307,7 @@ export async function runCJLiveReadOnlyProbe(apiKey: string) {
       stockState: normalizedVariant.stockState,
       stockQuantity: normalizedVariant.stockQuantity,
     },
-    warehouse: summarizeWarehouse(warehouses, originCountry),
+    warehouse: summarizeWarehouseFromStock(stocks, originCountry),
     freight,
     finalState: "STOP_BEFORE_ORDER_OR_PUBLICATION" as const,
     forbiddenActions: [
