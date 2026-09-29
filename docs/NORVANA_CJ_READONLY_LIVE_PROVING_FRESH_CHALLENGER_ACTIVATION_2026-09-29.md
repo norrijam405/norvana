@@ -68,3 +68,5 @@ If no defect is established:
 - issue `FRESH_CHALLENGER_PASS` bound to the exact live-proof lineage.
 
 NO FAKE PASS.
+
+Activation status: `READY_FOR_SEPARATE_FRESH_CHALLENGER`
