@@ -1,0 +1,67 @@
+name: Norvana CJ Read-Only Qualification CI
+
+on:
+  push:
+    branches:
+      - "feature/2026-09-29-norvana-cj-readonly-qualification-r0"
+  workflow_dispatch:
+
+concurrency:
+  group: norvana-cj-readonly-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  static-verification:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+        with:
+          node-version: 22
+          package-manager-cache: false
+      - name: Install dependencies
+        run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Runtime dependency audit
+        run: npm audit --omit=dev --audit-level=moderate
+      - name: Full dependency high-severity gate
+        run: npm audit --audit-level=high
+      - name: Reject obvious CJ secret regressions
+        shell: bash
+        run: |
+          set -euo pipefail
+          if grep -RInE --exclude-dir=.git --exclude-dir=node_modules --exclude-dir=.next --exclude='*.md' 'CJUserNum@api@|CJ-Access-Token:[[:space:]]*[A-Za-z0-9]' src tests scripts .github 2>/dev/null; then
+            echo "Potential CJ credential literal found."
+            exit 1
+          fi
+          if grep -RInE --exclude-dir=.git --exclude-dir=node_modules --exclude-dir=.next 'NEXT_PUBLIC_NORVANA_CJ_' src tests scripts .github 2>/dev/null; then
+            echo "CJ credential exposed to client namespace."
+            exit 1
+          fi
+      - name: Watchtower regression tests
+        run: npm run test:watchtower
+      - name: Supplier Gateway regression tests
+        run: npm run test:suppliers
+      - name: CJ read-only qualification tests
+        run: npm run test:cj
+      - name: Typecheck
+        run: npm run typecheck
+      - name: Lint
+        run: npm run lint
+      - name: Production build
+        env:
+          DATABASE_URL: postgresql://norvana_ci:norvana_ci@127.0.0.1:5432/norvana_ci
+          STRIPE_SECRET_KEY: sk_test_norvana_ci_placeholder
+          STRIPE_WEBHOOK_SECRET: whsec_norvana_ci_placeholder
+          NORVANA_SITE_URL: http://localhost:3000
+          NORVANA_EXTERNAL_FULFILLMENT_ENABLED: "false"
+          NORVANA_SUPPLIER_CONNECTORS_ENABLED: "false"
+          IGNIAQUA_FEDERATION_ENABLED: "false"
+          NORVANA_ADMIN_RECOVERY_ENABLED: "false"
+          NORVANA_WATCHTOWER_QUEUE_ENABLED: "false"
+          NORVANA_WATCHTOWER_EXECUTOR_ENABLED: "false"
+          NEXT_TELEMETRY_DISABLED: "1"
+        run: npm run build
