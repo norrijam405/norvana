@@ -111,7 +111,7 @@ async function readJson<T>(
       code: typeof envelope.code === "number" ? envelope.code : null,
       message: typeof envelope.message === "string" ? envelope.message : null,
     });
-    throw new Error(mapped.code);
+    throw new Error(`CJ_PROVIDER_FAILURE|${mapped.code}|${url.pathname}`);
   }
 
   return envelope;
