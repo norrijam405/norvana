@@ -13,25 +13,32 @@ export async function GET(
 
   try {
     const { id } = await params;
-    const [supplier] = await db.select().from(suppliers).where(eq(suppliers.id, parseInt(id)));
+    const supplierId = Number(id);
+    if (!Number.isInteger(supplierId) || supplierId <= 0) {
+      return NextResponse.json({ error: "Invalid supplier id." }, { status: 400 });
+    }
+
+    const [supplier] = await db.select().from(suppliers).where(eq(suppliers.id, supplierId));
     if (!supplier) {
       return NextResponse.json({ error: "Supplier not found" }, { status: 404 });
     }
-    
-    // Get credentials (but hide sensitive data)
+
     const [creds] = await db
       .select()
       .from(supplierCredentials)
-      .where(eq(supplierCredentials.supplierId, parseInt(id)));
+      .where(eq(supplierCredentials.supplierId, supplierId));
 
     return NextResponse.json({
       ...supplier,
       hasCredentials: !!creds,
-      credentialFields: creds ? {
-        hasApiKey: !!creds.apiKey,
-        hasAccessToken: !!creds.accessToken,
-        shopDomain: creds.shopDomain || null,
-      } : null,
+      credentialFields: creds
+        ? {
+            hasApiKey: !!creds.apiKey,
+            hasAccessToken: !!creds.accessToken,
+            shopDomain: creds.shopDomain || null,
+          }
+        : null,
+      r0ExecutionAuthority: "LOCKED",
     });
   } catch (error) {
     console.error("Supplier GET error:", error);
@@ -48,23 +55,44 @@ export async function PATCH(
 
   try {
     const { id } = await params;
+    const supplierId = Number(id);
+    if (!Number.isInteger(supplierId) || supplierId <= 0) {
+      return NextResponse.json({ error: "Invalid supplier id." }, { status: 400 });
+    }
+
     const body = await req.json();
-    
-    // Update supplier
+
+    if (body.isActive === true) {
+      return NextResponse.json(
+        {
+          error: "Supplier activation is locked in Norvana R0.",
+          code: "NORVANA_SUPPLIER_ACTIVATION_LOCKED_R0",
+        },
+        { status: 409 }
+      );
+    }
+
+    if (body.autoFulfill === true) {
+      return NextResponse.json(
+        {
+          error: "Automatic supplier fulfillment is locked in Norvana R0.",
+          code: "NORVANA_SUPPLIER_AUTO_FULFILL_LOCKED_R0",
+        },
+        { status: 409 }
+      );
+    }
+
+    const updates: Record<string, unknown> = {};
+    for (const key of ["name", "type", "platform", "url", "contactEmail", "notes", "niches"]) {
+      if (body[key] !== undefined) updates[key] = body[key];
+    }
+    if (body.isActive === false) updates.isActive = false;
+    if (body.autoFulfill === false) updates.autoFulfill = false;
+
     const [supplier] = await db
       .update(suppliers)
-      .set({
-        name: body.name,
-        type: body.type,
-        platform: body.platform,
-        url: body.url,
-        contactEmail: body.contactEmail,
-        notes: body.notes,
-        niches: body.niches,
-        isActive: body.isActive,
-        autoFulfill: body.autoFulfill,
-      })
-      .where(eq(suppliers.id, parseInt(id)))
+      .set(updates)
+      .where(eq(suppliers.id, supplierId))
       .returning();
 
     if (!supplier) {
@@ -87,13 +115,17 @@ export async function DELETE(
 
   try {
     const { id } = await params;
-    
-    // Delete credentials first
-    await db.delete(supplierCredentials).where(eq(supplierCredentials.supplierId, parseInt(id)));
-    
-    // Delete supplier
-    await db.delete(suppliers).where(eq(suppliers.id, parseInt(id)));
-    
+    const supplierId = Number(id);
+    if (!Number.isInteger(supplierId) || supplierId <= 0) {
+      return NextResponse.json({ error: "Invalid supplier id." }, { status: 400 });
+    }
+
+    await db
+      .delete(supplierCredentials)
+      .where(eq(supplierCredentials.supplierId, supplierId));
+
+    await db.delete(suppliers).where(eq(suppliers.id, supplierId));
+
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error("Supplier DELETE error:", error);

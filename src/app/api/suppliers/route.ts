@@ -26,18 +26,25 @@ export async function POST(req: NextRequest) {
     const [supplier] = await db
       .insert(suppliers)
       .values({
-        name: body.name,
+        name: String(body.name || "").slice(0, 255),
         type: body.type || "manual",
         platform: body.platform || null,
         url: body.url || "",
         contactEmail: body.contactEmail || "",
         notes: body.notes || "",
-        niches: body.niches || [],
-        isActive: body.isActive ?? true,
-        autoFulfill: body.autoFulfill ?? false,
+        niches: Array.isArray(body.niches) ? body.niches : [],
+        isActive: false,
+        autoFulfill: false,
       })
       .returning();
-    return NextResponse.json(supplier, { status: 201 });
+
+    return NextResponse.json(
+      {
+        ...supplier,
+        r0Authority: "DISCOVERED_RECORD_ONLY",
+      },
+      { status: 201 }
+    );
   } catch (error) {
     console.error("Suppliers POST error:", error);
     return NextResponse.json({ error: "Failed to create supplier" }, { status: 500 });
