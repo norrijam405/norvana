@@ -284,6 +284,7 @@ test("critical routes share the same transaction-level harness safety lock", asy
   const { readFile } = await import("node:fs/promises");
   const routes = [
     "../src/app/api/watchtower/harness/queue/route.ts",
+    "../src/app/api/watchtower/harness/retire-stale/route.ts",
     "../src/app/api/watchtower/jobs/[id]/route.ts",
     "../src/app/api/watchtower/runs/claim/route.ts",
     "../src/app/api/watchtower/runs/[id]/result/route.ts",
@@ -420,4 +421,77 @@ test("concurrent harness claim/finalization ordering preserves uniqueness checks
   assert.ok(resultLock >= 0);
   assert.ok(resultInvariant > resultLock);
   assert.ok(resultTransition > resultInvariant);
+});
+
+
+test("stale harness retirement binds safety proof and write under the common lock", async () => {
+  const { readFile } = await import("node:fs/promises");
+  const source = await readFile(
+    new URL("../src/app/api/watchtower/harness/retire-stale/route.ts", import.meta.url),
+    "utf8"
+  );
+
+  const lock = source.indexOf("pg_advisory_xact_lock");
+  const watcherRead = source.indexOf("const jobs = await tx.select().from(watchJobs)");
+  const activeRead = source.indexOf("const activeRuns = await tx");
+  const staleDecision = source.indexOf("evaluateStaleHarnessRetirement");
+  const guardedTransition = source.indexOf('eq(watchRuns.status, "QUEUED")');
+  const receiptInsert = source.indexOf('actionType: "WATCH_HARNESS_STALE_RUN_RETIRED"');
+
+  assert.ok(lock >= 0);
+  assert.ok(watcherRead > lock);
+  assert.ok(activeRead > watcherRead);
+  assert.ok(staleDecision > activeRead);
+  assert.ok(guardedTransition > staleDecision);
+  assert.ok(receiptInsert > guardedTransition);
+
+  assert.match(source, /eq\(watchRuns\.trigger, "HARNESS_TEST"\)/);
+  assert.match(source, /eq\(watchRuns\.status, "QUEUED"\)/);
+  assert.match(source, /eq\(watchRuns\.runtimeId, staleRuntimeId\)/);
+  assert.match(source, /WATCHTOWER_STALE_RETIREMENT_STATE_CHANGED/);
+});
+
+test("stale retirement receipt derives from the protected watcher/run snapshot", async () => {
+  const { readFile } = await import("node:fs/promises");
+  const source = await readFile(
+    new URL("../src/app/api/watchtower/harness/retire-stale/route.ts", import.meta.url),
+    "utf8"
+  );
+
+  assert.match(source, /realWatcherStatus: "PAUSED"/);
+  assert.match(source, /realWatcherCount: jobs\.length/);
+  assert.match(source, /originalTrigger: "HARNESS_TEST"/);
+  assert.match(source, /originalStatus: "QUEUED"/);
+  assert.match(source, /safetyLock: "WATCHTOWER_HARNESS_GLOBAL"/);
+
+  const noRun = source.indexOf('if (!run) {');
+  const receipt = source.indexOf('actionType: "WATCH_HARNESS_STALE_RUN_RETIRED"');
+  assert.ok(noRun >= 0);
+  assert.ok(receipt > noRun);
+});
+
+test("retirement and watcher mutation share one serialization domain", async () => {
+  const { readFile } = await import("node:fs/promises");
+  const retirement = await readFile(
+    new URL("../src/app/api/watchtower/harness/retire-stale/route.ts", import.meta.url),
+    "utf8"
+  );
+  const mutation = await readFile(
+    new URL("../src/app/api/watchtower/jobs/[id]/route.ts", import.meta.url),
+    "utf8"
+  );
+
+  for (const source of [retirement, mutation]) {
+    assert.match(source, /WATCHTOWER_HARNESS_ADVISORY_LOCK_KEY_1/);
+    assert.match(source, /WATCHTOWER_HARNESS_ADVISORY_LOCK_KEY_2/);
+    assert.match(source, /pg_advisory_xact_lock/);
+  }
+
+  const retirementLock = retirement.indexOf("pg_advisory_xact_lock");
+  const retirementWatcherRead = retirement.indexOf("const jobs = await tx.select().from(watchJobs)");
+  const mutationLock = mutation.indexOf("pg_advisory_xact_lock");
+  const mutationCurrentRead = mutation.indexOf("const [current] = await tx");
+
+  assert.ok(retirementWatcherRead > retirementLock);
+  assert.ok(mutationCurrentRead > mutationLock);
 });
