@@ -47,6 +47,8 @@ jobs:
         run: npm run test:suppliers
       - name: CJ read-only qualification tests
         run: npm run test:cj
+      - name: CJ live read probe tests
+        run: npm run test:cj:live
       - name: Typecheck
         run: npm run typecheck
       - name: Lint
