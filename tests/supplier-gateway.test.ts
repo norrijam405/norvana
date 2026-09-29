@@ -287,3 +287,30 @@ test("Supplier Lab removes global storefront commerce affordances", async () => 
   );
   assert.match(drawer, /return null/);
 });
+
+
+test("CJ provider-level qualification is freight-proven while execution stays locked", () => {
+  const cj = getSupplierRegistryProfile("cjdropshipping");
+  assert.ok(cj);
+  assert.equal(cj.qualificationState, "FREIGHT_QUOTE_PROVEN");
+  assert.equal(cj.executionAuthority, "LOCKED_R0");
+  assert.ok(cj.readCapabilities.includes("catalog.search"));
+  assert.ok(cj.readCapabilities.includes("inventory.read"));
+  assert.ok(cj.readCapabilities.includes("shipping.quote"));
+});
+
+test("Supplier Lab distinguishes proven CJ provider reads from unbound candidate truth", async () => {
+  const source = await readFile(
+    new URL("../src/app/supplier-lab/page.tsx", import.meta.url),
+    "utf8"
+  );
+
+  assert.match(source, /Supplier qualification truth/);
+  assert.match(source, /Live read proof/);
+  assert.match(source, /non-empty\s+freight quote/);
+  assert.match(source, /NOT FOR SALE/);
+  assert.match(source, /Supplier binding: UNBOUND/);
+  assert.match(source, /SKU-specific/);
+  assert.doesNotMatch(source, /href=["']\/checkout/);
+  assert.doesNotMatch(source, /addToCart/);
+});
