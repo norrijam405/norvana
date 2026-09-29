@@ -153,8 +153,9 @@ export default async function SupplierLabCandidatePage({
         </section>
 
         <footer className="mt-8 border-t border-border py-8 text-xs leading-6 text-muted">
-          Promotion to a real supplier candidate requires account-level API entitlement, authenticated
-          read-only catalog proof, stock/freight evidence, and later independent verification.
+          CJ provider-level authenticated catalog, stock and freight capability is now proven. Promotion of this
+          specific merchandising concept still requires SKU-specific supplier binding, current evidence and later
+          independent verification.
         </footer>
       </div>
     </main>
