@@ -8,7 +8,6 @@ import type {
   CJApiEnvelope,
   CJFreightQuoteDto,
   CJProductDetailDto,
-  CJProductListData,
   CJStockDto,
   CJVariantDto,
 } from "./types.ts";
@@ -22,6 +21,24 @@ type TokenData = {
   accessTokenExpiryDate?: string;
   refreshToken?: string;
   refreshTokenExpiryDate?: string;
+};
+
+type CJProductListV2Item = {
+  id?: string | null;
+  nameEn?: string | null;
+  sku?: string | null;
+  bigImage?: string | null;
+  sellPrice?: number | string | null;
+};
+
+type CJProductListV2Data = {
+  pageSize?: number;
+  pageNumber?: number;
+  totalRecords?: number;
+  totalPages?: number;
+  content?: Array<{
+    productList?: CJProductListV2Item[] | null;
+  }> | null;
 };
 
 type WarehouseListItem = {
@@ -187,18 +204,20 @@ export async function runCJLiveReadOnlyProbe(apiKey: string) {
 
   const token = await getAccessToken(apiKey);
 
-  const catalog = await cjGet<CJProductListData>(
+  const catalog = await cjGet<CJProductListV2Data>(
     "/api2.0/v1/product/listV2",
     token.accessToken,
     { page: "1", size: "1" }
   );
-  const first = catalog.data?.list?.[0];
-  if (!first?.pid) throw new Error("CJ_CATALOG_EMPTY");
+  const first = catalog.data?.content
+    ?.flatMap((group) => group.productList ?? [])
+    .find((product) => Boolean(product?.id));
+  if (!first?.id) throw new Error("CJ_CATALOG_EMPTY");
 
   const detail = await cjGet<CJProductDetailDto>(
     "/api2.0/v1/product/query",
     token.accessToken,
-    { pid: first.pid }
+    { pid: first.id }
   );
   if (!detail.data?.pid) throw new Error("CJ_PRODUCT_DETAIL_MISSING");
 
