@@ -17,7 +17,7 @@ export const SUPPLIER_REGISTRY_R0: readonly SupplierRegistryProfile[] = [
     lane: "GENERAL_MERCHANDISE",
     priority: 1,
     disposition: "QUALIFY",
-    qualificationState: "STOCK_READ_PROVEN",
+    qualificationState: "FREIGHT_QUOTE_PROVEN",
     apiEntitlementState: "SOURCE_REPORTED_FREE",
     monthlyPlatformCostClaimCents: 0,
     noInventoryClaim: true,
@@ -48,7 +48,7 @@ export const SUPPLIER_REGISTRY_R0: readonly SupplierRegistryProfile[] = [
       "First general-merchandise proving adapter.",
       "Do not subscribe to entire catalog; qualify selected products only.",
       "No order creation or payment authority in R0.",
-      "Live CJ authentication, catalog, product, variant, and stock reads are proven. Strict freight proof is being rerun with a required non-empty quote.",
+      "Live CJ authentication, catalog, product, variant, stock, warehouse evidence, and a required non-empty freight quote are proven on 2026-09-29.",
     ],
   },
   {
