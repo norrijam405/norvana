@@ -28,6 +28,7 @@ export const SUPPLIER_REGISTRY_R0: readonly SupplierRegistryProfile[] = [
       "product.read",
       "variant.read",
       "inventory.read",
+      "warehouse.read",
       "shipping.quote",
       "delivery.estimate",
       "webhook.verify",
