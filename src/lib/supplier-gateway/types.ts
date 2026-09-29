@@ -31,6 +31,7 @@ export const SUPPLIER_READ_CAPABILITIES = [
   "product.read",
   "variant.read",
   "inventory.read",
+  "warehouse.read",
   "shipping.quote",
   "delivery.estimate",
   "returns.policy.read",
@@ -127,6 +128,16 @@ export type NormalizedShippingQuote = {
   evidenceTimestamp: string | null;
 };
 
+export type NormalizedSupplierWarehouse = {
+  providerId: string;
+  supplierWarehouseId: string;
+  name: string;
+  countryCode: string | null;
+  city: string | null;
+  address: string | null;
+  evidenceTimestamp: string | null;
+};
+
 export type NormalizedReturnPolicy = {
   providerId: string;
   supplierSku: string | null;
@@ -143,7 +154,12 @@ export type SupplierReadFailureCode =
   | "SUPPLIER_CREDENTIAL_NOT_BOUND"
   | "SUPPLIER_API_ENTITLEMENT_NOT_VERIFIED"
   | "SUPPLIER_EXCLUDED"
-  | "SUPPLIER_CAPABILITY_NOT_PROVEN";
+  | "SUPPLIER_CAPABILITY_NOT_PROVEN"
+  | "SUPPLIER_AUTH_INVALID"
+  | "SUPPLIER_RATE_LIMITED"
+  | "SUPPLIER_RESPONSE_INVALID"
+  | "SUPPLIER_DATA_INCOMPLETE"
+  | "SUPPLIER_CURRENCY_UNSUPPORTED";
 
 export type SupplierReadResult<T> =
   | { ok: true; data: T; providerId: string; capability: SupplierReadCapability }
@@ -162,6 +178,7 @@ export interface NorvanaReadOnlySupplierAdapter {
   searchCatalog(query: string): Promise<SupplierReadResult<NormalizedSupplierProduct[]>>;
   readProduct(supplierProductId: string): Promise<SupplierReadResult<NormalizedSupplierProduct>>;
   readInventory(supplierSku: string): Promise<SupplierReadResult<NormalizedSupplierVariant>>;
+  readWarehouse(supplierWarehouseId: string): Promise<SupplierReadResult<NormalizedSupplierWarehouse>>;
   quoteShipping(input: {
     supplierSku: string;
     quantity: number;
