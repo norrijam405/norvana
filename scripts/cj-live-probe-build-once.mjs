@@ -48,5 +48,23 @@ try {
         finalState: "STOPPED_NO_ORDER_NO_PUBLICATION",
       })
   );
-  process.exit(3);
+  const diagnosticExit =
+    code === "CJ_CATALOG_EMPTY" ? 41 :
+    code === "CJ_PRODUCT_DETAIL_MISSING" ? 42 :
+    code === "CJ_PRODUCT_VARIANT_MISSING" ? 43 :
+    code === "CJ_VARIANT_DETAIL_MISSING" ? 44 :
+    code.includes("/product/listV2") ? 61 :
+    code.includes("/product/query") ? 62 :
+    code.includes("/product/variant/queryByVid") ? 63 :
+    code.includes("/product/stock/queryByVid") ? 64 :
+    code.includes("/product/globalWarehouseList") ? 65 :
+    code.includes("/logistic/freightCalculate") ? 66 :
+    code === "CJ_PRODUCT_REQUIRED_ID_OR_SKU_MISSING" ? 71 :
+    code === "CJ_VARIANT_REQUIRED_ID_OR_SKU_MISSING" ? 72 :
+    code === "CJ_FREIGHT_METHOD_MISSING" ? 73 :
+    code === "CJ_FREIGHT_PRICE_MISSING" ? 74 :
+    code === "CJ_NON_JSON_RESPONSE" ? 75 :
+    code === "CJ_RESPONSE_INVALID" ? 76 :
+    79;
+  process.exit(diagnosticExit);
 }
