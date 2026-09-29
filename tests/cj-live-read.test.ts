@@ -123,28 +123,6 @@ test("CJ live read probe uses only token + admitted read endpoints and returns n
       message: "Success",
       data: [
         {
-          areaEn: "China Warehouse",
-          areaId: 1,
-          countryCode: "CN",
-          nameEn: "China",
-          disabled: false,
-        },
-        {
-          areaEn: "US Warehouse",
-          areaId: 2,
-          countryCode: "US",
-          nameEn: "United States",
-          disabled: false,
-        },
-      ],
-    },
-    {
-      code: 200,
-      result: true,
-      success: true,
-      message: "Success",
-      data: [
-        {
           logisticAging: "5-9",
           logisticPrice: 4.71,
           logisticName: "CJ Test Packet",
@@ -185,6 +163,8 @@ test("CJ live read probe uses only token + admitted read endpoints and returns n
     assert.equal(result.variant.stockState, "IN_STOCK");
     assert.equal(result.variant.stockQuantity, 20);
     assert.equal(result.warehouse.originCountryCode, "CN");
+    assert.equal(result.warehouse.availableWarehouseCount, 1);
+    assert.equal(result.warehouse.evidenceSource, "inventory.read");
     assert.equal(result.freight.quoteCount, 1);
 
     const serialized = JSON.stringify(result);
@@ -192,7 +172,7 @@ test("CJ live read probe uses only token + admitted read endpoints and returns n
     assert.doesNotMatch(serialized, /TEST_ACCESS_TOKEN_DO_NOT_RETURN/);
     assert.doesNotMatch(serialized, /TEST_REFRESH_TOKEN_DO_NOT_RETURN/);
 
-    assert.equal(calls.length, 7);
+    assert.equal(calls.length, 6);
     assert.equal(calls[0].method, "POST");
     assert.match(calls[0].url, /authentication\/getAccessToken$/);
 
@@ -208,12 +188,11 @@ test("CJ live read probe uses only token + admitted read endpoints and returns n
     assert.match(calls[2].url, /product\/query/);
     assert.match(calls[3].url, /product\/variant\/queryByVid/);
     assert.match(calls[4].url, /product\/stock\/queryByVid/);
-    assert.match(calls[5].url, /product\/globalWarehouseList/);
-    assert.match(calls[6].url, /logistic\/freightCalculate/);
+    assert.match(calls[5].url, /logistic\/freightCalculate/);
 
-    assert.equal(calls[6].method, "POST");
-    assert.match(calls[6].body ?? "", /"quantity":1/);
-    assert.match(calls[6].body ?? "", /"vid":"LIVE-TEST-VID"/);
+    assert.equal(calls[5].method, "POST");
+    assert.match(calls[5].body ?? "", /"quantity":1/);
+    assert.match(calls[5].body ?? "", /"vid":"LIVE-TEST-VID"/);
   } finally {
     globalThis.fetch = originalFetch;
   }
