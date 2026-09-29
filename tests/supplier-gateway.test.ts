@@ -264,3 +264,26 @@ test("supplier candidate detail page contains no execution action", async () => 
   assert.doesNotMatch(source, /addToCart/);
   assert.doesNotMatch(source, /href=["']\/checkout/);
 });
+
+
+test("Supplier Lab removes global storefront commerce affordances", async () => {
+  const { readFile } = await import("node:fs/promises");
+  const navbar = await readFile(
+    new URL("../src/components/navbar.tsx", import.meta.url),
+    "utf8"
+  );
+  const drawer = await readFile(
+    new URL("../src/components/cart-drawer.tsx", import.meta.url),
+    "utf8"
+  );
+
+  assert.match(
+    navbar,
+    /pathname\.startsWith\("\/supplier-lab"\)/
+  );
+  assert.match(
+    drawer,
+    /pathname\.startsWith\("\/supplier-lab"\)/
+  );
+  assert.match(drawer, /return null/);
+});
