@@ -188,6 +188,12 @@ function CandidateSection({
               <div className="mt-4 border-t border-border pt-4">
                 <p className="text-xs font-medium text-muted">Supplier binding: UNBOUND</p>
                 <p className="mt-1 text-xs text-muted">Stock / landed cost / delivery: UNKNOWN</p>
+                <Link
+                  href={`/supplier-lab/${candidate.id}`}
+                  className="mt-4 inline-flex text-sm font-semibold text-indigo-accent hover:underline"
+                >
+                  Open routing simulation →
+                </Link>
               </div>
             </div>
           </article>

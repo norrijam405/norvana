@@ -215,3 +215,52 @@ test("supplier lab page exposes no checkout or add-to-cart action", async () => 
   assert.doesNotMatch(source, /checkout\s*\(/);
   assert.doesNotMatch(source, /Buy now/i);
 });
+
+
+test("synthetic routing fixtures are explicitly non-live and non-executable", async () => {
+  const {
+    buildSyntheticOrderSimulation,
+    getSyntheticSupplierScenarios,
+  } = await import("../src/lib/supplier-gateway/simulation.ts");
+
+  const scenarios = getSyntheticSupplierScenarios("travel-tech-organizer");
+  assert.equal(scenarios.length, 3);
+  assert.deepEqual(
+    scenarios.map((scenario) => scenario.rank),
+    [1, 2, 3]
+  );
+
+  for (const scenario of scenarios) {
+    assert.equal(scenario.fixtureClass, "LOCAL_SYNTHETIC_FIXTURE");
+    assert.equal(scenario.liveSupplierFact, false);
+    assert.equal(scenario.supplierSku, null);
+    assert.equal(scenario.stockState, "UNKNOWN");
+    assert.equal(scenario.evidenceTimestamp, null);
+    assert.ok(scenario.landedCostCents > 0);
+  }
+
+  const simulation = buildSyntheticOrderSimulation("travel-tech-organizer");
+  assert.ok(simulation);
+  assert.equal(simulation.simulationClass, "LOCAL_SYNTHETIC_ORDER_OBJECT");
+  assert.equal(simulation.liveSupplierFact, false);
+  assert.equal(simulation.externalSubmissionPermitted, false);
+  assert.equal(simulation.supplierSku, null);
+  assert.equal(simulation.executionAuthority, "LOCKED_R0");
+  assert.equal(simulation.finalState, "SIMULATION_ONLY");
+});
+
+test("supplier candidate detail page contains no execution action", async () => {
+  const { readFile } = await import("node:fs/promises");
+  const source = await readFile(
+    new URL("../src/app/supplier-lab/[id]/page.tsx", import.meta.url),
+    "utf8"
+  );
+
+  assert.match(source, /Synthetic scenario boundary/);
+  assert.match(source, /External submission/);
+  assert.match(source, /FORBIDDEN/);
+  assert.doesNotMatch(source, /submitOrder/);
+  assert.doesNotMatch(source, /createOrder/);
+  assert.doesNotMatch(source, /addToCart/);
+  assert.doesNotMatch(source, /href=["']\/checkout/);
+});
