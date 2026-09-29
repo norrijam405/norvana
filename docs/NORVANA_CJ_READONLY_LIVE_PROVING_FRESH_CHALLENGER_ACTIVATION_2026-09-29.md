@@ -30,11 +30,11 @@ Do not repair defects in this role.
 
 Final successful controlled Preview:
 
-`dpl_3cK7C3NdTT3ptx6SYRCZwbd2HJEs`
+`dpl_EfUjDwjvi2aWchTorjetSvUndjXA`
 
 Gate commit:
 
-`962b6fec458ca4db89ad359fa6de5100437a04c3`
+`e50a68ca6d2479f1262cb4b9c04b1273e9d9cf7a`
 
 State:
 
@@ -54,7 +54,7 @@ At minimum independently evaluate:
 6. Product List V2 parsing matches the current admitted contract;
 7. stock read truth does not fabricate quantity;
 8. warehouse evidence derived from stock is correctly labeled and not broadened into a global-warehouse claim;
-9. freight calculation is quote-only and cannot submit an order;
+9. freight calculation is quote-only, requires at least one live normalized quote for PASS, and cannot submit an order;
 10. the prior authentication failure and global-warehouse-list failure are preserved;
 11. branch deployment is refrozen after proof;
 12. registry state `FREIGHT_QUOTE_PROVEN` does not imply `READ_ONLY_SHADOW_VERIFIED` or ACT authority.
