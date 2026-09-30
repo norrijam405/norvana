@@ -21,7 +21,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     env:
-      NORVANA_WATCHTOWER_BASE_URL: https://norvana-lgue82el4-norrijam405-2107s-projects.vercel.app
+      NORVANA_WATCHTOWER_BASE_URL: https://norvana-bg60h5b0c-norrijam405-2107s-projects.vercel.app
       NORVANA_WATCHTOWER_HARNESS_ENABLED: "true"
     steps:
       - name: Verify explicit harness gate
@@ -29,7 +29,7 @@ jobs:
         run: |
           set -euo pipefail
           test "${{ inputs.confirmation }}" = "RUN_DETERMINISTIC_HARNESS"
-          test "${NORVANA_WATCHTOWER_BASE_URL}" = "https://norvana-lgue82el4-norrijam405-2107s-projects.vercel.app"
+          test "${NORVANA_WATCHTOWER_BASE_URL}" = "https://norvana-bg60h5b0c-norrijam405-2107s-projects.vercel.app"
           test "${NORVANA_WATCHTOWER_HARNESS_ENABLED}" = "true"
 
       - name: Mint GitHub OIDC token for Vercel Trusted Sources
