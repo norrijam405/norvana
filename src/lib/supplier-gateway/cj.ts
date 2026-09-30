@@ -338,6 +338,9 @@ export function normalizeCjInventory(value: unknown): SupplierReadResult<Normali
       "CJ stock quantity is missing. Norvana must not invent availability."
     );
   }
+  const options: Record<string, string> =
+    typeof v.warehouseId === "string" ? { warehouseId: v.warehouseId } : {};
+
   return ok("inventory.read", {
     supplierVariantId: v.variantId,
     supplierSku: v.sku,
@@ -345,7 +348,7 @@ export function normalizeCjInventory(value: unknown): SupplierReadResult<Normali
     itemCostCents: null,
     stockState: stockState(v.quantity),
     stockQuantity: v.quantity,
-    options: typeof v.warehouseId === "string" ? { warehouseId: v.warehouseId } : {},
+    options,
   });
 }
 
