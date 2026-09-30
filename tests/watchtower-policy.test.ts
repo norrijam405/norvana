@@ -20,6 +20,7 @@ import {
   evaluateWorkerModeExecutorState,
   isR0Authority,
 } from "../src/lib/watchtower/policy.ts";
+import { evaluateAuthenticatedBrowserReadOrigin } from "../src/lib/browser-origin.ts";
 
 test("R0 accepts only OBSERVE and RECOMMEND authority", () => {
   assert.equal(isR0Authority("OBSERVE"), true);
@@ -1047,5 +1048,115 @@ test("observe-proof workflow has no direct confirmation expression in shell sour
   assert.doesNotMatch(
     workflow,
     /run:\s*\|[\s\S]*?\$\{\{\s*inputs\.confirmation\s*\}\}/
+  );
+});
+
+
+test("authenticated owner safe GET accepts normal same-origin browser fetch metadata without Origin", () => {
+  assert.deepEqual(
+    evaluateAuthenticatedBrowserReadOrigin({
+      method: "GET",
+      origin: null,
+      host: "norvana-fduc8vqo5-norrijam405-2107s-projects.vercel.app",
+      referer:
+        "https://norvana-fduc8vqo5-norrijam405-2107s-projects.vercel.app/admin",
+      secFetchSite: "same-origin",
+    }),
+    { ok: true }
+  );
+});
+
+test("authenticated owner safe GET may fall back to an exact same-origin Referer when Origin is absent", () => {
+  assert.deepEqual(
+    evaluateAuthenticatedBrowserReadOrigin({
+      method: "GET",
+      origin: null,
+      host: "norvana-fduc8vqo5-norrijam405-2107s-projects.vercel.app",
+      referer:
+        "https://norvana-fduc8vqo5-norrijam405-2107s-projects.vercel.app/admin",
+      secFetchSite: null,
+    }),
+    { ok: true }
+  );
+});
+
+test("authenticated owner safe-read origin policy rejects cross-site and cross-origin requests", () => {
+  const crossSite = evaluateAuthenticatedBrowserReadOrigin({
+    method: "GET",
+    origin: null,
+    host: "norvana-fduc8vqo5-norrijam405-2107s-projects.vercel.app",
+    referer: "https://attacker.example/",
+    secFetchSite: "cross-site",
+  });
+  assert.equal(crossSite.ok, false);
+  if (!crossSite.ok) {
+    assert.equal(crossSite.code, "NORVANA_SAME_ORIGIN_REQUIRED");
+  }
+
+  const explicitCrossOrigin = evaluateAuthenticatedBrowserReadOrigin({
+    method: "GET",
+    origin: "https://attacker.example",
+    host: "norvana-fduc8vqo5-norrijam405-2107s-projects.vercel.app",
+    referer:
+      "https://norvana-fduc8vqo5-norrijam405-2107s-projects.vercel.app/admin",
+    secFetchSite: "same-origin",
+  });
+  assert.equal(explicitCrossOrigin.ok, false);
+  if (!explicitCrossOrigin.ok) {
+    assert.equal(explicitCrossOrigin.code, "NORVANA_CROSS_ORIGIN_REJECTED");
+  }
+});
+
+test("origin-less browser mutation remains rejected even with same-origin fetch metadata", () => {
+  const decision = evaluateAuthenticatedBrowserReadOrigin({
+    method: "POST",
+    origin: null,
+    host: "norvana-fduc8vqo5-norrijam405-2107s-projects.vercel.app",
+    referer:
+      "https://norvana-fduc8vqo5-norrijam405-2107s-projects.vercel.app/admin",
+    secFetchSite: "same-origin",
+  });
+
+  assert.equal(decision.ok, false);
+  if (!decision.ok) {
+    assert.equal(decision.code, "NORVANA_SAFE_READ_METHOD_REQUIRED");
+  }
+});
+
+test("Watchtower jobs safe GET uses the read guard while POST and PATCH keep strict mutation guard", async () => {
+  const { readFile } = await import("node:fs/promises");
+  const root = new URL("../", import.meta.url);
+
+  const [collectionRoute, mutationRoute, adminGuard] = await Promise.all([
+    readFile(new URL("src/app/api/watchtower/jobs/route.ts", root), "utf8"),
+    readFile(new URL("src/app/api/watchtower/jobs/[id]/route.ts", root), "utf8"),
+    readFile(new URL("src/lib/admin-guard.ts", root), "utf8"),
+  ]);
+
+  const getStart = collectionRoute.indexOf("export async function GET");
+  const postStart = collectionRoute.indexOf("export async function POST");
+  assert.ok(getStart >= 0);
+  assert.ok(postStart > getStart);
+
+  const getBlock = collectionRoute.slice(getStart, postStart);
+  const postBlock = collectionRoute.slice(postStart);
+
+  assert.match(getBlock, /requireCurrentRecoveryAdminRead\(req\)/);
+  assert.doesNotMatch(getBlock, /requireCurrentRecoveryAdmin\(req\)/);
+  assert.match(postBlock, /requireCurrentRecoveryAdmin\(req\)/);
+  assert.match(mutationRoute, /requireCurrentRecoveryAdmin\(req\)/);
+  assert.doesNotMatch(mutationRoute, /requireCurrentRecoveryAdminRead\(req\)/);
+
+  assert.match(
+    adminGuard,
+    /export async function requireCurrentRecoveryAdminRead/
+  );
+  assert.match(
+    adminGuard,
+    /return requireBrowserSameOriginRead\(req\)/
+  );
+  assert.match(
+    adminGuard,
+    /return requireBrowserSameOrigin\(req\)/
   );
 });

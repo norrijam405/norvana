@@ -1,6 +1,7 @@
 import { timingSafeEqual } from "node:crypto";
 import { NextRequest, NextResponse } from "next/server";
 import { currentAdminSessionFromRequest } from "@/lib/admin-session";
+import { evaluateAuthenticatedBrowserReadOrigin } from "@/lib/browser-origin";
 
 const ADMIN_HEADER = "x-norvana-admin-token";
 
@@ -40,6 +41,26 @@ export function requireBrowserSameOrigin(req: NextRequest): NextResponse | null 
   return null;
 }
 
+
+export function requireBrowserSameOriginRead(
+  req: NextRequest
+): NextResponse | null {
+  const decision = evaluateAuthenticatedBrowserReadOrigin({
+    method: req.method,
+    origin: req.headers.get("origin"),
+    host: req.headers.get("x-forwarded-host") || req.headers.get("host"),
+    referer: req.headers.get("referer"),
+    secFetchSite: req.headers.get("sec-fetch-site"),
+  });
+
+  if (decision.ok) return null;
+
+  return NextResponse.json(
+    { error: decision.reason, code: decision.code },
+    { status: 403 }
+  );
+}
+
 /**
  * Temporary recovery boundary for privileged server mutations.
  *
@@ -67,6 +88,37 @@ export async function requireCurrentRecoveryAdmin(
     return NextResponse.json(
       {
         error: "Privileged Norvana mutations are disabled during recovery.",
+        code: "NORVANA_ADMIN_BOUNDARY_NOT_CONFIGURED",
+      },
+      { status: 503 }
+    );
+  }
+
+  return NextResponse.json(
+    { error: "Unauthorized.", code: "NORVANA_ADMIN_AUTH_REQUIRED" },
+    { status: 401 }
+  );
+}
+
+
+export async function requireCurrentRecoveryAdminRead(
+  req: NextRequest
+): Promise<NextResponse | null> {
+  const configured = process.env.NORVANA_ADMIN_API_TOKEN;
+  const supplied = req.headers.get(ADMIN_HEADER);
+
+  if (configured && supplied && constantTimeEqual(configured, supplied)) {
+    return null;
+  }
+
+  if (await currentAdminSessionFromRequest(req)) {
+    return requireBrowserSameOriginRead(req);
+  }
+
+  if (!configured && !process.env.NORVANA_ADMIN_SESSION_SECRET) {
+    return NextResponse.json(
+      {
+        error: "Privileged Norvana reads are disabled during recovery.",
         code: "NORVANA_ADMIN_BOUNDARY_NOT_CONFIGURED",
       },
       { status: 503 }
