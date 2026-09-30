@@ -23,6 +23,7 @@ Allowed capability family:
 - product.read
 - variant.read
 - inventory.read
+- warehouse.read
 - shipping.quote
 - delivery.estimate
 - returns.policy.read
