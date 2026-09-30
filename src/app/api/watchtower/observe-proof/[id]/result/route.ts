@@ -136,24 +136,22 @@ export async function POST(
 
   const findings = objectRecords(body.findings, MAX_FINDINGS);
   const rawEvidenceRefs = objectRecords(body.evidenceRefs, MAX_EVIDENCE_REFS);
-  const evidenceRefs = rawEvidenceRefs.map((item) => {
+  const normalizedEvidence: Record<string, unknown>[] = [];
+
+  for (const item of rawEvidenceRefs) {
     const sourceUrl = approvedEvidenceUrl(item.sourceUrl);
-    return sourceUrl ? { ...item, sourceUrl } : null;
-  });
+    if (!sourceUrl) {
+      return NextResponse.json(
+        {
+          error: "Observe-proof evidence must use approved HTTPS public-source hosts.",
+          code: "WATCHTOWER_OBSERVE_PROOF_EVIDENCE_SOURCE_NOT_APPROVED",
+        },
+        { status: 409 }
+      );
+    }
 
-  if (evidenceRefs.some((item) => item === null)) {
-    return NextResponse.json(
-      {
-        error: "Observe-proof evidence must use approved HTTPS public-source hosts.",
-        code: "WATCHTOWER_OBSERVE_PROOF_EVIDENCE_SOURCE_NOT_APPROVED",
-      },
-      { status: 409 }
-    );
+    normalizedEvidence.push({ ...item, sourceUrl });
   }
-
-  const normalizedEvidence = evidenceRefs.filter(
-    (item): item is Record<string, unknown> => item !== null
-  );
 
   if (
     (requestedStatus === "PASS" || requestedStatus === "NO_MATERIAL_CHANGE") &&
