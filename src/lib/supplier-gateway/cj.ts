@@ -448,7 +448,11 @@ export class CjFixtureReadOnlyQualificationAdapter implements NorvanaReadOnlySup
   readonly transport = "LOCAL_FIXTURE_ONLY" as const;
   readonly capabilities = Object.keys(CJ_READONLY_CAPABILITY_MAP_R0) as SupplierReadCapability[];
 
-  constructor(private readonly fixtures: CjFixtureBundleR0) {}
+  private readonly fixtures: CjFixtureBundleR0;
+
+  constructor(fixtures: CjFixtureBundleR0) {
+    this.fixtures = fixtures;
+  }
 
   async searchCatalog(_query: string): Promise<SupplierReadResult<NormalizedSupplierProduct[]>> {
     const result = normalizeCjProduct(this.fixtures.product);
