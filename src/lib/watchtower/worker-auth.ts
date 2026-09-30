@@ -1,6 +1,6 @@
 import { createPublicKey, timingSafeEqual, verify, type JsonWebKeyInput } from "node:crypto";
 import { NextRequest, NextResponse } from "next/server";
-import { evaluateGitHubHarnessClaims } from "@/lib/watchtower/policy";
+import { evaluateGitHubHarnessClaims, evaluateGitHubObserveProofClaims } from "@/lib/watchtower/policy";
 
 const GITHUB_OIDC_JWKS_URL = "https://token.actions.githubusercontent.com/.well-known/jwks";
 const TOKEN_CLOCK_SKEW_SECONDS = 60;
@@ -216,4 +216,141 @@ export async function requireWatchtowerWorker(req: NextRequest): Promise<NextRes
   }
 
   return null;
+}
+
+
+async function verifyGitHubObserveProofOidc(token: string) {
+  const parts = token.split(".");
+  if (parts.length !== 3) {
+    return {
+      ok: false as const,
+      code: "WATCHTOWER_OBSERVE_PROOF_OIDC_MALFORMED",
+      reason: "Observe-proof OIDC token is malformed.",
+    };
+  }
+
+  const [encodedHeader, encodedPayload, encodedSignature] = parts;
+  const header = decodeJsonSegment(encodedHeader);
+  const claims = decodeJsonSegment(encodedPayload);
+
+  if (!header || !claims) {
+    return {
+      ok: false as const,
+      code: "WATCHTOWER_OBSERVE_PROOF_OIDC_MALFORMED",
+      reason: "Observe-proof OIDC token cannot be decoded.",
+    };
+  }
+
+  if (String(header.alg || "") !== "RS256" || !String(header.kid || "")) {
+    return {
+      ok: false as const,
+      code: "WATCHTOWER_OBSERVE_PROOF_OIDC_ALGORITHM_REJECTED",
+      reason: "Observe-proof OIDC token does not use an approved signing algorithm.",
+    };
+  }
+
+  const keys = await githubJwks();
+  const jwk = keys.find(
+    (key) =>
+      key.kid === String(header.kid) &&
+      key.kty === "RSA" &&
+      (!key.alg || key.alg === "RS256") &&
+      (!key.use || key.use === "sig")
+  );
+
+  if (!jwk) {
+    return {
+      ok: false as const,
+      code: "WATCHTOWER_OBSERVE_PROOF_OIDC_SIGNING_KEY_UNKNOWN",
+      reason: "Observe-proof OIDC signing key is not recognized.",
+    };
+  }
+
+  let signatureValid = false;
+  try {
+    const key = createPublicKey({ key: jwk, format: "jwk" } as JsonWebKeyInput);
+    signatureValid = verify(
+      "RSA-SHA256",
+      Buffer.from(`${encodedHeader}.${encodedPayload}`),
+      key,
+      Buffer.from(encodedSignature, "base64url")
+    );
+  } catch {
+    signatureValid = false;
+  }
+
+  if (!signatureValid) {
+    return {
+      ok: false as const,
+      code: "WATCHTOWER_OBSERVE_PROOF_OIDC_SIGNATURE_INVALID",
+      reason: "Observe-proof OIDC signature verification failed.",
+    };
+  }
+
+  const now = Math.floor(Date.now() / 1000);
+  const exp = Number(claims.exp);
+  const nbf = Number(claims.nbf);
+  const iat = Number(claims.iat);
+
+  if (
+    !Number.isFinite(exp) ||
+    !Number.isFinite(nbf) ||
+    !Number.isFinite(iat) ||
+    exp < now - TOKEN_CLOCK_SKEW_SECONDS ||
+    nbf > now + TOKEN_CLOCK_SKEW_SECONDS ||
+    iat > now + TOKEN_CLOCK_SKEW_SECONDS
+  ) {
+    return {
+      ok: false as const,
+      code: "WATCHTOWER_OBSERVE_PROOF_OIDC_TIME_INVALID",
+      reason: "Observe-proof OIDC token is expired or not currently valid.",
+    };
+  }
+
+  return evaluateGitHubObserveProofClaims(claims);
+}
+
+export async function requireWatchtowerObserveProofWorker(
+  req: NextRequest
+): Promise<NextResponse | null> {
+  if (process.env.VERCEL_ENV !== "preview") {
+    return NextResponse.json(
+      {
+        error: "GitHub OIDC observe-proof authentication is restricted to Vercel Preview.",
+        code: "WATCHTOWER_OBSERVE_PROOF_OIDC_PREVIEW_ONLY",
+      },
+      { status: 409 }
+    );
+  }
+
+  const token = req.headers.get("x-norvana-github-oidc-token");
+  if (!token) {
+    return NextResponse.json(
+      {
+        error: "GitHub OIDC observe-proof token is required in the Norvana forwarding header.",
+        code: "WATCHTOWER_OBSERVE_PROOF_OIDC_REQUIRED",
+      },
+      { status: 401 }
+    );
+  }
+
+  try {
+    const decision = await verifyGitHubObserveProofOidc(token);
+    if (!decision.ok) {
+      return NextResponse.json(
+        { error: decision.reason, code: decision.code },
+        { status: 401 }
+      );
+    }
+    return null;
+  } catch (error) {
+    console.error("Watchtower observe-proof GitHub OIDC verification unavailable:", error);
+    return NextResponse.json(
+      {
+        error: "GitHub OIDC observe-proof verification is temporarily unavailable.",
+        code: "WATCHTOWER_OBSERVE_PROOF_OIDC_VERIFICATION_UNAVAILABLE",
+      },
+      { status: 503 }
+    );
+  }
 }

@@ -10,6 +10,12 @@ import {
   evaluateHarnessTargetJob,
   evaluateHarnessWatcherSnapshot,
   evaluateGitHubHarnessClaims,
+  evaluateGitHubObserveProofClaims,
+  evaluateObserveProofEnvironmentSnapshot,
+  evaluateObserveProofTargetJob,
+  evaluateObserveProofWatcherSnapshot,
+  evaluateActiveObserveProofInvariant,
+  evaluateObserveProofResultEffects,
   evaluateWatcherEnable,
   evaluateWorkerModeExecutorState,
   isR0Authority,
@@ -494,4 +500,210 @@ test("retirement and watcher mutation share one serialization domain", async () 
 
   assert.ok(retirementWatcherRead > retirementLock);
   assert.ok(mutationCurrentRead > mutationLock);
+});
+
+
+test("observe proof GitHub OIDC claims are pinned to the dedicated manual workflow", () => {
+  const valid = {
+    iss: "https://token.actions.githubusercontent.com",
+    aud: "https://github.com/norrijam405",
+    repository: "norrijam405/norvana",
+    ref: "refs/heads/main",
+    event_name: "workflow_dispatch",
+    workflow_ref:
+      "norrijam405/norvana/.github/workflows/watchtower-observe-proof.yml@refs/heads/main",
+    runner_environment: "github-hosted",
+  };
+
+  assert.deepEqual(evaluateGitHubObserveProofClaims(valid), { ok: true });
+
+  const wrongWorkflow = evaluateGitHubObserveProofClaims({
+    ...valid,
+    workflow_ref:
+      "norrijam405/norvana/.github/workflows/watchtower-worker-harness.yml@refs/heads/main",
+  });
+  assert.equal(wrongWorkflow.ok, false);
+
+  const wrongRef = evaluateGitHubObserveProofClaims({
+    ...valid,
+    ref: "refs/heads/recovery/2026-09-26-norvana-modernization-r0",
+  });
+  assert.equal(wrongRef.ok, false);
+});
+
+test("observe proof environment keeps all normal and consequential execution disabled", () => {
+  assert.deepEqual(
+    evaluateObserveProofEnvironmentSnapshot({
+      queueEnabled: false,
+      executorEnabled: false,
+      fulfillmentEnabled: false,
+      supplierConnectorsEnabled: false,
+      federationEnabled: false,
+    }),
+    { ok: true }
+  );
+
+  for (const key of [
+    "queueEnabled",
+    "executorEnabled",
+    "fulfillmentEnabled",
+    "supplierConnectorsEnabled",
+    "federationEnabled",
+  ] as const) {
+    const input = {
+      queueEnabled: false,
+      executorEnabled: false,
+      fulfillmentEnabled: false,
+      supplierConnectorsEnabled: false,
+      federationEnabled: false,
+      [key]: true,
+    };
+    assert.equal(evaluateObserveProofEnvironmentSnapshot(input).ok, false);
+  }
+});
+
+test("observe proof permits exactly one enabled Local Producer Watch at OBSERVE and $0", () => {
+  const jobs = [
+    {
+      slug: "free-supplier-watch",
+      status: "PAUSED",
+      authority: "RECOMMEND",
+      budgetCents: 0,
+    },
+    {
+      slug: "global-resale-sourcing-watch",
+      status: "PAUSED",
+      authority: "RECOMMEND",
+      budgetCents: 0,
+    },
+    {
+      slug: "local-producer-watch",
+      status: "ENABLED",
+      authority: "OBSERVE",
+      budgetCents: 0,
+    },
+    {
+      slug: "operating-cost-watch",
+      status: "PAUSED",
+      authority: "RECOMMEND",
+      budgetCents: 0,
+    },
+    {
+      slug: "drop-opportunity-watch",
+      status: "PAUSED",
+      authority: "RECOMMEND",
+      budgetCents: 0,
+    },
+  ];
+
+  assert.deepEqual(evaluateObserveProofWatcherSnapshot(jobs), { ok: true });
+  assert.deepEqual(
+    evaluateObserveProofTargetJob(jobs[2]),
+    { ok: true }
+  );
+
+  assert.equal(
+    evaluateObserveProofWatcherSnapshot(
+      jobs.map((job) =>
+        job.slug === "free-supplier-watch" ? { ...job, status: "ENABLED" } : job
+      )
+    ).ok,
+    false
+  );
+
+  assert.equal(
+    evaluateObserveProofWatcherSnapshot(
+      jobs.map((job) =>
+        job.slug === "local-producer-watch" ? { ...job, authority: "RECOMMEND" } : job
+      )
+    ).ok,
+    false
+  );
+
+  assert.equal(
+    evaluateObserveProofWatcherSnapshot(
+      jobs.map((job) =>
+        job.slug === "local-producer-watch" ? { ...job, budgetCents: 1 } : job
+      )
+    ).ok,
+    false
+  );
+});
+
+test("observe proof requires exactly one active proof run and zero effect", () => {
+  assert.deepEqual(
+    evaluateActiveObserveProofInvariant({
+      activeRuns: [{ id: 21, status: "QUEUED" }],
+      expectedRunId: 21,
+      expectedStatus: "QUEUED",
+    }),
+    { ok: true }
+  );
+
+  assert.equal(
+    evaluateActiveObserveProofInvariant({
+      activeRuns: [
+        { id: 21, status: "QUEUED" },
+        { id: 22, status: "QUEUED" },
+      ],
+    }).ok,
+    false
+  );
+
+  assert.deepEqual(
+    evaluateObserveProofResultEffects({
+      estimatedCostCents: 0,
+      candidateCount: 0,
+    }),
+    { ok: true }
+  );
+  assert.equal(
+    evaluateObserveProofResultEffects({
+      estimatedCostCents: 1,
+      candidateCount: 0,
+    }).ok,
+    false
+  );
+  assert.equal(
+    evaluateObserveProofResultEffects({
+      estimatedCostCents: 0,
+      candidateCount: 1,
+    }).ok,
+    false
+  );
+});
+
+test("observe-proof routes and worker remain isolated from normal schedule and harness execution", async () => {
+  const { readFile } = await import("node:fs/promises");
+  const root = new URL("../", import.meta.url);
+
+  const [queueRoute, claimRoute, resultRoute, worker, workflow] = await Promise.all([
+    readFile(new URL("src/app/api/watchtower/observe-proof/queue/route.ts", root), "utf8"),
+    readFile(new URL("src/app/api/watchtower/observe-proof/claim/route.ts", root), "utf8"),
+    readFile(new URL("src/app/api/watchtower/observe-proof/[id]/result/route.ts", root), "utf8"),
+    readFile(new URL("scripts/watchtower-observe-proof.mjs", root), "utf8"),
+    readFile(new URL(".github/workflows/watchtower-observe-proof.yml", root), "utf8"),
+  ]);
+
+  assert.match(queueRoute, /OBSERVE_PROOF/);
+  assert.match(queueRoute, /local-producer-watch/);
+  assert.match(queueRoute, /CONTROL_TEST/);
+  assert.match(queueRoute, /WORKER_TEST/);
+
+  assert.match(claimRoute, /requireWatchtowerObserveProofWorker/);
+  assert.match(claimRoute, /OBSERVE_PROOF/);
+  assert.doesNotMatch(claimRoute, /NORVANA_WATCHTOWER_WORKER_SECRET/);
+
+  assert.match(resultRoute, /WATCHTOWER_OBSERVE_PROOF_CANDIDATES_FORBIDDEN/);
+  assert.match(resultRoute, /WATCHTOWER_OBSERVE_PROOF_NONZERO_COST/);
+  assert.match(resultRoute, /WATCH_OBSERVE_PROOF_COMPLETED/);
+
+  assert.match(worker, /ag\.ok\.gov\/divisions\/market-development/);
+  assert.match(worker, /ams\.usda\.gov\/services\/local-regional\/food-directories/);
+  assert.match(worker, /candidates:\s*\[\]/);
+  assert.match(worker, /estimatedCostCents:\s*0/);
+
+  assert.match(workflow, /workflow_dispatch/);
+  assert.match(workflow, /id-token:\s*write/);
+  assert.match(workflow, /RUN_LOCAL_PRODUCER_OBSERVE_PROOF/);
 });

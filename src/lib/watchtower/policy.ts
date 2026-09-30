@@ -357,3 +357,253 @@ export function evaluateActiveHarnessInvariant(input: {
 
   return { ok: true };
 }
+
+
+export const WATCHTOWER_OBSERVE_PROOF_ADVISORY_LOCK_KEY_1 =
+  WATCHTOWER_HARNESS_ADVISORY_LOCK_KEY_1;
+export const WATCHTOWER_OBSERVE_PROOF_ADVISORY_LOCK_KEY_2 =
+  WATCHTOWER_HARNESS_ADVISORY_LOCK_KEY_2;
+
+export const WATCHTOWER_OBSERVE_PROOF_TARGET_SLUG = "local-producer-watch";
+
+export function evaluateGitHubObserveProofClaims(
+  claims: Record<string, unknown>
+): R0GateDecision {
+  const audience = Array.isArray(claims.aud)
+    ? claims.aud.map((value) => String(value))
+    : [String(claims.aud || "")];
+
+  if (String(claims.iss || "") !== "https://token.actions.githubusercontent.com") {
+    return {
+      ok: false,
+      code: "WATCHTOWER_OBSERVE_PROOF_OIDC_ISSUER_MISMATCH",
+      reason: "Observe-proof OIDC issuer is not GitHub Actions.",
+    };
+  }
+
+  if (!audience.includes("https://github.com/norrijam405")) {
+    return {
+      ok: false,
+      code: "WATCHTOWER_OBSERVE_PROOF_OIDC_AUDIENCE_MISMATCH",
+      reason: "Observe-proof OIDC audience does not match the Norvana GitHub owner.",
+    };
+  }
+
+  if (String(claims.repository || "") !== "norrijam405/norvana") {
+    return {
+      ok: false,
+      code: "WATCHTOWER_OBSERVE_PROOF_OIDC_REPOSITORY_MISMATCH",
+      reason: "Observe-proof OIDC repository does not match Norvana.",
+    };
+  }
+
+  if (String(claims.ref || "") !== "refs/heads/main") {
+    return {
+      ok: false,
+      code: "WATCHTOWER_OBSERVE_PROOF_OIDC_REF_MISMATCH",
+      reason: "Observe-proof OIDC ref must be the main branch.",
+    };
+  }
+
+  if (String(claims.event_name || "") !== "workflow_dispatch") {
+    return {
+      ok: false,
+      code: "WATCHTOWER_OBSERVE_PROOF_OIDC_EVENT_MISMATCH",
+      reason: "Observe-proof OIDC event must be workflow_dispatch.",
+    };
+  }
+
+  if (
+    String(claims.workflow_ref || "") !==
+    "norrijam405/norvana/.github/workflows/watchtower-observe-proof.yml@refs/heads/main"
+  ) {
+    return {
+      ok: false,
+      code: "WATCHTOWER_OBSERVE_PROOF_OIDC_WORKFLOW_MISMATCH",
+      reason: "Observe-proof OIDC workflow identity does not match the approved workflow.",
+    };
+  }
+
+  if (String(claims.runner_environment || "") !== "github-hosted") {
+    return {
+      ok: false,
+      code: "WATCHTOWER_OBSERVE_PROOF_OIDC_RUNNER_MISMATCH",
+      reason: "Observe-proof OIDC token must originate from a GitHub-hosted runner.",
+    };
+  }
+
+  return { ok: true };
+}
+
+export function evaluateObserveProofEnvironmentSnapshot(input: {
+  queueEnabled: boolean;
+  executorEnabled: boolean;
+  fulfillmentEnabled: boolean;
+  supplierConnectorsEnabled: boolean;
+  federationEnabled: boolean;
+}): R0GateDecision {
+  if (
+    input.queueEnabled ||
+    input.executorEnabled ||
+    input.fulfillmentEnabled ||
+    input.supplierConnectorsEnabled ||
+    input.federationEnabled
+  ) {
+    return {
+      ok: false,
+      code: "WATCHTOWER_OBSERVE_PROOF_ENVIRONMENT_NOT_LOCKED",
+      reason:
+        "Observe proof requires normal queue, executor, fulfillment, supplier connectors, and federation to remain disabled.",
+    };
+  }
+
+  return { ok: true };
+}
+
+export function evaluateObserveProofTargetJob(input: {
+  slug: string;
+  status: string;
+  authority: string;
+  budgetCents: number;
+}): R0GateDecision {
+  if (input.slug !== WATCHTOWER_OBSERVE_PROOF_TARGET_SLUG) {
+    return {
+      ok: false,
+      code: "WATCHTOWER_OBSERVE_PROOF_TARGET_NOT_ALLOWED",
+      reason: "R0 real-observe proof is restricted to Local Producer Watch.",
+    };
+  }
+
+  if (input.status !== "ENABLED") {
+    return {
+      ok: false,
+      code: "WATCHTOWER_OBSERVE_PROOF_TARGET_NOT_ENABLED",
+      reason: "The Local Producer Watch must be the one enabled watcher for observe proof.",
+    };
+  }
+
+  if (input.authority !== "OBSERVE") {
+    return {
+      ok: false,
+      code: "WATCHTOWER_OBSERVE_PROOF_REQUIRES_OBSERVE",
+      reason: "Real-observe proof requires OBSERVE authority.",
+    };
+  }
+
+  if (input.budgetCents !== 0) {
+    return {
+      ok: false,
+      code: "WATCHTOWER_OBSERVE_PROOF_REQUIRES_ZERO_BUDGET",
+      reason: "Real-observe proof requires a zero-dollar target job.",
+    };
+  }
+
+  return { ok: true };
+}
+
+export function evaluateObserveProofWatcherSnapshot(
+  jobs: Array<{
+    slug: string;
+    status: string;
+    authority: string;
+    budgetCents: number;
+  }>
+): R0GateDecision {
+  if (!jobs.length) {
+    return {
+      ok: false,
+      code: "WATCHTOWER_OBSERVE_PROOF_WATCHERS_MISSING",
+      reason: "Observe proof requires initialized Watchtower jobs.",
+    };
+  }
+
+  const enabled = jobs.filter((job) => job.status === "ENABLED");
+  if (enabled.length !== 1) {
+    return {
+      ok: false,
+      code: "WATCHTOWER_OBSERVE_PROOF_ENABLED_CARDINALITY_INVALID",
+      reason: "Observe proof requires exactly one enabled real watcher.",
+    };
+  }
+
+  const targetDecision = evaluateObserveProofTargetJob(enabled[0]);
+  if (!targetDecision.ok) return targetDecision;
+
+  for (const job of jobs) {
+    const decision = evaluateR0Job(job.authority, job.budgetCents);
+    if (!decision.ok) {
+      return {
+        ok: false,
+        code: "WATCHTOWER_OBSERVE_PROOF_WATCHER_POLICY_DRIFT",
+        reason: "Every Watchtower job must remain inside R0 authority and zero-budget policy.",
+      };
+    }
+
+    if (job.slug !== WATCHTOWER_OBSERVE_PROOF_TARGET_SLUG && job.status !== "PAUSED") {
+      return {
+        ok: false,
+        code: "WATCHTOWER_OBSERVE_PROOF_OTHER_WATCHER_NOT_PAUSED",
+        reason: "All non-target watchers must remain PAUSED during observe proof.",
+      };
+    }
+  }
+
+  return { ok: true };
+}
+
+export function evaluateActiveObserveProofInvariant(input: {
+  activeRuns: Array<{ id: number; status: string }>;
+  expectedRunId?: number;
+  expectedStatus?: "QUEUED" | "RUNNING";
+}): R0GateDecision {
+  if (input.activeRuns.length !== 1) {
+    return {
+      ok: false,
+      code: "WATCHTOWER_OBSERVE_PROOF_ACTIVE_CARDINALITY_INVALID",
+      reason: "Observe proof requires exactly one active OBSERVE_PROOF run.",
+    };
+  }
+
+  const [active] = input.activeRuns;
+
+  if (input.expectedRunId !== undefined && active.id !== input.expectedRunId) {
+    return {
+      ok: false,
+      code: "WATCHTOWER_OBSERVE_PROOF_ACTIVE_RUN_MISMATCH",
+      reason: "The active OBSERVE_PROOF does not match the requested run.",
+    };
+  }
+
+  if (input.expectedStatus !== undefined && active.status !== input.expectedStatus) {
+    return {
+      ok: false,
+      code: "WATCHTOWER_OBSERVE_PROOF_ACTIVE_STATE_MISMATCH",
+      reason: `The active OBSERVE_PROOF must be ${input.expectedStatus} at this execution boundary.`,
+    };
+  }
+
+  return { ok: true };
+}
+
+export function evaluateObserveProofResultEffects(input: {
+  estimatedCostCents: number;
+  candidateCount: number;
+}): R0GateDecision {
+  if (input.estimatedCostCents !== 0) {
+    return {
+      ok: false,
+      code: "WATCHTOWER_OBSERVE_PROOF_NONZERO_COST",
+      reason: "Real-observe proof must report zero spend.",
+    };
+  }
+
+  if (input.candidateCount !== 0) {
+    return {
+      ok: false,
+      code: "WATCHTOWER_OBSERVE_PROOF_CANDIDATES_FORBIDDEN",
+      reason: "Real-observe proof may record observations, not recommendation candidates.",
+    };
+  }
+
+  return { ok: true };
+}
