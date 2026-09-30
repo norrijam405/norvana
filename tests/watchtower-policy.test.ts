@@ -677,12 +677,13 @@ test("observe-proof routes and worker remain isolated from normal schedule and h
   const { readFile } = await import("node:fs/promises");
   const root = new URL("../", import.meta.url);
 
-  const [queueRoute, claimRoute, resultRoute, worker, fetchHelper, workflow] = await Promise.all([
+  const [queueRoute, claimRoute, resultRoute, worker, fetchHelper, destination, workflow] = await Promise.all([
     readFile(new URL("src/app/api/watchtower/observe-proof/queue/route.ts", root), "utf8"),
     readFile(new URL("src/app/api/watchtower/observe-proof/claim/route.ts", root), "utf8"),
     readFile(new URL("src/app/api/watchtower/observe-proof/[id]/result/route.ts", root), "utf8"),
     readFile(new URL("scripts/watchtower-observe-proof.mjs", root), "utf8"),
     readFile(new URL("scripts/watchtower-observe-proof-fetch.mjs", root), "utf8"),
+    readFile(new URL("scripts/watchtower-observe-proof-destination.mjs", root), "utf8"),
     readFile(new URL(".github/workflows/watchtower-observe-proof.yml", root), "utf8"),
   ]);
 
@@ -707,10 +708,18 @@ test("observe-proof routes and worker remain isolated from normal schedule and h
   assert.match(fetchHelper, /assertApprovedObserveProofUrl\(nextUrl\)/);
   assert.match(worker, /candidates:\s*\[\]/);
   assert.match(worker, /estimatedCostCents:\s*0/);
+  assert.match(worker, /requirePinnedObserveProofBaseUrl/);
+  assert.doesNotMatch(worker, /NORVANA_WATCHTOWER_OBSERVE_PROOF_BASE_URL/);
+  assert.doesNotMatch(worker, /NORVANA_WATCHTOWER_OBSERVE_PROOF_ENABLED/);
+
+  assert.match(destination, /__NORVANA_CONTROLLED_PREVIEW_NOT_PINNED__/);
+  assert.match(destination, /norrijam405-2107s-projects\\.vercel\\.app/);
 
   assert.match(workflow, /workflow_dispatch/);
   assert.match(workflow, /id-token:\s*write/);
   assert.match(workflow, /RUN_LOCAL_PRODUCER_OBSERVE_PROOF/);
+  assert.doesNotMatch(workflow, /\$\{\{\s*vars\./);
+  assert.doesNotMatch(workflow, /NORVANA_WATCHTOWER_OBSERVE_PROOF_BASE_URL/);
 });
 
 
@@ -847,4 +856,94 @@ test("observe-proof redirect handling fails closed when the redirect cap is exce
     "https://ag.ok.gov/start",
     "https://ag.ok.gov/one",
   ]);
+});
+
+
+test("observe-proof destination is source-controlled and fails closed while unpinned", async () => {
+  const helperUrl = new URL(
+    "../scripts/watchtower-observe-proof-destination.mjs",
+    import.meta.url
+  ).href;
+  const helper = await import(helperUrl);
+
+  assert.equal(
+    helper.OBSERVE_PROOF_BASE_URL,
+    "__NORVANA_CONTROLLED_PREVIEW_NOT_PINNED__"
+  );
+
+  assert.throws(
+    () => helper.requirePinnedObserveProofBaseUrl(),
+    /not pinned/
+  );
+});
+
+test("observe-proof destination validator rejects attacker and malformed origins", async () => {
+  const helperUrl = new URL(
+    "../scripts/watchtower-observe-proof-destination.mjs",
+    import.meta.url
+  ).href;
+  const helper = await import(helperUrl);
+
+  for (const value of [
+    "https://attacker.example",
+    "https://norvana-abc123-norrijam405-2107s-projects.vercel.app.attacker.example",
+    "http://norvana-abc123-norrijam405-2107s-projects.vercel.app",
+    "https://user:pass@norvana-abc123-norrijam405-2107s-projects.vercel.app",
+    "https://norvana-abc123-norrijam405-2107s-projects.vercel.app:8443",
+    "https://norvana-abc123-norrijam405-2107s-projects.vercel.app/admin",
+    "https://norvana-abc123-norrijam405-2107s-projects.vercel.app/?x=1",
+    "https://norvana-abc123-norrijam405-2107s-projects.vercel.app/#x",
+  ]) {
+    assert.throws(() => helper.requirePinnedObserveProofBaseUrl(value));
+  }
+});
+
+test("observe-proof destination validator accepts an exact Norvana Preview origin", async () => {
+  const helperUrl = new URL(
+    "../scripts/watchtower-observe-proof-destination.mjs",
+    import.meta.url
+  ).href;
+  const helper = await import(helperUrl);
+
+  assert.equal(
+    helper.requirePinnedObserveProofBaseUrl(
+      "https://norvana-bg60h5b0c-norrijam405-2107s-projects.vercel.app"
+    ),
+    "https://norvana-bg60h5b0c-norrijam405-2107s-projects.vercel.app"
+  );
+});
+
+test("observe-proof workflow validates checked-in destination before minting OIDC", async () => {
+  const { readFile } = await import("node:fs/promises");
+  const workflow = await readFile(
+    new URL("../.github/workflows/watchtower-observe-proof.yml", import.meta.url),
+    "utf8"
+  );
+  const worker = await readFile(
+    new URL("../scripts/watchtower-observe-proof.mjs", import.meta.url),
+    "utf8"
+  );
+
+  const checkout = workflow.indexOf("Checkout exact repository state");
+  const setup = workflow.indexOf("Set up Node");
+  const destinationGate = workflow.indexOf(
+    "Verify explicit gate and source-pinned Preview destination"
+  );
+  const destinationCommand = workflow.indexOf(
+    "node scripts/watchtower-observe-proof-destination.mjs"
+  );
+  const mint = workflow.indexOf("Mint GitHub OIDC token for exact controlled Preview");
+  const execute = workflow.indexOf("Run one-shot Local Producer Watch observe proof");
+
+  assert.ok(checkout >= 0);
+  assert.ok(setup > checkout);
+  assert.ok(destinationGate > setup);
+  assert.ok(destinationCommand > destinationGate);
+  assert.ok(mint > destinationCommand);
+  assert.ok(execute > mint);
+
+  assert.doesNotMatch(workflow, /\$\{\{\s*vars\./);
+  assert.doesNotMatch(workflow, /NORVANA_WATCHTOWER_OBSERVE_PROOF_BASE_URL/);
+  assert.doesNotMatch(worker, /process\.env\.NORVANA_WATCHTOWER_OBSERVE_PROOF_BASE_URL/);
+  assert.match(worker, /requirePinnedObserveProofBaseUrl\(\)/);
 });

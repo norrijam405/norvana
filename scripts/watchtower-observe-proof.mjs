@@ -1,15 +1,13 @@
 import { fetchApprovedObserveProofHtml } from "./watchtower-observe-proof-fetch.mjs";
+import { requirePinnedObserveProofBaseUrl } from "./watchtower-observe-proof-destination.mjs";
 
-const baseUrl = (process.env.NORVANA_WATCHTOWER_OBSERVE_PROOF_BASE_URL || "").replace(/\/+$/, "");
-const enabled = process.env.NORVANA_WATCHTOWER_OBSERVE_PROOF_ENABLED === "true";
+const baseUrl = requirePinnedObserveProofBaseUrl();
 const vercelOidcToken = process.env.NORVANA_VERCEL_OIDC_TOKEN || "";
 
 function fail(message) {
   throw new Error(message);
 }
 
-if (!enabled) fail("Watchtower real-observe proof is not enabled.");
-if (!baseUrl.startsWith("https://")) fail("Observe-proof base URL must use HTTPS.");
 if (!vercelOidcToken) fail("GitHub OIDC token is not configured for observe proof.");
 
 const authHeaders = {
