@@ -8,36 +8,45 @@ on:
         required: true
         type: string
 
-permissions:
-  contents: read
-  id-token: write
-
 concurrency:
   group: norvana-watchtower-real-observe-proof
   cancel-in-progress: false
 
 jobs:
-  local-producer-observe-proof:
+  preflight:
     runs-on: ubuntu-latest
     timeout-minutes: 5
+    permissions:
+      contents: read
     steps:
-      - name: Checkout exact repository state
+      - name: Checkout exact workflow commit without OIDC authority
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.sha }}
 
-      - name: Set up Node
+      - name: Set up Node without OIDC authority
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: 22
           package-manager-cache: false
 
-      - name: Verify explicit gate and source-pinned Preview destination
-        shell: bash
-        run: |
-          set -euo pipefail
-          test "${{ inputs.confirmation }}" = "RUN_LOCAL_PRODUCER_OBSERVE_PROOF"
-          node scripts/watchtower-observe-proof-destination.mjs
+      - name: Verify exact confirmation as data
+        env:
+          NORVANA_WATCHTOWER_OBSERVE_PROOF_CONFIRMATION: ${{ inputs.confirmation }}
+        run: node scripts/watchtower-observe-proof-confirmation.mjs
 
-      - name: Mint GitHub OIDC token for exact controlled Preview
+      - name: Verify source-pinned Preview destination
+        run: node scripts/watchtower-observe-proof-destination.mjs
+
+  local-producer-observe-proof:
+    needs: preflight
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - name: Mint GitHub OIDC token after successful no-OIDC preflight
         id: oidc
         shell: bash
         run: |
@@ -49,6 +58,20 @@ jobs:
           test -n "${TOKEN}"
           echo "::add-mask::${TOKEN}"
           echo "token=${TOKEN}" >> "${GITHUB_OUTPUT}"
+
+      - name: Checkout exact workflow commit
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.sha }}
+
+      - name: Set up Node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 22
+          package-manager-cache: false
+
+      - name: Re-verify source-pinned Preview destination from exact SHA
+        run: node scripts/watchtower-observe-proof-destination.mjs
 
       - name: Run one-shot Local Producer Watch observe proof
         env:

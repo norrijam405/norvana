@@ -947,3 +947,97 @@ test("observe-proof workflow validates checked-in destination before minting OID
   assert.doesNotMatch(worker, /process\.env\.NORVANA_WATCHTOWER_OBSERVE_PROOF_BASE_URL/);
   assert.match(worker, /requirePinnedObserveProofBaseUrl\(\)/);
 });
+
+
+test("observe-proof confirmation validator treats workflow input strictly as data", async () => {
+  const helperUrl = new URL(
+    "../scripts/watchtower-observe-proof-confirmation.mjs",
+    import.meta.url
+  ).href;
+  const helper = await import(helperUrl);
+
+  assert.equal(
+    helper.requireObserveProofConfirmation("RUN_LOCAL_PRODUCER_OBSERVE_PROOF"),
+    "RUN_LOCAL_PRODUCER_OBSERVE_PROOF"
+  );
+
+  for (const value of [
+    'RUN_LOCAL_PRODUCER_OBSERVE_PROOF" ; printf "PRE_VALIDATION_CODE_EXECUTED\\n" ; #',
+    "RUN_LOCAL_PRODUCER_OBSERVE_PROOF$(id)",
+    "RUN_LOCAL_PRODUCER_OBSERVE_PROOF`id`",
+    "RUN_LOCAL_PRODUCER_OBSERVE_PROOF\nwhoami",
+    "",
+  ]) {
+    assert.throws(() => helper.requireObserveProofConfirmation(value));
+  }
+});
+
+test("observe-proof OIDC authority is structurally separated behind no-OIDC preflight", async () => {
+  const { readFile } = await import("node:fs/promises");
+  const workflow = await readFile(
+    new URL("../.github/workflows/watchtower-observe-proof.yml", import.meta.url),
+    "utf8"
+  );
+
+  assert.doesNotMatch(
+    workflow,
+    /test\s+["']?\$\{\{\s*inputs\.confirmation\s*\}\}/
+  );
+
+  assert.match(
+    workflow,
+    /NORVANA_WATCHTOWER_OBSERVE_PROOF_CONFIRMATION:\s*\$\{\{\s*inputs\.confirmation\s*\}\}/
+  );
+  assert.match(
+    workflow,
+    /run:\s*node scripts\/watchtower-observe-proof-confirmation\.mjs/
+  );
+
+  const preflightStart = workflow.indexOf("  preflight:");
+  const proofStart = workflow.indexOf("  local-producer-observe-proof:");
+  assert.ok(preflightStart >= 0);
+  assert.ok(proofStart > preflightStart);
+
+  const preflightBlock = workflow.slice(preflightStart, proofStart);
+  const proofBlock = workflow.slice(proofStart);
+
+  assert.match(preflightBlock, /permissions:\s*\n\s+contents:\s*read/);
+  assert.doesNotMatch(preflightBlock, /id-token:\s*write/);
+  assert.match(preflightBlock, /ref:\s*\$\{\{\s*github\.sha\s*\}\}/);
+  assert.match(
+    preflightBlock,
+    /node scripts\/watchtower-observe-proof-destination\.mjs/
+  );
+
+  assert.match(proofBlock, /needs:\s*preflight/);
+  assert.match(proofBlock, /id-token:\s*write/);
+  assert.match(proofBlock, /ref:\s*\$\{\{\s*github\.sha\s*\}\}/);
+
+  const needs = proofBlock.indexOf("needs: preflight");
+  const mint = proofBlock.indexOf(
+    "Mint GitHub OIDC token after successful no-OIDC preflight"
+  );
+  assert.ok(needs >= 0);
+  assert.ok(mint > needs);
+});
+
+test("observe-proof workflow has no direct confirmation expression in shell source", async () => {
+  const { readFile } = await import("node:fs/promises");
+  const workflow = await readFile(
+    new URL("../.github/workflows/watchtower-observe-proof.yml", import.meta.url),
+    "utf8"
+  );
+
+  const runLines = workflow
+    .split("\n")
+    .filter((line) => line.trimStart().startsWith("run:"));
+
+  for (const line of runLines) {
+    assert.doesNotMatch(line, /inputs\.confirmation/);
+  }
+
+  assert.doesNotMatch(
+    workflow,
+    /run:\s*\|[\s\S]*?\$\{\{\s*inputs\.confirmation\s*\}\}/
+  );
+});
