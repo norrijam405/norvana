@@ -1093,7 +1093,7 @@ test("authenticated owner safe-read origin policy rejects cross-site and cross-o
   });
   assert.equal(crossSite.ok, false);
   if (!crossSite.ok) {
-    assert.equal(crossSite.code, "NORVANA_SAME_ORIGIN_REQUIRED");
+    assert.equal(crossSite.code, "NORVANA_CROSS_ORIGIN_REJECTED");
   }
 
   const explicitCrossOrigin = evaluateAuthenticatedBrowserReadOrigin({
