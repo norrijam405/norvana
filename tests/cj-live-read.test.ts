@@ -1,6 +1,8 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { readFile } from "node:fs/promises";
+import { readFile, readdir } from "node:fs/promises";
+import { join } from "node:path";
+import { fileURLToPath } from "node:url";
 import { runCJLiveReadOnlyProbe } from "../src/lib/supplier-gateway/cj/live-client.ts";
 
 function jsonResponse(body: unknown, status = 200) {
@@ -8,6 +10,19 @@ function jsonResponse(body: unknown, status = 200) {
     status,
     headers: { "content-type": "application/json" },
   });
+}
+
+async function findRouteFiles(directory: string): Promise<string[]> {
+  const entries = await readdir(directory, { withFileTypes: true });
+  const nested = await Promise.all(
+    entries.map(async (entry) => {
+      const fullPath = join(directory, entry.name);
+      if (entry.isDirectory()) return findRouteFiles(fullPath);
+      if (entry.isFile() && entry.name === "route.ts") return [fullPath];
+      return [];
+    })
+  );
+  return nested.flat();
 }
 
 test("CJ live read probe uses only token + admitted read endpoints and returns no secret", async () => {
@@ -210,15 +225,56 @@ test("CJ live client source contains no order/payment endpoint and no token logg
   assert.doesNotMatch(source, /console\.(log|info|warn|error).*apiKey/);
 });
 
-test("CJ live route is Preview-only and requires deliberate confirmation", async () => {
-  const source = await readFile(
-    new URL("../src/app/api/suppliers/cj/live-probe/route.ts", import.meta.url),
-    "utf8"
+test("every CJ runtime live-probe route preserves the deliberate confirmation boundary", async () => {
+  const cjRouteRoot = fileURLToPath(
+    new URL("../src/app/api/suppliers/cj/", import.meta.url)
   );
-  assert.match(source, /VERCEL_ENV !== "preview"/);
-  assert.match(source, /RUN_CJ_READ_ONLY_PROBE/);
-  assert.match(source, /NORVANA_EXTERNAL_FULFILLMENT_ENABLED/);
-  assert.match(source, /IGNIAQUA_FEDERATION_ENABLED/);
-  assert.doesNotMatch(source, /order\.create/);
-  assert.doesNotMatch(source, /publishProduct/);
+  const routeFiles = await findRouteFiles(cjRouteRoot);
+
+  assert.ok(routeFiles.length > 0);
+  assert.equal(
+    routeFiles.some((routeFile) =>
+      routeFile.endsWith(join("live-probe", "run", "route.ts"))
+    ),
+    false,
+    "obsolete alternate /live-probe/run route must remain absent"
+  );
+
+  const liveProbeCallers: Array<{ routeFile: string; source: string }> = [];
+  for (const routeFile of routeFiles) {
+    const source = await readFile(routeFile, "utf8");
+    if (source.includes("runCJLiveReadOnlyProbe")) {
+      liveProbeCallers.push({ routeFile, source });
+    }
+  }
+
+  assert.ok(
+    liveProbeCallers.length > 0,
+    "expected at least one guarded CJ live-probe runtime route"
+  );
+
+  for (const { routeFile, source } of liveProbeCallers) {
+    assert.match(
+      source,
+      /VERCEL_ENV\s*!==\s*"preview"/,
+      `${routeFile} must remain Preview-only`
+    );
+    assert.match(
+      source,
+      /RUN_CJ_READ_ONLY_PROBE/,
+      `${routeFile} must require explicit live-probe confirmation`
+    );
+    assert.match(
+      source,
+      /NORVANA_EXTERNAL_FULFILLMENT_ENABLED/,
+      `${routeFile} must fail closed if external fulfillment is enabled`
+    );
+    assert.match(
+      source,
+      /IGNIAQUA_FEDERATION_ENABLED/,
+      `${routeFile} must fail closed if federation is enabled`
+    );
+    assert.doesNotMatch(source, /order\.create/);
+    assert.doesNotMatch(source, /publishProduct/);
+  }
 });
