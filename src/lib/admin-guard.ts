@@ -1,7 +1,10 @@
 import { timingSafeEqual } from "node:crypto";
 import { NextRequest, NextResponse } from "next/server";
 import { currentAdminSessionFromRequest } from "@/lib/admin-session";
-import { evaluateAuthenticatedBrowserReadOrigin } from "@/lib/browser-origin";
+import {
+  evaluateAuthenticatedBrowserMutationOrigin,
+  evaluateAuthenticatedBrowserReadOrigin,
+} from "@/lib/browser-origin";
 
 const ADMIN_HEADER = "x-norvana-admin-token";
 
@@ -13,32 +16,19 @@ function constantTimeEqual(left: string, right: string) {
 }
 
 export function requireBrowserSameOrigin(req: NextRequest): NextResponse | null {
-  const origin = req.headers.get("origin");
-  const host = req.headers.get("x-forwarded-host") || req.headers.get("host");
+  const decision = evaluateAuthenticatedBrowserMutationOrigin({
+    origin: req.headers.get("origin"),
+    requestOrigin: req.nextUrl.origin,
+    referer: req.headers.get("referer"),
+    secFetchSite: req.headers.get("sec-fetch-site"),
+  });
 
-  if (!origin || !host) {
-    return NextResponse.json(
-      { error: "Same-origin browser request required.", code: "NORVANA_SAME_ORIGIN_REQUIRED" },
-      { status: 403 }
-    );
-  }
+  if (decision.ok) return null;
 
-  try {
-    const originUrl = new URL(origin);
-    if (originUrl.host !== host) {
-      return NextResponse.json(
-        { error: "Cross-origin browser mutation rejected.", code: "NORVANA_CROSS_ORIGIN_REJECTED" },
-        { status: 403 }
-      );
-    }
-  } catch {
-    return NextResponse.json(
-      { error: "Invalid request origin.", code: "NORVANA_INVALID_ORIGIN" },
-      { status: 403 }
-    );
-  }
-
-  return null;
+  return NextResponse.json(
+    { error: decision.reason, code: decision.code },
+    { status: 403 }
+  );
 }
 
 
@@ -48,7 +38,7 @@ export function requireBrowserSameOriginRead(
   const decision = evaluateAuthenticatedBrowserReadOrigin({
     method: req.method,
     origin: req.headers.get("origin"),
-    host: req.headers.get("x-forwarded-host") || req.headers.get("host"),
+    requestOrigin: req.nextUrl.origin,
     referer: req.headers.get("referer"),
     secFetchSite: req.headers.get("sec-fetch-site"),
   });

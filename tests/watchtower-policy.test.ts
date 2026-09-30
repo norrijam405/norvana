@@ -20,7 +20,10 @@ import {
   evaluateWorkerModeExecutorState,
   isR0Authority,
 } from "../src/lib/watchtower/policy.ts";
-import { evaluateAuthenticatedBrowserReadOrigin } from "../src/lib/browser-origin.ts";
+import {
+  evaluateAuthenticatedBrowserMutationOrigin,
+  evaluateAuthenticatedBrowserReadOrigin,
+} from "../src/lib/browser-origin.ts";
 
 test("R0 accepts only OBSERVE and RECOMMEND authority", () => {
   assert.equal(isR0Authority("OBSERVE"), true);
@@ -1057,7 +1060,7 @@ test("authenticated owner safe GET accepts normal same-origin browser fetch meta
     evaluateAuthenticatedBrowserReadOrigin({
       method: "GET",
       origin: null,
-      host: "norvana-fduc8vqo5-norrijam405-2107s-projects.vercel.app",
+      requestOrigin: "https://norvana-fduc8vqo5-norrijam405-2107s-projects.vercel.app",
       referer:
         "https://norvana-fduc8vqo5-norrijam405-2107s-projects.vercel.app/admin",
       secFetchSite: "same-origin",
@@ -1071,7 +1074,7 @@ test("authenticated owner safe GET may fall back to an exact same-origin Referer
     evaluateAuthenticatedBrowserReadOrigin({
       method: "GET",
       origin: null,
-      host: "norvana-fduc8vqo5-norrijam405-2107s-projects.vercel.app",
+      requestOrigin: "https://norvana-fduc8vqo5-norrijam405-2107s-projects.vercel.app",
       referer:
         "https://norvana-fduc8vqo5-norrijam405-2107s-projects.vercel.app/admin",
       secFetchSite: null,
@@ -1084,7 +1087,7 @@ test("authenticated owner safe-read origin policy rejects cross-site and cross-o
   const crossSite = evaluateAuthenticatedBrowserReadOrigin({
     method: "GET",
     origin: null,
-    host: "norvana-fduc8vqo5-norrijam405-2107s-projects.vercel.app",
+    requestOrigin: "https://norvana-fduc8vqo5-norrijam405-2107s-projects.vercel.app",
     referer: "https://attacker.example/",
     secFetchSite: "cross-site",
   });
@@ -1096,7 +1099,7 @@ test("authenticated owner safe-read origin policy rejects cross-site and cross-o
   const explicitCrossOrigin = evaluateAuthenticatedBrowserReadOrigin({
     method: "GET",
     origin: "https://attacker.example",
-    host: "norvana-fduc8vqo5-norrijam405-2107s-projects.vercel.app",
+    requestOrigin: "https://norvana-fduc8vqo5-norrijam405-2107s-projects.vercel.app",
     referer:
       "https://norvana-fduc8vqo5-norrijam405-2107s-projects.vercel.app/admin",
     secFetchSite: "same-origin",
@@ -1111,7 +1114,7 @@ test("origin-less browser mutation remains rejected even with same-origin fetch 
   const decision = evaluateAuthenticatedBrowserReadOrigin({
     method: "POST",
     origin: null,
-    host: "norvana-fduc8vqo5-norrijam405-2107s-projects.vercel.app",
+    requestOrigin: "https://norvana-fduc8vqo5-norrijam405-2107s-projects.vercel.app",
     referer:
       "https://norvana-fduc8vqo5-norrijam405-2107s-projects.vercel.app/admin",
     secFetchSite: "same-origin",
@@ -1159,4 +1162,195 @@ test("Watchtower jobs safe GET uses the read guard while POST and PATCH keep str
     adminGuard,
     /return requireBrowserSameOrigin\(req\)/
   );
+});
+
+
+test("full origin semantics reject same-host cross-scheme and non-serialized Origin values", () => {
+  const requestOrigin =
+    "https://norvana-fduc8vqo5-norrijam405-2107s-projects.vercel.app";
+
+  for (const origin of [
+    "http://norvana-fduc8vqo5-norrijam405-2107s-projects.vercel.app",
+    "https://norvana-fduc8vqo5-norrijam405-2107s-projects.vercel.app/admin",
+    "https://norvana-fduc8vqo5-norrijam405-2107s-projects.vercel.app?x=1",
+    "https://norvana-fduc8vqo5-norrijam405-2107s-projects.vercel.app#x",
+    "https://user:pass@norvana-fduc8vqo5-norrijam405-2107s-projects.vercel.app",
+    "null",
+  ]) {
+    const read = evaluateAuthenticatedBrowserReadOrigin({
+      method: "GET",
+      origin,
+      requestOrigin,
+      referer: null,
+      secFetchSite: "same-origin",
+    });
+    assert.equal(read.ok, false);
+
+    const mutation = evaluateAuthenticatedBrowserMutationOrigin({
+      origin,
+      requestOrigin,
+      referer: null,
+      secFetchSite: "same-origin",
+    });
+    assert.equal(mutation.ok, false);
+  }
+});
+
+test("strict mutation origin uses full scheme-host-port equality", () => {
+  const httpsOrigin =
+    "https://norvana-fduc8vqo5-norrijam405-2107s-projects.vercel.app";
+  const httpOrigin =
+    "http://norvana-fduc8vqo5-norrijam405-2107s-projects.vercel.app";
+
+  assert.deepEqual(
+    evaluateAuthenticatedBrowserMutationOrigin({
+      origin: httpsOrigin,
+      requestOrigin: httpsOrigin,
+      referer: httpsOrigin + "/admin",
+      secFetchSite: "same-origin",
+    }),
+    { ok: true }
+  );
+
+  assert.equal(
+    evaluateAuthenticatedBrowserMutationOrigin({
+      origin: httpOrigin,
+      requestOrigin: httpsOrigin,
+      referer: httpsOrigin + "/admin",
+      secFetchSite: "same-origin",
+    }).ok,
+    false
+  );
+
+  assert.deepEqual(
+    evaluateAuthenticatedBrowserMutationOrigin({
+      origin: "https://example.test:8443",
+      requestOrigin: "https://example.test:8443",
+      referer: "https://example.test:8443/admin",
+      secFetchSite: "same-origin",
+    }),
+    { ok: true }
+  );
+
+  assert.equal(
+    evaluateAuthenticatedBrowserMutationOrigin({
+      origin: "https://example.test",
+      requestOrigin: "https://example.test:8443",
+      referer: null,
+      secFetchSite: "same-origin",
+    }).ok,
+    false
+  );
+});
+
+test("contradictory Fetch Metadata and Referer fail closed", () => {
+  const requestOrigin =
+    "https://norvana-fduc8vqo5-norrijam405-2107s-projects.vercel.app";
+
+  const attackerReferer = evaluateAuthenticatedBrowserReadOrigin({
+    method: "GET",
+    origin: null,
+    requestOrigin,
+    referer: "https://attacker.example/path",
+    secFetchSite: "same-origin",
+  });
+  assert.equal(attackerReferer.ok, false);
+  if (!attackerReferer.ok) {
+    assert.equal(attackerReferer.code, "NORVANA_CROSS_ORIGIN_REJECTED");
+  }
+
+  const contradictoryFetchSite = evaluateAuthenticatedBrowserReadOrigin({
+    method: "GET",
+    origin: null,
+    requestOrigin,
+    referer: requestOrigin + "/admin",
+    secFetchSite: "same-site",
+  });
+  assert.equal(contradictoryFetchSite.ok, false);
+  if (!contradictoryFetchSite.ok) {
+    assert.equal(contradictoryFetchSite.code, "NORVANA_CROSS_ORIGIN_REJECTED");
+  }
+
+  const mutationContradiction = evaluateAuthenticatedBrowserMutationOrigin({
+    origin: requestOrigin,
+    requestOrigin,
+    referer: "https://attacker.example/",
+    secFetchSite: "same-origin",
+  });
+  assert.equal(mutationContradiction.ok, false);
+});
+
+test("safe-read origin policy rejects malformed Referer and same-site different-origin provenance", () => {
+  const requestOrigin =
+    "https://norvana-fduc8vqo5-norrijam405-2107s-projects.vercel.app";
+
+  const malformed = evaluateAuthenticatedBrowserReadOrigin({
+    method: "GET",
+    origin: null,
+    requestOrigin,
+    referer: "not a URL",
+    secFetchSite: null,
+  });
+  assert.equal(malformed.ok, false);
+  if (!malformed.ok) {
+    assert.equal(malformed.code, "NORVANA_INVALID_REFERER");
+  }
+
+  const sameSiteDifferentOrigin = evaluateAuthenticatedBrowserReadOrigin({
+    method: "GET",
+    origin: null,
+    requestOrigin,
+    referer: "https://other-norrijam405-2107s-projects.vercel.app/admin",
+    secFetchSite: "same-site",
+  });
+  assert.equal(sameSiteDifferentOrigin.ok, false);
+});
+
+test("origin-less safe read requires at least one same-origin provenance signal", () => {
+  const requestOrigin =
+    "https://norvana-fduc8vqo5-norrijam405-2107s-projects.vercel.app";
+
+  const noSignals = evaluateAuthenticatedBrowserReadOrigin({
+    method: "GET",
+    origin: null,
+    requestOrigin,
+    referer: null,
+    secFetchSite: null,
+  });
+  assert.equal(noSignals.ok, false);
+
+  assert.deepEqual(
+    evaluateAuthenticatedBrowserReadOrigin({
+      method: "GET",
+      origin: null,
+      requestOrigin,
+      referer: null,
+      secFetchSite: "same-origin",
+    }),
+    { ok: true }
+  );
+
+  assert.deepEqual(
+    evaluateAuthenticatedBrowserReadOrigin({
+      method: "HEAD",
+      origin: null,
+      requestOrigin,
+      referer: requestOrigin + "/admin",
+      secFetchSite: null,
+    }),
+    { ok: true }
+  );
+});
+
+test("admin guard derives the expected full origin from NextRequest and uses shared strict semantics", async () => {
+  const { readFile } = await import("node:fs/promises");
+  const source = await readFile(
+    new URL("../src/lib/admin-guard.ts", import.meta.url),
+    "utf8"
+  );
+
+  assert.match(source, /evaluateAuthenticatedBrowserMutationOrigin/);
+  assert.match(source, /evaluateAuthenticatedBrowserReadOrigin/);
+  assert.match(source, /requestOrigin:\s*req\.nextUrl\.origin/);
+  assert.doesNotMatch(source, /originUrl\.host\s*!==\s*host/);
 });
