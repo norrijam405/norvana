@@ -686,7 +686,7 @@ test("observe-proof routes and worker remain isolated from normal schedule and h
   ]);
 
   assert.match(queueRoute, /OBSERVE_PROOF/);
-  assert.match(queueRoute, /local-producer-watch/);
+  assert.match(queueRoute, /WATCHTOWER_OBSERVE_PROOF_TARGET_SLUG/);
   assert.match(queueRoute, /CONTROL_TEST/);
   assert.match(queueRoute, /WORKER_TEST/);
 
