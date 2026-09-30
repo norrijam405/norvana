@@ -677,11 +677,12 @@ test("observe-proof routes and worker remain isolated from normal schedule and h
   const { readFile } = await import("node:fs/promises");
   const root = new URL("../", import.meta.url);
 
-  const [queueRoute, claimRoute, resultRoute, worker, workflow] = await Promise.all([
+  const [queueRoute, claimRoute, resultRoute, worker, fetchHelper, workflow] = await Promise.all([
     readFile(new URL("src/app/api/watchtower/observe-proof/queue/route.ts", root), "utf8"),
     readFile(new URL("src/app/api/watchtower/observe-proof/claim/route.ts", root), "utf8"),
     readFile(new URL("src/app/api/watchtower/observe-proof/[id]/result/route.ts", root), "utf8"),
     readFile(new URL("scripts/watchtower-observe-proof.mjs", root), "utf8"),
+    readFile(new URL("scripts/watchtower-observe-proof-fetch.mjs", root), "utf8"),
     readFile(new URL(".github/workflows/watchtower-observe-proof.yml", root), "utf8"),
   ]);
 
@@ -700,12 +701,150 @@ test("observe-proof routes and worker remain isolated from normal schedule and h
 
   assert.match(worker, /ag\.ok\.gov\/divisions\/market-development/);
   assert.match(worker, /ams\.usda\.gov\/services\/local-regional\/food-directories/);
-  assert.match(worker, /approvedFinalHosts/);
-  assert.match(worker, /resolvedUrl\.hostname/);
+  assert.match(worker, /fetchApprovedObserveProofHtml/);
+  assert.doesNotMatch(worker, /redirect:\s*"follow"/);
+  assert.match(fetchHelper, /redirect:\s*"manual"/);
+  assert.match(fetchHelper, /assertApprovedObserveProofUrl\(nextUrl\)/);
   assert.match(worker, /candidates:\s*\[\]/);
   assert.match(worker, /estimatedCostCents:\s*0/);
 
   assert.match(workflow, /workflow_dispatch/);
   assert.match(workflow, /id-token:\s*write/);
   assert.match(workflow, /RUN_LOCAL_PRODUCER_OBSERVE_PROOF/);
+});
+
+
+test("observe-proof redirect handling rejects an unapproved intermediate hop before requesting it", async () => {
+  const helperUrl = new URL(
+    "../scripts/watchtower-observe-proof-fetch.mjs",
+    import.meta.url
+  ).href;
+  const helper = await import(helperUrl);
+
+  const calls: string[] = [];
+  const fetchImpl = async (url: string) => {
+    calls.push(url);
+
+    if (url === "https://ag.ok.gov/start") {
+      return new Response(null, {
+        status: 302,
+        headers: { location: "https://unapproved.example/bounce" },
+      });
+    }
+
+    if (url === "https://unapproved.example/bounce") {
+      return new Response(null, {
+        status: 302,
+        headers: { location: "https://ag.ok.gov/final" },
+      });
+    }
+
+    return new Response("<html>unexpected</html>", {
+      status: 200,
+      headers: { "content-type": "text/html" },
+    });
+  };
+
+  await assert.rejects(
+    () =>
+      helper.fetchApprovedObserveProofHtml("https://ag.ok.gov/start", {
+        fetchImpl,
+        maxRedirects: 5,
+      }),
+    /host is not approved/
+  );
+
+  assert.deepEqual(calls, ["https://ag.ok.gov/start"]);
+});
+
+test("observe-proof redirect handling allows only fully approved HTTPS hops", async () => {
+  const helperUrl = new URL(
+    "../scripts/watchtower-observe-proof-fetch.mjs",
+    import.meta.url
+  ).href;
+  const helper = await import(helperUrl);
+
+  const calls: string[] = [];
+  const fetchImpl = async (url: string) => {
+    calls.push(url);
+
+    if (url === "https://ag.ok.gov/start") {
+      return new Response(null, {
+        status: 302,
+        headers: { location: "/next" },
+      });
+    }
+
+    if (url === "https://ag.ok.gov/next") {
+      return new Response(null, {
+        status: 307,
+        headers: {
+          location: "https://www.ams.usda.gov/services/local-regional/food-directories",
+        },
+      });
+    }
+
+    return new Response("<html>Local Food Directories</html>", {
+      status: 200,
+      headers: { "content-type": "text/html; charset=utf-8" },
+    });
+  };
+
+  const result = await helper.fetchApprovedObserveProofHtml(
+    "https://ag.ok.gov/start",
+    {
+      fetchImpl,
+      maxRedirects: 5,
+    }
+  );
+
+  assert.deepEqual(calls, [
+    "https://ag.ok.gov/start",
+    "https://ag.ok.gov/next",
+    "https://www.ams.usda.gov/services/local-regional/food-directories",
+  ]);
+  assert.equal(result.redirectCount, 2);
+  assert.equal(
+    result.resolvedUrl.toString(),
+    "https://www.ams.usda.gov/services/local-regional/food-directories"
+  );
+});
+
+test("observe-proof redirect handling fails closed when the redirect cap is exceeded", async () => {
+  const helperUrl = new URL(
+    "../scripts/watchtower-observe-proof-fetch.mjs",
+    import.meta.url
+  ).href;
+  const helper = await import(helperUrl);
+
+  const calls: string[] = [];
+  const fetchImpl = async (url: string) => {
+    calls.push(url);
+
+    if (url === "https://ag.ok.gov/start") {
+      return new Response(null, {
+        status: 302,
+        headers: { location: "/one" },
+      });
+    }
+
+    return new Response(null, {
+      status: 302,
+      headers: { location: "/two" },
+    });
+  };
+
+  await assert.rejects(
+    () =>
+      helper.fetchApprovedObserveProofHtml("https://ag.ok.gov/start", {
+        fetchImpl,
+        maxRedirects: 1,
+      }),
+    /exceeded the redirect limit/
+  );
+
+  assert.deepEqual(calls, [
+    "https://ag.ok.gov/start",
+    "https://ag.ok.gov/one",
+  ]);
 });

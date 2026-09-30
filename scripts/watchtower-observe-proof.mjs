@@ -1,3 +1,5 @@
+import { fetchApprovedObserveProofHtml } from "./watchtower-observe-proof-fetch.mjs";
+
 const baseUrl = (process.env.NORVANA_WATCHTOWER_OBSERVE_PROOF_BASE_URL || "").replace(/\/+$/, "");
 const enabled = process.env.NORVANA_WATCHTOWER_OBSERVE_PROOF_ENABLED === "true";
 const vercelOidcToken = process.env.NORVANA_VERCEL_OIDC_TOKEN || "";
@@ -53,8 +55,6 @@ const requiredUrls = new Set([
   "https://ag.ok.gov/divisions/market-development/",
   "https://www.ams.usda.gov/services/local-regional/food-directories",
 ]);
-const approvedFinalHosts = new Set(["ag.ok.gov", "ams.usda.gov", "www.ams.usda.gov"]);
-
 for (const source of approvedSources) {
   if (!requiredUrls.has(String(source?.url || ""))) {
     fail("Server returned an unapproved observe-proof source URL.");
@@ -77,33 +77,15 @@ function textSnippet(html, marker) {
 
 try {
   for (const source of approvedSources) {
-    const response = await fetch(source.url, {
-      method: "GET",
-      headers: {
-        accept: "text/html,application/xhtml+xml",
-        "user-agent": "Norvana-Watchtower-Observe-Proof/0.1",
-      },
-      redirect: "follow",
-      signal: AbortSignal.timeout(15_000),
-    });
-
-    const resolvedUrl = new URL(response.url);
-    if (
-      resolvedUrl.protocol !== "https:" ||
-      !approvedFinalHosts.has(resolvedUrl.hostname.toLowerCase())
-    ) {
-      throw new Error(`Public source redirected outside the approved host set: ${response.url}`);
-    }
-
-    const html = await response.text();
-    if (!response.ok) {
-      throw new Error(`Public source ${source.url} returned HTTP ${response.status}.`);
-    }
+    const {
+      response,
+      html,
+      resolvedUrl,
+      redirectCount,
+      redirectChain,
+    } = await fetchApprovedObserveProofHtml(source.url);
 
     const contentType = response.headers.get("content-type") || "";
-    if (!contentType.toLowerCase().includes("text/html")) {
-      throw new Error(`Public source ${source.url} did not return HTML.`);
-    }
 
     const markers = Array.isArray(source.requiredAnyMarkers)
       ? source.requiredAnyMarkers.map(String)
@@ -125,6 +107,8 @@ try {
       contentType,
       matchedMarker: matched,
       evidenceSnippet: textSnippet(html, matched).slice(0, 500),
+      redirectCount,
+      redirectChain,
     });
 
     findings.push({
@@ -135,6 +119,8 @@ try {
       observation:
         "Approved official public source was retrieved read-only and contained the expected local-producer discovery marker.",
       matchedMarker: matched,
+      redirectCount,
+      redirectChain,
     });
   }
 } catch (error) {
