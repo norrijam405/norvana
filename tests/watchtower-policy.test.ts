@@ -924,22 +924,30 @@ test("observe-proof workflow validates checked-in destination before minting OID
     "utf8"
   );
 
-  const checkout = workflow.indexOf("Checkout exact repository state");
-  const setup = workflow.indexOf("Set up Node");
+  const checkout = workflow.indexOf(
+    "Checkout exact workflow commit without OIDC authority"
+  );
+  const setup = workflow.indexOf("Set up Node without OIDC authority");
+  const confirmationGate = workflow.indexOf("Verify exact confirmation as data");
   const destinationGate = workflow.indexOf(
-    "Verify explicit gate and source-pinned Preview destination"
+    "Verify source-pinned Preview destination"
   );
   const destinationCommand = workflow.indexOf(
     "node scripts/watchtower-observe-proof-destination.mjs"
   );
-  const mint = workflow.indexOf("Mint GitHub OIDC token for exact controlled Preview");
+  const proofJob = workflow.indexOf("  local-producer-observe-proof:");
+  const mint = workflow.indexOf(
+    "Mint GitHub OIDC token after successful no-OIDC preflight"
+  );
   const execute = workflow.indexOf("Run one-shot Local Producer Watch observe proof");
 
   assert.ok(checkout >= 0);
   assert.ok(setup > checkout);
-  assert.ok(destinationGate > setup);
+  assert.ok(confirmationGate > setup);
+  assert.ok(destinationGate > confirmationGate);
   assert.ok(destinationCommand > destinationGate);
-  assert.ok(mint > destinationCommand);
+  assert.ok(proofJob > destinationCommand);
+  assert.ok(mint > proofJob);
   assert.ok(execute > mint);
 
   assert.doesNotMatch(workflow, /\$\{\{\s*vars\./);
