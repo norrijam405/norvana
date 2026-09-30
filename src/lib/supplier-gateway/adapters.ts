@@ -2,14 +2,10 @@ import { getSupplierRegistryProfile } from "./registry.ts";
 import { evaluateSupplierReadiness } from "./policy.ts";
 import type {
   NorvanaReadOnlySupplierAdapter,
-  LocalSupplierOrderSimulation,
-  NormalizedDeliveryEstimate,
   NormalizedReturnPolicy,
   NormalizedShippingQuote,
   NormalizedSupplierProduct,
   NormalizedSupplierVariant,
-  NormalizedSupplierWarehouse,
-  NormalizedWebhookVerification,
   SupplierReadCapability,
   SupplierReadResult,
 } from "./types.ts";
@@ -70,16 +66,8 @@ export class UnboundReadOnlySupplierAdapter implements NorvanaReadOnlySupplierAd
     return notBound(this.providerId, "product.read");
   }
 
-  async readVariant(_supplierVariantId: string): Promise<SupplierReadResult<NormalizedSupplierVariant>> {
-    return notBound(this.providerId, "variant.read");
-  }
-
   async readInventory(_supplierSku: string): Promise<SupplierReadResult<NormalizedSupplierVariant>> {
     return notBound(this.providerId, "inventory.read");
-  }
-
-  async readWarehouse(_supplierWarehouseId: string): Promise<SupplierReadResult<NormalizedSupplierWarehouse>> {
-    return notBound(this.providerId, "warehouse.read");
   }
 
   async quoteShipping(_input: {
@@ -91,32 +79,8 @@ export class UnboundReadOnlySupplierAdapter implements NorvanaReadOnlySupplierAd
     return notBound(this.providerId, "shipping.quote");
   }
 
-  async estimateDelivery(_input: {
-    supplierSku: string;
-    destinationCountry: string;
-    destinationPostalCode?: string;
-  }): Promise<SupplierReadResult<NormalizedDeliveryEstimate>> {
-    return notBound(this.providerId, "delivery.estimate");
-  }
-
   async readReturnPolicy(_supplierSku?: string): Promise<SupplierReadResult<NormalizedReturnPolicy>> {
     return notBound(this.providerId, "returns.policy.read");
-  }
-
-  async verifyWebhook(_input: {
-    payload: string;
-    signature: string;
-  }): Promise<SupplierReadResult<NormalizedWebhookVerification>> {
-    return notBound(this.providerId, "webhook.verify");
-  }
-
-  async simulateOrder(_input: {
-    supplierSku: string;
-    quantity: number;
-    destinationCountry: string;
-    destinationPostalCode?: string;
-  }): Promise<SupplierReadResult<LocalSupplierOrderSimulation>> {
-    return notBound(this.providerId, "order.simulate");
   }
 }
 

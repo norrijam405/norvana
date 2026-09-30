@@ -31,7 +31,6 @@ export const SUPPLIER_READ_CAPABILITIES = [
   "product.read",
   "variant.read",
   "inventory.read",
-  "warehouse.read",
   "shipping.quote",
   "delivery.estimate",
   "returns.policy.read",
@@ -115,46 +114,6 @@ export type NormalizedSupplierProduct = {
   evidenceTimestamp: string | null;
 };
 
-export type NormalizedSupplierWarehouse = {
-  providerId: string;
-  supplierWarehouseId: string;
-  name: string;
-  country: string;
-  region: string | null;
-  evidenceTimestamp: string | null;
-};
-
-export type NormalizedDeliveryEstimate = {
-  providerId: string;
-  supplierSku: string;
-  destinationCountry: string;
-  destinationPostalCode: string | null;
-  deliveryWindowDays: { min: number | null; max: number | null };
-  warehouse: string | null;
-  evidenceTimestamp: string | null;
-};
-
-export type NormalizedWebhookVerification = {
-  providerId: string;
-  verified: boolean;
-  verificationClass: "LOCAL_FIXTURE_ONLY" | "LIVE_PROVIDER";
-  evidenceTimestamp: string | null;
-};
-
-export type LocalSupplierOrderSimulation = {
-  providerId: string;
-  supplierSku: string;
-  quantity: number;
-  destinationCountry: string;
-  destinationPostalCode: string | null;
-  itemCostCents: number | null;
-  shippingCostCents: number | null;
-  landedCostCents: number | null;
-  externalSubmissionPermitted: false;
-  executionAuthority: "LOCKED_R0";
-  finalState: "SIMULATION_ONLY";
-};
-
 export type NormalizedShippingQuote = {
   providerId: string;
   supplierSku: string;
@@ -182,15 +141,9 @@ export type NormalizedReturnPolicy = {
 
 export type SupplierReadFailureCode =
   | "SUPPLIER_CREDENTIAL_NOT_BOUND"
-  | "SUPPLIER_CREDENTIAL_INVALID"
   | "SUPPLIER_API_ENTITLEMENT_NOT_VERIFIED"
   | "SUPPLIER_EXCLUDED"
-  | "SUPPLIER_CAPABILITY_NOT_PROVEN"
-  | "SUPPLIER_RATE_LIMITED"
-  | "SUPPLIER_RESPONSE_MALFORMED"
-  | "SUPPLIER_STOCK_UNKNOWN"
-  | "SUPPLIER_FREIGHT_UNKNOWN"
-  | "SUPPLIER_CURRENCY_UNSUPPORTED";
+  | "SUPPLIER_CAPABILITY_NOT_PROVEN";
 
 export type SupplierReadResult<T> =
   | { ok: true; data: T; providerId: string; capability: SupplierReadCapability }
@@ -208,29 +161,12 @@ export interface NorvanaReadOnlySupplierAdapter {
   readonly capabilities: readonly SupplierReadCapability[];
   searchCatalog(query: string): Promise<SupplierReadResult<NormalizedSupplierProduct[]>>;
   readProduct(supplierProductId: string): Promise<SupplierReadResult<NormalizedSupplierProduct>>;
-  readVariant(supplierVariantId: string): Promise<SupplierReadResult<NormalizedSupplierVariant>>;
   readInventory(supplierSku: string): Promise<SupplierReadResult<NormalizedSupplierVariant>>;
-  readWarehouse(supplierWarehouseId: string): Promise<SupplierReadResult<NormalizedSupplierWarehouse>>;
   quoteShipping(input: {
     supplierSku: string;
     quantity: number;
     destinationCountry: string;
     destinationPostalCode?: string;
   }): Promise<SupplierReadResult<NormalizedShippingQuote[]>>;
-  estimateDelivery(input: {
-    supplierSku: string;
-    destinationCountry: string;
-    destinationPostalCode?: string;
-  }): Promise<SupplierReadResult<NormalizedDeliveryEstimate>>;
   readReturnPolicy(supplierSku?: string): Promise<SupplierReadResult<NormalizedReturnPolicy>>;
-  verifyWebhook(input: {
-    payload: string;
-    signature: string;
-  }): Promise<SupplierReadResult<NormalizedWebhookVerification>>;
-  simulateOrder(input: {
-    supplierSku: string;
-    quantity: number;
-    destinationCountry: string;
-    destinationPostalCode?: string;
-  }): Promise<SupplierReadResult<LocalSupplierOrderSimulation>>;
 }
