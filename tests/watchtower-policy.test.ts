@@ -694,12 +694,14 @@ test("observe-proof routes and worker remain isolated from normal schedule and h
   assert.match(claimRoute, /OBSERVE_PROOF/);
   assert.doesNotMatch(claimRoute, /NORVANA_WATCHTOWER_WORKER_SECRET/);
 
-  assert.match(resultRoute, /WATCHTOWER_OBSERVE_PROOF_CANDIDATES_FORBIDDEN/);
-  assert.match(resultRoute, /WATCHTOWER_OBSERVE_PROOF_NONZERO_COST/);
+  assert.match(resultRoute, /evaluateObserveProofResultEffects/);
+  assert.match(resultRoute, /candidateCount:\s*candidates\.length/);
   assert.match(resultRoute, /WATCH_OBSERVE_PROOF_COMPLETED/);
 
   assert.match(worker, /ag\.ok\.gov\/divisions\/market-development/);
   assert.match(worker, /ams\.usda\.gov\/services\/local-regional\/food-directories/);
+  assert.match(worker, /approvedFinalHosts/);
+  assert.match(worker, /resolvedUrl\.hostname/);
   assert.match(worker, /candidates:\s*\[\]/);
   assert.match(worker, /estimatedCostCents:\s*0/);
 
