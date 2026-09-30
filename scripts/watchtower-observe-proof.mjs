@@ -53,6 +53,7 @@ const requiredUrls = new Set([
   "https://ag.ok.gov/divisions/market-development/",
   "https://www.ams.usda.gov/services/local-regional/food-directories",
 ]);
+const approvedFinalHosts = new Set(["ag.ok.gov", "ams.usda.gov", "www.ams.usda.gov"]);
 
 for (const source of approvedSources) {
   if (!requiredUrls.has(String(source?.url || ""))) {
@@ -86,6 +87,14 @@ try {
       signal: AbortSignal.timeout(15_000),
     });
 
+    const resolvedUrl = new URL(response.url);
+    if (
+      resolvedUrl.protocol !== "https:" ||
+      !approvedFinalHosts.has(resolvedUrl.hostname.toLowerCase())
+    ) {
+      throw new Error(`Public source redirected outside the approved host set: ${response.url}`);
+    }
+
     const html = await response.text();
     if (!response.ok) {
       throw new Error(`Public source ${source.url} returned HTTP ${response.status}.`);
@@ -109,7 +118,8 @@ try {
 
     evidenceRefs.push({
       sourceName: String(source.name || ""),
-      sourceUrl: source.url,
+      sourceUrl: resolvedUrl.toString(),
+      requestedSourceUrl: source.url,
       observedAt,
       httpStatus: response.status,
       contentType,
@@ -119,7 +129,8 @@ try {
 
     findings.push({
       sourceName: String(source.name || ""),
-      sourceUrl: source.url,
+      sourceUrl: resolvedUrl.toString(),
+      requestedSourceUrl: source.url,
       observedAt,
       observation:
         "Approved official public source was retrieved read-only and contained the expected local-producer discovery marker.",
