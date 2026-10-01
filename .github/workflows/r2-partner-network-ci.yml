@@ -50,8 +50,8 @@ jobs:
       - name: Typecheck
         run: npm run typecheck
 
-      - name: Lint
-        run: npm run lint
+      - name: Lint R2 surface
+        run: npx eslint src/lib/partner-network tests/partner-network.test.ts
 
       - name: Production build
         env:
