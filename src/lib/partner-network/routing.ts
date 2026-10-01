@@ -1,0 +1,185 @@
+import type {
+  DemandLine,
+  PartnerCandidate,
+  PartnerOffer,
+  ProposedAllocation,
+  ProposedFulfillmentPlan,
+} from "./types";
+import { qualifyPartnerCandidate } from "./policy";
+
+function offerTrustScore(offer: PartnerOffer) {
+  let score = 0;
+  if (offer.availabilityState === "VERIFIED") score += 35;
+  else if (offer.availabilityState === "CLAIMED") score += 15;
+
+  if (offer.priceState === "VERIFIED") score += 20;
+  else if (offer.priceState === "CLAIMED") score += 8;
+
+  if (offer.serviceAreaState === "VERIFIED_MATCH") score += 30;
+  else if (offer.serviceAreaState === "CLAIMED_MATCH") score += 15;
+  else if (offer.serviceAreaState === "UNKNOWN") score += 2;
+
+  if (offer.fulfillmentMode === "FOOD_HUB") score += 8;
+  else if (offer.fulfillmentMode === "LOCAL_DELIVERY") score += 6;
+  else if (offer.fulfillmentMode === "PICKUP") score += 4;
+  else if (offer.fulfillmentMode === "COURIER") score += 3;
+
+  return score;
+}
+
+export function buildProposedFulfillmentPlan(input: {
+  demand: DemandLine[];
+  partners: PartnerCandidate[];
+  offers: PartnerOffer[];
+  now: Date;
+}): ProposedFulfillmentPlan {
+  const partnerMap = new Map(input.partners.map((p) => [p.id, p]));
+  const qualifications = new Map(
+    input.partners.map((partner) => [
+      partner.id,
+      qualifyPartnerCandidate(partner, input.now),
+    ])
+  );
+
+  const allocations: ProposedAllocation[] = [];
+  const uncovered: ProposedFulfillmentPlan["uncovered"] = [];
+  const alternates: ProposedFulfillmentPlan["alternates"] = [];
+  const planWarnings: string[] = [];
+  let knownCostCents = 0;
+  let hasUnknownCosts = false;
+  let requiresHumanVerification = false;
+
+  for (const line of input.demand) {
+    let remaining = line.quantity;
+
+    const lineOffers = input.offers
+      .filter((offer) => offer.demandLineId === line.id)
+      .filter((offer) => {
+        const partner = partnerMap.get(offer.partnerCandidateId);
+        const qualification = qualifications.get(offer.partnerCandidateId);
+        if (!partner || !qualification?.eligibleForRecommendation) return false;
+        if (offer.serviceAreaState === "NO_MATCH") return false;
+        if (offer.availabilityState === "UNKNOWN" || offer.availabilityState === "STALE") return false;
+        if (offer.availableQuantity === null || offer.availableQuantity <= 0) return false;
+        return true;
+      })
+      .sort((a, b) => {
+        const trustDelta = offerTrustScore(b) - offerTrustScore(a);
+        if (trustDelta !== 0) return trustDelta;
+
+        const aPrice = a.unitPriceCents ?? Number.MAX_SAFE_INTEGER;
+        const bPrice = b.unitPriceCents ?? Number.MAX_SAFE_INTEGER;
+        if (aPrice !== bPrice) return aPrice - bPrice;
+
+        return a.partnerCandidateId.localeCompare(b.partnerCandidateId);
+      });
+
+    for (const offer of lineOffers) {
+      if (remaining <= 0) {
+        alternates.push({
+          demandLineId: line.id,
+          partnerCandidateId: offer.partnerCandidateId,
+          reason: "Qualified alternate after the demand line was already covered.",
+        });
+        continue;
+      }
+
+      const quantity = Math.min(remaining, offer.availableQuantity ?? 0);
+      if (quantity <= 0) continue;
+
+      const warnings: string[] = [];
+      const verificationRequired =
+        offer.availabilityState !== "VERIFIED" ||
+        offer.priceState !== "VERIFIED" ||
+        offer.serviceAreaState !== "VERIFIED_MATCH";
+
+      if (offer.availabilityState !== "VERIFIED") warnings.push("Availability is claimed, not verified.");
+      if (offer.priceState !== "VERIFIED") warnings.push("Price is not verified.");
+      if (offer.serviceAreaState !== "VERIFIED_MATCH") warnings.push("Service-area match requires verification.");
+
+      const knownCost =
+        offer.unitPriceCents === null ? null : quantity * offer.unitPriceCents;
+
+      if (knownCost === null) hasUnknownCosts = true;
+      else knownCostCents += knownCost;
+
+      if (verificationRequired) requiresHumanVerification = true;
+
+      allocations.push({
+        demandLineId: line.id,
+        partnerCandidateId: offer.partnerCandidateId,
+        quantity,
+        unit: line.unit,
+        unitPriceCents: offer.unitPriceCents,
+        knownCostCents: knownCost,
+        fulfillmentMode: offer.fulfillmentMode,
+        verificationRequired,
+        warnings,
+      });
+
+      remaining -= quantity;
+    }
+
+    const unusableAlternates = input.offers.filter(
+      (offer) =>
+        offer.demandLineId === line.id &&
+        !allocations.some(
+          (allocation) =>
+            allocation.demandLineId === line.id &&
+            allocation.partnerCandidateId === offer.partnerCandidateId
+        )
+    );
+
+    for (const offer of unusableAlternates) {
+      if (
+        alternates.some(
+          (a) =>
+            a.demandLineId === line.id &&
+            a.partnerCandidateId === offer.partnerCandidateId
+        )
+      ) continue;
+
+      let reason = "Offer is not currently eligible for allocation.";
+      if (offer.serviceAreaState === "NO_MATCH") reason = "Service area does not match.";
+      else if (offer.availableQuantity === null) reason = "Available quantity is unknown.";
+      else if (offer.availabilityState === "STALE") reason = "Availability evidence is stale.";
+      else if (offer.availabilityState === "UNKNOWN") reason = "Availability is unknown.";
+
+      alternates.push({
+        demandLineId: line.id,
+        partnerCandidateId: offer.partnerCandidateId,
+        reason,
+      });
+    }
+
+    if (remaining > 0) {
+      uncovered.push({
+        demandLineId: line.id,
+        remainingQuantity: remaining,
+        unit: line.unit,
+        reason: "Verified/recommendable partner evidence does not cover the full requested quantity.",
+      });
+      requiresHumanVerification = true;
+    }
+  }
+
+  if (hasUnknownCosts) {
+    planWarnings.push("At least one proposed allocation has unknown current cost.");
+  }
+  if (uncovered.length > 0) {
+    planWarnings.push("The proposed network does not fully cover all demand.");
+  }
+  planWarnings.push("Proposal is RECOMMEND-only and cannot execute an order.");
+
+  return {
+    authority: "RECOMMEND_ONLY",
+    canExecute: false,
+    allocations,
+    uncovered,
+    alternates,
+    knownCostCents,
+    hasUnknownCosts,
+    requiresHumanVerification,
+    warnings: planWarnings,
+  };
+}
