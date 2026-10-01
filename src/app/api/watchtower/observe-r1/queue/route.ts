@@ -14,7 +14,7 @@ import {
   WATCHTOWER_R1_QUEUE_RECEIPT_ACTION,
 } from "@/lib/watchtower/policy";
 import { currentWatchtowerRuntimeId } from "@/lib/watchtower/runtime-id";
-import { requireWatchtowerObserveProofWorker } from "@/lib/watchtower/worker-auth";
+import { requireWatchtowerR1Worker } from "@/lib/watchtower/worker-auth";
 
 function currentR1Environment() {
   return evaluateObserveProofEnvironmentSnapshot({
@@ -27,7 +27,7 @@ function currentR1Environment() {
 }
 
 export async function POST(req: NextRequest) {
-  const auth = await requireWatchtowerObserveProofWorker(req);
+  const auth = await requireWatchtowerR1Worker(req);
   if (auth) return auth;
 
   const environment = currentR1Environment();
