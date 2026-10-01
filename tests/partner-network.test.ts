@@ -149,6 +149,8 @@ test("routing can split one demand line across multiple recommended partners wit
       {
         partnerCandidateId: "farm-a",
         demandLineId: "tomatoes",
+        category: "produce",
+        unit: "lb",
         availableQuantity: 6,
         unitPriceCents: 250,
         availabilityState: "VERIFIED",
@@ -160,6 +162,8 @@ test("routing can split one demand line across multiple recommended partners wit
       {
         partnerCandidateId: "farm-b",
         demandLineId: "tomatoes",
+        category: "produce",
+        unit: "lb",
         availableQuantity: 8,
         unitPriceCents: 275,
         availabilityState: "VERIFIED",
@@ -185,7 +189,7 @@ test("routing can split one demand line across multiple recommended partners wit
 test("unknown quantity is never silently treated as available inventory", () => {
   const plan = buildProposedFulfillmentPlan({
     now: NOW,
-    partners: [candidate()],
+    partners: [candidate({ categories: ["eggs"] })],
     demand: [
       { id: "eggs", category: "eggs", quantity: 12, unit: "dozen" },
     ],
@@ -193,6 +197,8 @@ test("unknown quantity is never silently treated as available inventory", () => 
       {
         partnerCandidateId: "farm-a",
         demandLineId: "eggs",
+        category: "eggs",
+        unit: "dozen",
         availableQuantity: null,
         unitPriceCents: 500,
         availabilityState: "CLAIMED",
@@ -212,7 +218,7 @@ test("unknown quantity is never silently treated as available inventory", () => 
 test("no-match service area cannot be allocated", () => {
   const plan = buildProposedFulfillmentPlan({
     now: NOW,
-    partners: [candidate()],
+    partners: [candidate({ categories: ["meat"] })],
     demand: [
       { id: "beef", category: "meat", quantity: 20, unit: "lb" },
     ],
@@ -220,6 +226,8 @@ test("no-match service area cannot be allocated", () => {
       {
         partnerCandidateId: "farm-a",
         demandLineId: "beef",
+        category: "meat",
+        unit: "lb",
         availableQuantity: 20,
         unitPriceCents: 800,
         availabilityState: "VERIFIED",
@@ -238,7 +246,7 @@ test("no-match service area cannot be allocated", () => {
 test("claimed availability or unknown price forces human verification", () => {
   const plan = buildProposedFulfillmentPlan({
     now: NOW,
-    partners: [candidate()],
+    partners: [candidate({ categories: ["bakery"] })],
     demand: [
       { id: "bread", category: "bakery", quantity: 5, unit: "loaf" },
     ],
@@ -246,6 +254,8 @@ test("claimed availability or unknown price forces human verification", () => {
       {
         partnerCandidateId: "farm-a",
         demandLineId: "bread",
+        category: "bakery",
+        unit: "loaf",
         availableQuantity: 5,
         unitPriceCents: null,
         availabilityState: "CLAIMED",
@@ -261,4 +271,117 @@ test("claimed availability or unknown price forces human verification", () => {
   assert.equal(plan.hasUnknownCosts, true);
   assert.equal(plan.requiresHumanVerification, true);
   assert.equal(plan.knownCostCents, 0);
+});
+
+
+test("offer category and unit must match demand before allocation", () => {
+  const partner = candidate({ categories: ["produce"] });
+  const plan = buildProposedFulfillmentPlan({
+    now: NOW,
+    partners: [partner],
+    demand: [
+      { id: "tomatoes", category: "produce", quantity: 10, unit: "lb" },
+    ],
+    offers: [
+      {
+        partnerCandidateId: "farm-a",
+        demandLineId: "tomatoes",
+        category: "produce",
+        unit: "case",
+        availableQuantity: 10,
+        unitPriceCents: 200,
+        availabilityState: "VERIFIED",
+        priceState: "VERIFIED",
+        serviceAreaState: "VERIFIED_MATCH",
+        fulfillmentMode: "PICKUP",
+        evidenceObservedAt: "2026-09-30T00:00:00.000Z",
+      },
+      {
+        partnerCandidateId: "farm-a",
+        demandLineId: "tomatoes",
+        category: "meat",
+        unit: "lb",
+        availableQuantity: 10,
+        unitPriceCents: 200,
+        availabilityState: "VERIFIED",
+        priceState: "VERIFIED",
+        serviceAreaState: "VERIFIED_MATCH",
+        fulfillmentMode: "PICKUP",
+        evidenceObservedAt: "2026-09-30T00:00:00.000Z",
+      },
+    ],
+  });
+
+  assert.equal(plan.allocations.length, 0);
+  assert.equal(plan.uncovered[0]?.remainingQuantity, 10);
+});
+
+test("stale offer evidence cannot allocate current demand", () => {
+  const plan = buildProposedFulfillmentPlan({
+    now: NOW,
+    partners: [candidate()],
+    demand: [
+      { id: "tomatoes", category: "produce", quantity: 10, unit: "lb" },
+    ],
+    offers: [
+      {
+        partnerCandidateId: "farm-a",
+        demandLineId: "tomatoes",
+        category: "produce",
+        unit: "lb",
+        availableQuantity: 10,
+        unitPriceCents: 200,
+        availabilityState: "VERIFIED",
+        priceState: "VERIFIED",
+        serviceAreaState: "VERIFIED_MATCH",
+        fulfillmentMode: "PICKUP",
+        evidenceObservedAt: "2026-07-01T00:00:00.000Z",
+      },
+    ],
+  });
+
+  assert.equal(plan.allocations.length, 0);
+  assert.ok(plan.alternates.some((alternate) => alternate.reason.includes("too old")));
+});
+
+test("duplicate same-partner offers cannot double-count one partner's availability", () => {
+  const plan = buildProposedFulfillmentPlan({
+    now: NOW,
+    partners: [candidate()],
+    demand: [
+      { id: "tomatoes", category: "produce", quantity: 10, unit: "lb" },
+    ],
+    offers: [
+      {
+        partnerCandidateId: "farm-a",
+        demandLineId: "tomatoes",
+        category: "produce",
+        unit: "lb",
+        availableQuantity: 6,
+        unitPriceCents: 250,
+        availabilityState: "VERIFIED",
+        priceState: "VERIFIED",
+        serviceAreaState: "VERIFIED_MATCH",
+        fulfillmentMode: "PICKUP",
+        evidenceObservedAt: "2026-09-30T00:00:00.000Z",
+      },
+      {
+        partnerCandidateId: "farm-a",
+        demandLineId: "tomatoes",
+        category: "produce",
+        unit: "lb",
+        availableQuantity: 6,
+        unitPriceCents: 240,
+        availabilityState: "VERIFIED",
+        priceState: "VERIFIED",
+        serviceAreaState: "VERIFIED_MATCH",
+        fulfillmentMode: "PICKUP",
+        evidenceObservedAt: "2026-09-30T00:00:00.000Z",
+      },
+    ],
+  });
+
+  assert.equal(plan.allocations.length, 1);
+  assert.equal(plan.allocations[0]?.quantity, 6);
+  assert.equal(plan.uncovered[0]?.remainingQuantity, 4);
 });
