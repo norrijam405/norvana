@@ -730,3 +730,250 @@ test("VERIFIED price with no numeric amount does not outrank a known VERIFIED nu
   assert.equal(plan.allocations[0]?.knownCostCents, 275);
   assert.equal(plan.allocations[0]?.verificationRequired, false);
 });
+
+
+test("VERIFIED negative numeric price is not authoritative and forces verification", () => {
+  const plan = buildProposedFulfillmentPlan({
+    now: NOW,
+    partners: [candidate()],
+    demand: [{ id: "tomatoes", category: "produce", quantity: 1, unit: "lb" }],
+    offers: [{
+      partnerCandidateId: "farm-a",
+      demandLineId: "tomatoes",
+      category: "produce",
+      unit: "lb",
+      availableQuantity: 1,
+      unitPriceCents: -1,
+      availabilityState: "VERIFIED",
+      priceState: "VERIFIED",
+      serviceAreaState: "VERIFIED_MATCH",
+      fulfillmentMode: "PICKUP",
+      evidenceObservedAt: "2026-10-01T20:00:00.000Z",
+    }],
+  });
+
+  assert.equal(plan.allocations[0]?.unitPriceCents, null);
+  assert.equal(plan.allocations[0]?.knownCostCents, null);
+  assert.equal(plan.allocations[0]?.verificationRequired, true);
+  assert.equal(plan.knownCostCents, 0);
+  assert.equal(plan.hasUnknownCosts, true);
+  assert.equal(plan.requiresHumanVerification, true);
+  assert.ok(
+    plan.allocations[0]?.warnings.some((warning) =>
+      warning.includes("invalid")
+    )
+  );
+});
+
+test("VERIFIED NaN and infinities are not authoritative prices", () => {
+  for (const unitPriceCents of [Number.NaN, Number.POSITIVE_INFINITY, Number.NEGATIVE_INFINITY]) {
+    const plan = buildProposedFulfillmentPlan({
+      now: NOW,
+      partners: [candidate()],
+      demand: [{ id: "tomatoes", category: "produce", quantity: 1, unit: "lb" }],
+      offers: [{
+        partnerCandidateId: "farm-a",
+        demandLineId: "tomatoes",
+        category: "produce",
+        unit: "lb",
+        availableQuantity: 1,
+        unitPriceCents,
+        availabilityState: "VERIFIED",
+        priceState: "VERIFIED",
+        serviceAreaState: "VERIFIED_MATCH",
+        fulfillmentMode: "PICKUP",
+        evidenceObservedAt: "2026-10-01T20:00:00.000Z",
+      }],
+    });
+
+    assert.equal(plan.allocations[0]?.unitPriceCents, null);
+    assert.equal(plan.allocations[0]?.knownCostCents, null);
+    assert.equal(plan.allocations[0]?.verificationRequired, true);
+    assert.equal(plan.hasUnknownCosts, true);
+    assert.equal(plan.requiresHumanVerification, true);
+  }
+});
+
+test("VERIFIED fractional-cent and unsafe-integer prices are not authoritative", () => {
+  for (const unitPriceCents of [1.5, Number.MAX_SAFE_INTEGER + 1]) {
+    const plan = buildProposedFulfillmentPlan({
+      now: NOW,
+      partners: [candidate()],
+      demand: [{ id: "tomatoes", category: "produce", quantity: 1, unit: "lb" }],
+      offers: [{
+        partnerCandidateId: "farm-a",
+        demandLineId: "tomatoes",
+        category: "produce",
+        unit: "lb",
+        availableQuantity: 1,
+        unitPriceCents,
+        availabilityState: "VERIFIED",
+        priceState: "VERIFIED",
+        serviceAreaState: "VERIFIED_MATCH",
+        fulfillmentMode: "PICKUP",
+        evidenceObservedAt: "2026-10-01T20:00:00.000Z",
+      }],
+    });
+
+    assert.equal(plan.allocations[0]?.unitPriceCents, null);
+    assert.equal(plan.allocations[0]?.knownCostCents, null);
+    assert.equal(plan.allocations[0]?.verificationRequired, true);
+    assert.equal(plan.hasUnknownCosts, true);
+  }
+});
+
+test("VERIFIED zero-cent price may remain authoritative", () => {
+  const plan = buildProposedFulfillmentPlan({
+    now: NOW,
+    partners: [candidate()],
+    demand: [{ id: "tomatoes", category: "produce", quantity: 1, unit: "lb" }],
+    offers: [{
+      partnerCandidateId: "farm-a",
+      demandLineId: "tomatoes",
+      category: "produce",
+      unit: "lb",
+      availableQuantity: 1,
+      unitPriceCents: 0,
+      availabilityState: "VERIFIED",
+      priceState: "VERIFIED",
+      serviceAreaState: "VERIFIED_MATCH",
+      fulfillmentMode: "PICKUP",
+      evidenceObservedAt: "2026-10-01T20:00:00.000Z",
+    }],
+  });
+
+  assert.equal(plan.allocations[0]?.unitPriceCents, 0);
+  assert.equal(plan.allocations[0]?.knownCostCents, 0);
+  assert.equal(plan.allocations[0]?.verificationRequired, false);
+  assert.equal(plan.hasUnknownCosts, false);
+  assert.equal(plan.requiresHumanVerification, false);
+});
+
+test("invalid VERIFIED negative price cannot beat a valid positive duplicate offer", () => {
+  const plan = buildProposedFulfillmentPlan({
+    now: NOW,
+    partners: [candidate()],
+    demand: [{ id: "tomatoes", category: "produce", quantity: 1, unit: "lb" }],
+    offers: [
+      {
+        partnerCandidateId: "farm-a",
+        demandLineId: "tomatoes",
+        category: "produce",
+        unit: "lb",
+        availableQuantity: 1,
+        unitPriceCents: -1,
+        availabilityState: "VERIFIED",
+        priceState: "VERIFIED",
+        serviceAreaState: "VERIFIED_MATCH",
+        fulfillmentMode: "PICKUP",
+        evidenceObservedAt: "2026-10-01T20:00:00.000Z",
+      },
+      {
+        partnerCandidateId: "farm-a",
+        demandLineId: "tomatoes",
+        category: "produce",
+        unit: "lb",
+        availableQuantity: 1,
+        unitPriceCents: 250,
+        availabilityState: "VERIFIED",
+        priceState: "VERIFIED",
+        serviceAreaState: "VERIFIED_MATCH",
+        fulfillmentMode: "PICKUP",
+        evidenceObservedAt: "2026-10-01T20:00:00.000Z",
+      },
+    ],
+  });
+
+  assert.equal(plan.allocations.length, 1);
+  assert.equal(plan.allocations[0]?.unitPriceCents, 250);
+  assert.equal(plan.allocations[0]?.knownCostCents, 250);
+  assert.equal(plan.allocations[0]?.verificationRequired, false);
+});
+
+test("invalid VERIFIED price never reduces mixed-plan known cost totals", () => {
+  const farmA = candidate();
+  const farmB = candidate({
+    id: "farm-b",
+    name: "Farm B",
+    evidence: [{
+      id: "ev-b-invalid-price",
+      sourceId: "usda-ams-local-food-directories",
+      sourceUrl: "https://example.test/farm-b",
+      observedAt: "2026-09-21T00:00:00.000Z",
+      claimKinds: ["identity", "location", "products"],
+    }],
+  });
+
+  const plan = buildProposedFulfillmentPlan({
+    now: NOW,
+    partners: [farmA, farmB],
+    demand: [{ id: "tomatoes", category: "produce", quantity: 2, unit: "lb" }],
+    offers: [
+      {
+        partnerCandidateId: "farm-a",
+        demandLineId: "tomatoes",
+        category: "produce",
+        unit: "lb",
+        availableQuantity: 1,
+        unitPriceCents: 250,
+        availabilityState: "VERIFIED",
+        priceState: "VERIFIED",
+        serviceAreaState: "VERIFIED_MATCH",
+        fulfillmentMode: "PICKUP",
+        evidenceObservedAt: "2026-10-01T20:00:00.000Z",
+      },
+      {
+        partnerCandidateId: "farm-b",
+        demandLineId: "tomatoes",
+        category: "produce",
+        unit: "lb",
+        availableQuantity: 1,
+        unitPriceCents: -999,
+        availabilityState: "VERIFIED",
+        priceState: "VERIFIED",
+        serviceAreaState: "VERIFIED_MATCH",
+        fulfillmentMode: "LOCAL_DELIVERY",
+        evidenceObservedAt: "2026-10-01T20:00:00.000Z",
+      },
+    ],
+  });
+
+  const invalid = plan.allocations.find(
+    (allocation) => allocation.partnerCandidateId === "farm-b"
+  );
+
+  assert.equal(plan.allocations.length, 2);
+  assert.equal(plan.knownCostCents, 250);
+  assert.equal(invalid?.unitPriceCents, null);
+  assert.equal(invalid?.knownCostCents, null);
+  assert.equal(invalid?.verificationRequired, true);
+  assert.equal(plan.hasUnknownCosts, true);
+  assert.equal(plan.requiresHumanVerification, true);
+});
+
+test("non-integer calculated cents fail closed even with a valid unit price", () => {
+  const plan = buildProposedFulfillmentPlan({
+    now: NOW,
+    partners: [candidate()],
+    demand: [{ id: "tomatoes", category: "produce", quantity: 0.5, unit: "lb" }],
+    offers: [{
+      partnerCandidateId: "farm-a",
+      demandLineId: "tomatoes",
+      category: "produce",
+      unit: "lb",
+      availableQuantity: 0.5,
+      unitPriceCents: 251,
+      availabilityState: "VERIFIED",
+      priceState: "VERIFIED",
+      serviceAreaState: "VERIFIED_MATCH",
+      fulfillmentMode: "PICKUP",
+      evidenceObservedAt: "2026-10-01T20:00:00.000Z",
+    }],
+  });
+
+  assert.equal(plan.allocations[0]?.unitPriceCents, 251);
+  assert.equal(plan.allocations[0]?.knownCostCents, null);
+  assert.equal(plan.allocations[0]?.verificationRequired, true);
+  assert.equal(plan.hasUnknownCosts, true);
+  assert.equal(plan.requiresHumanVerification, true);
+});
