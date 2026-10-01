@@ -27,12 +27,6 @@ jobs:
       - name: Install dependencies
         run: npm install --ignore-scripts --no-audit --no-fund
 
-      - name: Runtime dependency audit
-        run: npm audit --omit=dev --audit-level=moderate
-
-      - name: Full dependency high-severity gate
-        run: npm audit --audit-level=high
-
       - name: Reject obvious new secret regressions
         shell: bash
         run: |
@@ -66,3 +60,9 @@ jobs:
           IGNIAQUA_FEDERATION_ENABLED: "false"
           NEXT_TELEMETRY_DISABLED: "1"
         run: npm run build
+
+      - name: Runtime dependency audit
+        run: npm audit --omit=dev --audit-level=moderate
+
+      - name: Full dependency high-severity gate
+        run: npm audit --audit-level=high
