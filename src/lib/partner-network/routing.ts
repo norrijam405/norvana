@@ -16,7 +16,23 @@ function normalizeCategory(value: string) {
 }
 
 function verifiedUnitPriceCents(offer: PartnerOffer) {
-  return offer.priceState === "VERIFIED" ? offer.unitPriceCents : null;
+  if (offer.priceState !== "VERIFIED") return null;
+  const value = offer.unitPriceCents;
+  if (value === null) return null;
+  if (!Number.isSafeInteger(value) || value < 0) return null;
+  return value;
+}
+
+function knownCostCentsForQuantity(
+  quantity: number,
+  unitPriceCents: number | null
+) {
+  if (unitPriceCents === null) return null;
+  if (!Number.isFinite(quantity) || quantity <= 0) return null;
+
+  const cost = quantity * unitPriceCents;
+  if (!Number.isSafeInteger(cost) || cost < 0) return null;
+  return cost;
 }
 
 function offerAgeDays(offer: PartnerOffer, now: Date) {
@@ -163,21 +179,28 @@ export function buildProposedFulfillmentPlan(input: {
       const warnings: string[] = [];
       const ageDays = offerAgeDays(offer, input.now);
       const unitPriceCents = verifiedUnitPriceCents(offer);
-      const knownCost =
-        unitPriceCents === null ? null : quantity * unitPriceCents;
+      const knownCost = knownCostCentsForQuantity(
+        quantity,
+        unitPriceCents
+      );
 
       const verificationRequired =
         offer.availabilityState !== "VERIFIED" ||
         offer.priceState !== "VERIFIED" ||
         unitPriceCents === null ||
+        knownCost === null ||
         offer.serviceAreaState !== "VERIFIED_MATCH" ||
         ageDays > OFFER_REVERIFY_AFTER_DAYS;
 
       if (offer.availabilityState !== "VERIFIED") warnings.push("Availability is claimed, not verified.");
       if (offer.priceState !== "VERIFIED") {
         warnings.push("Price is not verified.");
-      } else if (unitPriceCents === null) {
+      } else if (offer.unitPriceCents === null) {
         warnings.push("Verified price state is missing a numeric current amount.");
+      } else if (unitPriceCents === null) {
+        warnings.push("Verified price amount is invalid; expected finite, non-negative, safe-integer cents.");
+      } else if (knownCost === null) {
+        warnings.push("Calculated current cost is not a finite, non-negative, safe-integer cents amount.");
       }
       if (offer.serviceAreaState !== "VERIFIED_MATCH") warnings.push("Service-area match requires verification.");
       if (ageDays > OFFER_REVERIFY_AFTER_DAYS) warnings.push("Offer evidence should be reverified before human approval.");
