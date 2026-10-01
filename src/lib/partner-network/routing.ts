@@ -32,8 +32,9 @@ function offerTrustScore(offer: PartnerOffer, now: Date) {
   if (offer.availabilityState === "VERIFIED") score += 35;
   else if (offer.availabilityState === "CLAIMED") score += 15;
 
-  if (offer.priceState === "VERIFIED") score += 20;
-  else if (offer.priceState === "CLAIMED") score += 8;
+  const authoritativePrice = verifiedUnitPriceCents(offer);
+  if (authoritativePrice !== null) score += 20;
+  else if (offer.priceState === "CLAIMED" && offer.unitPriceCents !== null) score += 8;
 
   if (offer.serviceAreaState === "VERIFIED_MATCH") score += 30;
   else if (offer.serviceAreaState === "CLAIMED_MATCH") score += 15;
@@ -161,20 +162,25 @@ export function buildProposedFulfillmentPlan(input: {
 
       const warnings: string[] = [];
       const ageDays = offerAgeDays(offer, input.now);
+      const unitPriceCents = verifiedUnitPriceCents(offer);
+      const knownCost =
+        unitPriceCents === null ? null : quantity * unitPriceCents;
+
       const verificationRequired =
         offer.availabilityState !== "VERIFIED" ||
         offer.priceState !== "VERIFIED" ||
+        unitPriceCents === null ||
         offer.serviceAreaState !== "VERIFIED_MATCH" ||
         ageDays > OFFER_REVERIFY_AFTER_DAYS;
 
       if (offer.availabilityState !== "VERIFIED") warnings.push("Availability is claimed, not verified.");
-      if (offer.priceState !== "VERIFIED") warnings.push("Price is not verified.");
+      if (offer.priceState !== "VERIFIED") {
+        warnings.push("Price is not verified.");
+      } else if (unitPriceCents === null) {
+        warnings.push("Verified price state is missing a numeric current amount.");
+      }
       if (offer.serviceAreaState !== "VERIFIED_MATCH") warnings.push("Service-area match requires verification.");
       if (ageDays > OFFER_REVERIFY_AFTER_DAYS) warnings.push("Offer evidence should be reverified before human approval.");
-
-      const unitPriceCents = verifiedUnitPriceCents(offer);
-      const knownCost =
-        unitPriceCents === null ? null : quantity * unitPriceCents;
 
       if (knownCost === null) hasUnknownCosts = true;
       else knownCostCents += knownCost;
