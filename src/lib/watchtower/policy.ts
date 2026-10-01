@@ -366,6 +366,37 @@ export const WATCHTOWER_OBSERVE_PROOF_ADVISORY_LOCK_KEY_2 =
 
 export const WATCHTOWER_OBSERVE_PROOF_TARGET_SLUG = "local-producer-watch";
 
+export const WATCHTOWER_OBSERVE_PROOF_MANUAL_WORKFLOW_REF =
+  "norrijam405/norvana/.github/workflows/watchtower-observe-proof.yml@refs/heads/main";
+
+export const WATCHTOWER_R1_WORKFLOW_REF =
+  "norrijam405/norvana/.github/workflows/watchtower-local-producer-r1.yml@refs/heads/main";
+
+export const WATCHTOWER_R1_MIN_INTERVAL_MS = 20 * 60 * 60 * 1000;
+export const WATCHTOWER_R1_QUEUE_RECEIPT_ACTION = "WATCH_R1_OBSERVE_QUEUED";
+
+export function evaluateR1QueueCadence(input: {
+  lastQueuedAt: Date | null;
+  now: Date;
+}): R0GateDecision {
+  if (!input.lastQueuedAt) return { ok: true };
+
+  const elapsedMs = input.now.getTime() - input.lastQueuedAt.getTime();
+  if (
+    !Number.isFinite(elapsedMs) ||
+    elapsedMs < WATCHTOWER_R1_MIN_INTERVAL_MS
+  ) {
+    return {
+      ok: false,
+      code: "WATCHTOWER_R1_CADENCE_NOT_ELAPSED",
+      reason:
+        "R1 recurring observe requires at least 20 hours between queue operations.",
+    };
+  }
+
+  return { ok: true };
+}
+
 export function evaluateGitHubObserveProofClaims(
   claims: Record<string, unknown>
 ): R0GateDecision {
@@ -405,22 +436,40 @@ export function evaluateGitHubObserveProofClaims(
     };
   }
 
-  if (String(claims.event_name || "") !== "workflow_dispatch") {
-    return {
-      ok: false,
-      code: "WATCHTOWER_OBSERVE_PROOF_OIDC_EVENT_MISMATCH",
-      reason: "Observe-proof OIDC event must be workflow_dispatch.",
-    };
-  }
+  const eventName = String(claims.event_name || "");
+  const workflowRef = String(claims.workflow_ref || "");
 
   if (
-    String(claims.workflow_ref || "") !==
-    "norrijam405/norvana/.github/workflows/watchtower-observe-proof.yml@refs/heads/main"
+    workflowRef !== WATCHTOWER_OBSERVE_PROOF_MANUAL_WORKFLOW_REF &&
+    workflowRef !== WATCHTOWER_R1_WORKFLOW_REF
   ) {
     return {
       ok: false,
       code: "WATCHTOWER_OBSERVE_PROOF_OIDC_WORKFLOW_MISMATCH",
-      reason: "Observe-proof OIDC workflow identity does not match the approved workflow.",
+      reason: "Observe-proof OIDC workflow identity does not match an approved workflow.",
+    };
+  }
+
+  if (
+    workflowRef === WATCHTOWER_OBSERVE_PROOF_MANUAL_WORKFLOW_REF &&
+    eventName !== "workflow_dispatch"
+  ) {
+    return {
+      ok: false,
+      code: "WATCHTOWER_OBSERVE_PROOF_OIDC_EVENT_MISMATCH",
+      reason: "The one-shot observe-proof workflow requires workflow_dispatch.",
+    };
+  }
+
+  if (
+    workflowRef === WATCHTOWER_R1_WORKFLOW_REF &&
+    eventName !== "schedule" &&
+    eventName !== "workflow_dispatch"
+  ) {
+    return {
+      ok: false,
+      code: "WATCHTOWER_OBSERVE_PROOF_OIDC_EVENT_MISMATCH",
+      reason: "The R1 observe workflow permits schedule or controlled workflow_dispatch only.",
     };
   }
 

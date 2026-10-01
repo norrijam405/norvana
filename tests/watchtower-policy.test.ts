@@ -11,6 +11,9 @@ import {
   evaluateHarnessWatcherSnapshot,
   evaluateGitHubHarnessClaims,
   evaluateGitHubObserveProofClaims,
+  evaluateR1QueueCadence,
+  WATCHTOWER_R1_MIN_INTERVAL_MS,
+  WATCHTOWER_R1_WORKFLOW_REF,
   evaluateObserveProofEnvironmentSnapshot,
   evaluateObserveProofTargetJob,
   evaluateObserveProofWatcherSnapshot,
@@ -1353,4 +1356,249 @@ test("admin guard derives the expected full origin from NextRequest and uses sha
   assert.match(source, /evaluateAuthenticatedBrowserReadOrigin/);
   assert.match(source, /requestOrigin:\s*req\.nextUrl\.origin/);
   assert.doesNotMatch(source, /originUrl\.host\s*!==\s*host/);
+});
+
+
+test("R1 observe OIDC identity accepts only the exact scheduled workflow/event pairs", () => {
+  const common = {
+    iss: "https://token.actions.githubusercontent.com",
+    aud: "https://github.com/norrijam405",
+    repository: "norrijam405/norvana",
+    ref: "refs/heads/main",
+    runner_environment: "github-hosted",
+  };
+
+  const manual = {
+    ...common,
+    event_name: "workflow_dispatch",
+    workflow_ref:
+      "norrijam405/norvana/.github/workflows/watchtower-observe-proof.yml@refs/heads/main",
+  };
+  assert.deepEqual(evaluateGitHubObserveProofClaims(manual), { ok: true });
+
+  const recurringSchedule = {
+    ...common,
+    event_name: "schedule",
+    workflow_ref: WATCHTOWER_R1_WORKFLOW_REF,
+  };
+  assert.deepEqual(
+    evaluateGitHubObserveProofClaims(recurringSchedule),
+    { ok: true }
+  );
+
+  const recurringManual = {
+    ...common,
+    event_name: "workflow_dispatch",
+    workflow_ref: WATCHTOWER_R1_WORKFLOW_REF,
+  };
+  assert.deepEqual(
+    evaluateGitHubObserveProofClaims(recurringManual),
+    { ok: true }
+  );
+
+  assert.equal(
+    evaluateGitHubObserveProofClaims({
+      ...manual,
+      event_name: "schedule",
+    }).ok,
+    false
+  );
+
+  assert.equal(
+    evaluateGitHubObserveProofClaims({
+      ...recurringSchedule,
+      event_name: "pull_request",
+    }).ok,
+    false
+  );
+
+  assert.equal(
+    evaluateGitHubObserveProofClaims({
+      ...recurringSchedule,
+      workflow_ref:
+        "norrijam405/norvana/.github/workflows/watchtower-scheduler.yml@refs/heads/main",
+    }).ok,
+    false
+  );
+});
+
+test("R1 cadence gate enforces a server-side 20-hour minimum interval", () => {
+  const now = new Date("2026-10-01T14:17:00.000Z");
+
+  assert.deepEqual(
+    evaluateR1QueueCadence({ lastQueuedAt: null, now }),
+    { ok: true }
+  );
+
+  assert.deepEqual(
+    evaluateR1QueueCadence({
+      lastQueuedAt: new Date(now.getTime() - WATCHTOWER_R1_MIN_INTERVAL_MS),
+      now,
+    }),
+    { ok: true }
+  );
+
+  const tooSoon = evaluateR1QueueCadence({
+    lastQueuedAt: new Date(now.getTime() - WATCHTOWER_R1_MIN_INTERVAL_MS + 1),
+    now,
+  });
+  assert.equal(tooSoon.ok, false);
+  if (!tooSoon.ok) {
+    assert.equal(tooSoon.code, "WATCHTOWER_R1_CADENCE_NOT_ELAPSED");
+  }
+
+  assert.equal(
+    evaluateR1QueueCadence({
+      lastQueuedAt: new Date(now.getTime() + 60_000),
+      now,
+    }).ok,
+    false
+  );
+});
+
+test("R1 source configuration is disabled by default and manual confirmation is inert data", async () => {
+  const configUrl = new URL(
+    "../scripts/watchtower-r1-config.mjs",
+    import.meta.url
+  ).href;
+  const triggerUrl = new URL(
+    "../scripts/watchtower-r1-trigger.mjs",
+    import.meta.url
+  ).href;
+
+  const config = await import(configUrl);
+  const trigger = await import(triggerUrl);
+
+  assert.equal(config.WATCHTOWER_R1_ENABLED, false);
+  assert.throws(() => config.requireWatchtowerR1Enabled(), /source-disabled/);
+
+  assert.equal(
+    trigger.requireWatchtowerR1Trigger({
+      eventName: "schedule",
+      confirmation: "",
+    }),
+    "schedule"
+  );
+
+  assert.equal(
+    trigger.requireWatchtowerR1Trigger({
+      eventName: "workflow_dispatch",
+      confirmation: "RUN_LOCAL_PRODUCER_R1",
+    }),
+    "workflow_dispatch"
+  );
+
+  for (const confirmation of [
+    "",
+    "RUN_LOCAL_PRODUCER_R1 extra",
+    'RUN_LOCAL_PRODUCER_R1"; id; #',
+    "RUN_LOCAL_PRODUCER_R1$(id)",
+  ]) {
+    assert.throws(() =>
+      trigger.requireWatchtowerR1Trigger({
+        eventName: "workflow_dispatch",
+        confirmation,
+      })
+    );
+  }
+});
+
+test("R1 workflow is daily, shares observe concurrency, and gates OIDC behind no-OIDC preflight", async () => {
+  const { readFile } = await import("node:fs/promises");
+  const root = new URL("../", import.meta.url);
+  const [workflow, manualWorkflow] = await Promise.all([
+    readFile(
+      new URL(".github/workflows/watchtower-local-producer-r1.yml", root),
+      "utf8"
+    ),
+    readFile(
+      new URL(".github/workflows/watchtower-observe-proof.yml", root),
+      "utf8"
+    ),
+  ]);
+
+  assert.match(workflow, /cron:\s*"17 14 \* \* \*"/);
+  assert.equal((workflow.match(/cron:/g) || []).length, 1);
+  assert.match(
+    workflow,
+    /group:\s*norvana-watchtower-real-observe-proof/
+  );
+  assert.match(
+    manualWorkflow,
+    /group:\s*norvana-watchtower-real-observe-proof/
+  );
+
+  const preflightStart = workflow.indexOf("  preflight:");
+  const proofStart = workflow.indexOf("  local-producer-r1:");
+  assert.ok(preflightStart >= 0);
+  assert.ok(proofStart > preflightStart);
+
+  const preflight = workflow.slice(preflightStart, proofStart);
+  const proof = workflow.slice(proofStart);
+
+  assert.match(preflight, /permissions:\s*\n\s+contents:\s*read/);
+  assert.doesNotMatch(preflight, /id-token:\s*write/);
+  assert.match(preflight, /node scripts\/watchtower-r1-config\.mjs/);
+  assert.match(preflight, /node scripts\/watchtower-r1-trigger\.mjs/);
+  assert.match(
+    preflight,
+    /node scripts\/watchtower-observe-proof-destination\.mjs/
+  );
+
+  assert.match(proof, /needs:\s*preflight/);
+  assert.match(proof, /id-token:\s*write/);
+  assert.match(proof, /ref:\s*\$\{\{\s*github\.sha\s*\}\}/);
+  assert.match(proof, /node scripts\/watchtower-local-producer-r1\.mjs/);
+
+  assert.doesNotMatch(
+    workflow,
+    /run:\s*\|[\s\S]*?\$\{\{\s*inputs\.confirmation\s*\}\}/
+  );
+  assert.doesNotMatch(workflow, /\$\{\{\s*vars\./);
+});
+
+test("R1 queue endpoint reuses the assured observe-proof safety domain and never enables the generic scheduler", async () => {
+  const { readFile } = await import("node:fs/promises");
+  const root = new URL("../", import.meta.url);
+
+  const [route, client, genericScheduler] = await Promise.all([
+    readFile(
+      new URL("src/app/api/watchtower/observe-r1/queue/route.ts", root),
+      "utf8"
+    ),
+    readFile(
+      new URL("scripts/watchtower-local-producer-r1.mjs", root),
+      "utf8"
+    ),
+    readFile(
+      new URL(".github/workflows/watchtower-scheduler.yml", root),
+      "utf8"
+    ),
+  ]);
+
+  assert.match(route, /requireWatchtowerObserveProofWorker\(req\)/);
+  assert.match(route, /evaluateObserveProofEnvironmentSnapshot/);
+  assert.match(route, /WATCHTOWER_OBSERVE_PROOF_ADVISORY_LOCK_KEY_1/);
+  assert.match(route, /WATCHTOWER_OBSERVE_PROOF_ADVISORY_LOCK_KEY_2/);
+  assert.match(route, /CONTROL_TEST/);
+  assert.match(route, /WORKER_TEST/);
+  assert.match(route, /evaluateObserveProofWatcherSnapshot/);
+  assert.match(route, /WATCHTOWER_OBSERVE_PROOF_TARGET_SLUG/);
+  assert.match(route, /evaluateR1QueueCadence/);
+  assert.match(route, /WATCH_R1_OBSERVE_QUEUED/);
+  assert.match(route, /trigger:\s*"OBSERVE_PROOF"/);
+  assert.match(route, /normalQueueEnabled:\s*false/);
+  assert.match(route, /normalExecutorEnabled:\s*false/);
+
+  const queueIndex = client.indexOf("/api/watchtower/observe-r1/queue");
+  const workerIndex = client.indexOf('import("./watchtower-observe-proof.mjs")');
+  assert.ok(queueIndex >= 0);
+  assert.ok(workerIndex > queueIndex);
+  assert.match(client, /R1_BOUNDED_RECURRING_OBSERVE/);
+  assert.match(client, /estimatedCostCents !== 0/);
+
+  assert.match(genericScheduler, /Norvana Watchtower Scheduler/);
+  assert.doesNotMatch(client, /\/api\/watchtower\/tick/);
+  assert.doesNotMatch(client, /NORVANA_WATCHTOWER_QUEUE_ENABLED/);
+  assert.doesNotMatch(client, /NORVANA_WATCHTOWER_EXECUTOR_ENABLED/);
 });

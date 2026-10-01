@@ -1,0 +1,92 @@
+name: Norvana Watchtower Local Producer R1
+
+on:
+  schedule:
+    - cron: "17 14 * * *"
+  workflow_dispatch:
+    inputs:
+      confirmation:
+        description: "Type RUN_LOCAL_PRODUCER_R1"
+        required: true
+        type: string
+
+concurrency:
+  group: norvana-watchtower-real-observe-proof
+  cancel-in-progress: false
+
+jobs:
+  preflight:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout exact workflow commit without OIDC authority
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: \${{ github.sha }}
+
+      - name: Set up Node without OIDC authority
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 22
+          package-manager-cache: false
+
+      - name: Verify R1 source activation
+        run: node scripts/watchtower-r1-config.mjs
+
+      - name: Verify R1 trigger as data
+        env:
+          NORVANA_WATCHTOWER_R1_CONFIRMATION: \${{ inputs.confirmation }}
+        run: node scripts/watchtower-r1-trigger.mjs
+
+      - name: Verify source-pinned Preview destination
+        run: node scripts/watchtower-observe-proof-destination.mjs
+
+  local-producer-r1:
+    needs: preflight
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - name: Mint GitHub OIDC token after successful no-OIDC preflight
+        id: oidc
+        shell: bash
+        run: |
+          set -euo pipefail
+          RESPONSE="$(curl --fail-with-body --silent --show-error \
+            --header "Authorization: Bearer \${ACTIONS_ID_TOKEN_REQUEST_TOKEN}" \
+            "\${ACTIONS_ID_TOKEN_REQUEST_URL}&audience=https://github.com/norrijam405")"
+          TOKEN="$(printf '%s' "\${RESPONSE}" | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{const v=JSON.parse(s).value;if(!v)process.exit(1);process.stdout.write(v)})')"
+          test -n "\${TOKEN}"
+          echo "::add-mask::\${TOKEN}"
+          echo "token=\${TOKEN}" >> "\${GITHUB_OUTPUT}"
+
+      - name: Checkout exact workflow commit
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: \${{ github.sha }}
+
+      - name: Set up Node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 22
+          package-manager-cache: false
+
+      - name: Re-verify R1 source activation
+        run: node scripts/watchtower-r1-config.mjs
+
+      - name: Re-verify R1 trigger as data
+        env:
+          NORVANA_WATCHTOWER_R1_CONFIRMATION: \${{ inputs.confirmation }}
+        run: node scripts/watchtower-r1-trigger.mjs
+
+      - name: Re-verify source-pinned Preview destination
+        run: node scripts/watchtower-observe-proof-destination.mjs
+
+      - name: Run bounded recurring Local Producer observe
+        env:
+          NORVANA_VERCEL_OIDC_TOKEN: \${{ steps.oidc.outputs.token }}
+        run: node scripts/watchtower-local-producer-r1.mjs
