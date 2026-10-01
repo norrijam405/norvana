@@ -15,6 +15,7 @@ import {
   evaluateR1QueueCadence,
   WATCHTOWER_R1_MIN_INTERVAL_MS,
   WATCHTOWER_R1_WORKFLOW_REF,
+  WATCHTOWER_REQUIRED_JOB_SLUGS,
   evaluateObserveProofEnvironmentSnapshot,
   evaluateObserveProofTargetJob,
   evaluateObserveProofWatcherSnapshot,
@@ -28,6 +29,7 @@ import {
   evaluateAuthenticatedBrowserMutationOrigin,
   evaluateAuthenticatedBrowserReadOrigin,
 } from "../src/lib/browser-origin.ts";
+import { WATCHTOWER_JOB_TEMPLATES } from "../src/lib/watchtower/default-jobs.ts";
 
 test("R0 accepts only OBSERVE and RECOMMEND authority", () => {
   assert.equal(isR0Authority("OBSERVE"), true);
@@ -1658,4 +1660,178 @@ test("R1 OIDC-capable job does not consume workflow_dispatch confirmation data",
 
   assert.doesNotMatch(proof, /inputs\.confirmation/);
   assert.doesNotMatch(proof, /NORVANA_WATCHTOWER_R1_CONFIRMATION/);
+});
+
+
+test("observe-proof canonical topology matches the five default Watchtower templates", () => {
+  const expected = [...WATCHTOWER_REQUIRED_JOB_SLUGS].sort();
+  const actual = WATCHTOWER_JOB_TEMPLATES.map((job) => job.slug).sort();
+
+  assert.equal(actual.length, 5);
+  assert.deepEqual(actual, expected);
+});
+
+test("observe-proof watcher snapshot requires the exact five canonical watcher rows", () => {
+  const target = {
+    slug: "local-producer-watch",
+    status: "ENABLED",
+    authority: "OBSERVE",
+    budgetCents: 0,
+  };
+
+  const freeSupplier = {
+    slug: "free-supplier-watch",
+    status: "PAUSED",
+    authority: "RECOMMEND",
+    budgetCents: 0,
+  };
+
+  const globalResale = {
+    slug: "global-resale-sourcing-watch",
+    status: "PAUSED",
+    authority: "RECOMMEND",
+    budgetCents: 0,
+  };
+
+  const operatingCost = {
+    slug: "operating-cost-watch",
+    status: "PAUSED",
+    authority: "OBSERVE",
+    budgetCents: 0,
+  };
+
+  const dropOpportunity = {
+    slug: "drop-opportunity-watch",
+    status: "PAUSED",
+    authority: "RECOMMEND",
+    budgetCents: 0,
+  };
+
+  const intended = [
+    freeSupplier,
+    globalResale,
+    target,
+    operatingCost,
+    dropOpportunity,
+  ];
+
+  assert.deepEqual(evaluateObserveProofWatcherSnapshot(intended), { ok: true });
+
+  const targetOnly = evaluateObserveProofWatcherSnapshot([target]);
+  assert.equal(targetOnly.ok, false);
+  if (!targetOnly.ok) {
+    assert.equal(
+      targetOnly.code,
+      "WATCHTOWER_OBSERVE_PROOF_TOPOLOGY_CARDINALITY_INVALID"
+    );
+  }
+
+  const missingOne = evaluateObserveProofWatcherSnapshot([
+    freeSupplier,
+    globalResale,
+    target,
+    operatingCost,
+  ]);
+  assert.equal(missingOne.ok, false);
+  if (!missingOne.ok) {
+    assert.equal(
+      missingOne.code,
+      "WATCHTOWER_OBSERVE_PROOF_TOPOLOGY_CARDINALITY_INVALID"
+    );
+  }
+
+  const extraRow = evaluateObserveProofWatcherSnapshot([
+    ...intended,
+    {
+      slug: "unexpected-paused-watch",
+      status: "PAUSED",
+      authority: "OBSERVE",
+      budgetCents: 0,
+    },
+  ]);
+  assert.equal(extraRow.ok, false);
+  if (!extraRow.ok) {
+    assert.equal(
+      extraRow.code,
+      "WATCHTOWER_OBSERVE_PROOF_TOPOLOGY_CARDINALITY_INVALID"
+    );
+  }
+
+  const substituted = evaluateObserveProofWatcherSnapshot([
+    freeSupplier,
+    globalResale,
+    target,
+    operatingCost,
+    {
+      slug: "replacement-paused-watch",
+      status: "PAUSED",
+      authority: "RECOMMEND",
+      budgetCents: 0,
+    },
+  ]);
+  assert.equal(substituted.ok, false);
+  if (!substituted.ok) {
+    assert.equal(
+      substituted.code,
+      "WATCHTOWER_OBSERVE_PROOF_TOPOLOGY_MISMATCH"
+    );
+  }
+
+  const duplicate = evaluateObserveProofWatcherSnapshot([
+    freeSupplier,
+    globalResale,
+    target,
+    operatingCost,
+    { ...operatingCost },
+  ]);
+  assert.equal(duplicate.ok, false);
+  if (!duplicate.ok) {
+    assert.equal(
+      duplicate.code,
+      "WATCHTOWER_OBSERVE_PROOF_TOPOLOGY_DUPLICATE_SLUG"
+    );
+  }
+});
+
+test("observe-proof exact topology still rejects non-paused canonical non-target watchers", () => {
+  const result = evaluateObserveProofWatcherSnapshot([
+    {
+      slug: "free-supplier-watch",
+      status: "PAUSED",
+      authority: "RECOMMEND",
+      budgetCents: 0,
+    },
+    {
+      slug: "global-resale-sourcing-watch",
+      status: "ENABLED",
+      authority: "RECOMMEND",
+      budgetCents: 0,
+    },
+    {
+      slug: "local-producer-watch",
+      status: "ENABLED",
+      authority: "OBSERVE",
+      budgetCents: 0,
+    },
+    {
+      slug: "operating-cost-watch",
+      status: "PAUSED",
+      authority: "OBSERVE",
+      budgetCents: 0,
+    },
+    {
+      slug: "drop-opportunity-watch",
+      status: "PAUSED",
+      authority: "RECOMMEND",
+      budgetCents: 0,
+    },
+  ]);
+
+  assert.equal(result.ok, false);
+  if (!result.ok) {
+    assert.equal(
+      result.code,
+      "WATCHTOWER_OBSERVE_PROOF_ENABLED_CARDINALITY_INVALID"
+    );
+  }
 });
