@@ -1,7 +1,7 @@
 import { pathToFileURL } from "node:url";
 
 export const OBSERVE_PROOF_BASE_URL =
-  "https://norvana-ipgbcuf24-norrijam405-2107s-projects.vercel.app";
+  "https://norvana-k2f4sadfk-norrijam405-2107s-projects.vercel.app";
 
 const NORVANA_PREVIEW_HOST =
   /^norvana-[a-z0-9]+-norrijam405-2107s-projects\.vercel\.app$/;
