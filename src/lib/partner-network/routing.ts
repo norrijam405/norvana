@@ -4,8 +4,8 @@ import type {
   PartnerOffer,
   ProposedAllocation,
   ProposedFulfillmentPlan,
-} from "./types";
-import { qualifyPartnerCandidate } from "./policy";
+} from "./types.ts";
+import { qualifyPartnerCandidate } from "./policy.ts";
 
 export const MAX_OFFER_EVIDENCE_AGE_DAYS = 30;
 export const OFFER_REVERIFY_AFTER_DAYS = 7;
