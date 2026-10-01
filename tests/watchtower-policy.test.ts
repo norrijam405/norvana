@@ -11,6 +11,7 @@ import {
   evaluateHarnessWatcherSnapshot,
   evaluateGitHubHarnessClaims,
   evaluateGitHubObserveProofClaims,
+  evaluateGitHubR1QueueClaims,
   evaluateR1QueueCadence,
   WATCHTOWER_R1_MIN_INTERVAL_MS,
   WATCHTOWER_R1_WORKFLOW_REF,
@@ -1576,7 +1577,7 @@ test("R1 queue endpoint reuses the assured observe-proof safety domain and never
     ),
   ]);
 
-  assert.match(route, /requireWatchtowerObserveProofWorker\(req\)/);
+  assert.match(route, /requireWatchtowerR1Worker\(req\)/);
   assert.match(route, /evaluateObserveProofEnvironmentSnapshot/);
   assert.match(route, /WATCHTOWER_OBSERVE_PROOF_ADVISORY_LOCK_KEY_1/);
   assert.match(route, /WATCHTOWER_OBSERVE_PROOF_ADVISORY_LOCK_KEY_2/);
@@ -1585,7 +1586,7 @@ test("R1 queue endpoint reuses the assured observe-proof safety domain and never
   assert.match(route, /evaluateObserveProofWatcherSnapshot/);
   assert.match(route, /WATCHTOWER_OBSERVE_PROOF_TARGET_SLUG/);
   assert.match(route, /evaluateR1QueueCadence/);
-  assert.match(route, /WATCH_R1_OBSERVE_QUEUED/);
+  assert.match(route, /WATCHTOWER_R1_QUEUE_RECEIPT_ACTION/);
   assert.match(route, /trigger:\s*"OBSERVE_PROOF"/);
   assert.match(route, /normalQueueEnabled:\s*false/);
   assert.match(route, /normalExecutorEnabled:\s*false/);
@@ -1601,4 +1602,60 @@ test("R1 queue endpoint reuses the assured observe-proof safety domain and never
   assert.doesNotMatch(client, /\/api\/watchtower\/tick/);
   assert.doesNotMatch(client, /NORVANA_WATCHTOWER_QUEUE_ENABLED/);
   assert.doesNotMatch(client, /NORVANA_WATCHTOWER_EXECUTOR_ENABLED/);
+});
+
+
+test("R1 queue authentication rejects the one-shot manual proof workflow identity", () => {
+  const common = {
+    iss: "https://token.actions.githubusercontent.com",
+    aud: "https://github.com/norrijam405",
+    repository: "norrijam405/norvana",
+    ref: "refs/heads/main",
+    runner_environment: "github-hosted",
+  };
+
+  assert.deepEqual(
+    evaluateGitHubR1QueueClaims({
+      ...common,
+      event_name: "schedule",
+      workflow_ref: WATCHTOWER_R1_WORKFLOW_REF,
+    }),
+    { ok: true }
+  );
+
+  assert.deepEqual(
+    evaluateGitHubR1QueueClaims({
+      ...common,
+      event_name: "workflow_dispatch",
+      workflow_ref: WATCHTOWER_R1_WORKFLOW_REF,
+    }),
+    { ok: true }
+  );
+
+  const manualProof = evaluateGitHubR1QueueClaims({
+    ...common,
+    event_name: "workflow_dispatch",
+    workflow_ref:
+      "norrijam405/norvana/.github/workflows/watchtower-observe-proof.yml@refs/heads/main",
+  });
+
+  assert.equal(manualProof.ok, false);
+  if (!manualProof.ok) {
+    assert.equal(manualProof.code, "WATCHTOWER_R1_OIDC_WORKFLOW_MISMATCH");
+  }
+});
+
+test("R1 OIDC-capable job does not consume workflow_dispatch confirmation data", async () => {
+  const { readFile } = await import("node:fs/promises");
+  const workflow = await readFile(
+    new URL("../.github/workflows/watchtower-local-producer-r1.yml", import.meta.url),
+    "utf8"
+  );
+
+  const proofStart = workflow.indexOf("  local-producer-r1:");
+  assert.ok(proofStart >= 0);
+  const proof = workflow.slice(proofStart);
+
+  assert.doesNotMatch(proof, /inputs\.confirmation/);
+  assert.doesNotMatch(proof, /NORVANA_WATCHTOWER_R1_CONFIRMATION/);
 });
