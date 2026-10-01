@@ -556,3 +556,177 @@ test("mixed plan sums only VERIFIED known costs and preserves unknown-cost state
   assert.equal(plan.hasUnknownCosts, true);
   assert.equal(plan.requiresHumanVerification, true);
 });
+
+
+test("VERIFIED price state with missing numeric amount requires human verification", () => {
+  const plan = buildProposedFulfillmentPlan({
+    now: NOW,
+    partners: [candidate()],
+    demand: [
+      { id: "tomatoes", category: "produce", quantity: 1, unit: "lb" },
+    ],
+    offers: [
+      {
+        partnerCandidateId: "farm-a",
+        demandLineId: "tomatoes",
+        category: "produce",
+        unit: "lb",
+        availableQuantity: 1,
+        unitPriceCents: null,
+        availabilityState: "VERIFIED",
+        priceState: "VERIFIED",
+        serviceAreaState: "VERIFIED_MATCH",
+        fulfillmentMode: "PICKUP",
+        evidenceObservedAt: "2026-10-01T20:00:00.000Z",
+      },
+    ],
+  });
+
+  assert.equal(plan.allocations.length, 1);
+  assert.equal(plan.allocations[0]?.unitPriceCents, null);
+  assert.equal(plan.allocations[0]?.knownCostCents, null);
+  assert.equal(plan.allocations[0]?.verificationRequired, true);
+  assert.equal(plan.hasUnknownCosts, true);
+  assert.equal(plan.requiresHumanVerification, true);
+  assert.ok(
+    plan.allocations[0]?.warnings.some((warning) =>
+      warning.includes("missing a numeric current amount")
+    )
+  );
+});
+
+test("VERIFIED numeric price can remain verification-complete when all other routing evidence is current", () => {
+  const plan = buildProposedFulfillmentPlan({
+    now: NOW,
+    partners: [candidate()],
+    demand: [
+      { id: "tomatoes", category: "produce", quantity: 1, unit: "lb" },
+    ],
+    offers: [
+      {
+        partnerCandidateId: "farm-a",
+        demandLineId: "tomatoes",
+        category: "produce",
+        unit: "lb",
+        availableQuantity: 1,
+        unitPriceCents: 250,
+        availabilityState: "VERIFIED",
+        priceState: "VERIFIED",
+        serviceAreaState: "VERIFIED_MATCH",
+        fulfillmentMode: "PICKUP",
+        evidenceObservedAt: "2026-10-01T20:00:00.000Z",
+      },
+    ],
+  });
+
+  assert.equal(plan.allocations[0]?.knownCostCents, 250);
+  assert.equal(plan.allocations[0]?.verificationRequired, false);
+  assert.equal(plan.hasUnknownCosts, false);
+  assert.equal(plan.requiresHumanVerification, false);
+});
+
+test("mixed plan propagates human verification when one VERIFIED price lacks a numeric amount", () => {
+  const farmA = candidate();
+  const farmB = candidate({
+    id: "farm-b",
+    name: "Farm B",
+    evidence: [
+      {
+        id: "ev-b-null-price",
+        sourceId: "usda-ams-local-food-directories",
+        sourceUrl: "https://example.test/farm-b",
+        observedAt: "2026-09-21T00:00:00.000Z",
+        claimKinds: ["identity", "location", "products"],
+      },
+    ],
+  });
+
+  const plan = buildProposedFulfillmentPlan({
+    now: NOW,
+    partners: [farmA, farmB],
+    demand: [
+      { id: "tomatoes", category: "produce", quantity: 2, unit: "lb" },
+    ],
+    offers: [
+      {
+        partnerCandidateId: "farm-a",
+        demandLineId: "tomatoes",
+        category: "produce",
+        unit: "lb",
+        availableQuantity: 1,
+        unitPriceCents: 250,
+        availabilityState: "VERIFIED",
+        priceState: "VERIFIED",
+        serviceAreaState: "VERIFIED_MATCH",
+        fulfillmentMode: "PICKUP",
+        evidenceObservedAt: "2026-10-01T20:00:00.000Z",
+      },
+      {
+        partnerCandidateId: "farm-b",
+        demandLineId: "tomatoes",
+        category: "produce",
+        unit: "lb",
+        availableQuantity: 1,
+        unitPriceCents: null,
+        availabilityState: "VERIFIED",
+        priceState: "VERIFIED",
+        serviceAreaState: "VERIFIED_MATCH",
+        fulfillmentMode: "LOCAL_DELIVERY",
+        evidenceObservedAt: "2026-10-01T20:00:00.000Z",
+      },
+    ],
+  });
+
+  assert.equal(plan.allocations.length, 2);
+  assert.equal(plan.knownCostCents, 250);
+  assert.equal(plan.hasUnknownCosts, true);
+  assert.equal(plan.requiresHumanVerification, true);
+  assert.equal(
+    plan.allocations.find((a) => a.partnerCandidateId === "farm-b")
+      ?.verificationRequired,
+    true
+  );
+});
+
+test("VERIFIED price with no numeric amount does not outrank a known VERIFIED numeric price", () => {
+  const plan = buildProposedFulfillmentPlan({
+    now: NOW,
+    partners: [candidate()],
+    demand: [
+      { id: "tomatoes", category: "produce", quantity: 1, unit: "lb" },
+    ],
+    offers: [
+      {
+        partnerCandidateId: "farm-a",
+        demandLineId: "tomatoes",
+        category: "produce",
+        unit: "lb",
+        availableQuantity: 1,
+        unitPriceCents: null,
+        availabilityState: "VERIFIED",
+        priceState: "VERIFIED",
+        serviceAreaState: "VERIFIED_MATCH",
+        fulfillmentMode: "PICKUP",
+        evidenceObservedAt: "2026-10-01T20:00:00.000Z",
+      },
+      {
+        partnerCandidateId: "farm-a",
+        demandLineId: "tomatoes",
+        category: "produce",
+        unit: "lb",
+        availableQuantity: 1,
+        unitPriceCents: 275,
+        availabilityState: "VERIFIED",
+        priceState: "VERIFIED",
+        serviceAreaState: "VERIFIED_MATCH",
+        fulfillmentMode: "PICKUP",
+        evidenceObservedAt: "2026-10-01T20:00:00.000Z",
+      },
+    ],
+  });
+
+  assert.equal(plan.allocations.length, 1);
+  assert.equal(plan.allocations[0]?.unitPriceCents, 275);
+  assert.equal(plan.allocations[0]?.knownCostCents, 275);
+  assert.equal(plan.allocations[0]?.verificationRequired, false);
+});
