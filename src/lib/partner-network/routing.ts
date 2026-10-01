@@ -15,6 +15,10 @@ function normalizeCategory(value: string) {
   return value.trim().toLowerCase();
 }
 
+function verifiedUnitPriceCents(offer: PartnerOffer) {
+  return offer.priceState === "VERIFIED" ? offer.unitPriceCents : null;
+}
+
 function offerAgeDays(offer: PartnerOffer, now: Date) {
   const observed = new Date(offer.evidenceObservedAt).getTime();
   if (!Number.isFinite(observed)) return Number.POSITIVE_INFINITY;
@@ -65,8 +69,10 @@ function selectOneOfferPerPartner(
     }
 
     if (nextScore === currentScore) {
-      const currentPrice = current.unitPriceCents ?? Number.MAX_SAFE_INTEGER;
-      const nextPrice = offer.unitPriceCents ?? Number.MAX_SAFE_INTEGER;
+      const currentPrice =
+        verifiedUnitPriceCents(current) ?? Number.MAX_SAFE_INTEGER;
+      const nextPrice =
+        verifiedUnitPriceCents(offer) ?? Number.MAX_SAFE_INTEGER;
       if (nextPrice < currentPrice) {
         selected.set(offer.partnerCandidateId, offer);
       }
@@ -131,8 +137,10 @@ export function buildProposedFulfillmentPlan(input: {
         offerTrustScore(b, input.now) - offerTrustScore(a, input.now);
       if (trustDelta !== 0) return trustDelta;
 
-      const aPrice = a.unitPriceCents ?? Number.MAX_SAFE_INTEGER;
-      const bPrice = b.unitPriceCents ?? Number.MAX_SAFE_INTEGER;
+      const aPrice =
+        verifiedUnitPriceCents(a) ?? Number.MAX_SAFE_INTEGER;
+      const bPrice =
+        verifiedUnitPriceCents(b) ?? Number.MAX_SAFE_INTEGER;
       if (aPrice !== bPrice) return aPrice - bPrice;
 
       return a.partnerCandidateId.localeCompare(b.partnerCandidateId);
@@ -164,8 +172,9 @@ export function buildProposedFulfillmentPlan(input: {
       if (offer.serviceAreaState !== "VERIFIED_MATCH") warnings.push("Service-area match requires verification.");
       if (ageDays > OFFER_REVERIFY_AFTER_DAYS) warnings.push("Offer evidence should be reverified before human approval.");
 
+      const unitPriceCents = verifiedUnitPriceCents(offer);
       const knownCost =
-        offer.unitPriceCents === null ? null : quantity * offer.unitPriceCents;
+        unitPriceCents === null ? null : quantity * unitPriceCents;
 
       if (knownCost === null) hasUnknownCosts = true;
       else knownCostCents += knownCost;
@@ -177,7 +186,7 @@ export function buildProposedFulfillmentPlan(input: {
         partnerCandidateId: offer.partnerCandidateId,
         quantity,
         unit: line.unit,
-        unitPriceCents: offer.unitPriceCents,
+        unitPriceCents,
         knownCostCents: knownCost,
         fulfillmentMode: offer.fulfillmentMode,
         verificationRequired,

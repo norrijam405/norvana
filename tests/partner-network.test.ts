@@ -385,3 +385,174 @@ test("duplicate same-partner offers cannot double-count one partner's availabili
   assert.equal(plan.allocations[0]?.quantity, 6);
   assert.equal(plan.uncovered[0]?.remainingQuantity, 4);
 });
+
+
+test("UNKNOWN numeric price remains unknown cost and requires verification", () => {
+  const plan = buildProposedFulfillmentPlan({
+    now: NOW,
+    partners: [candidate()],
+    demand: [
+      { id: "tomatoes", category: "produce", quantity: 1, unit: "lb" },
+    ],
+    offers: [
+      {
+        partnerCandidateId: "farm-a",
+        demandLineId: "tomatoes",
+        category: "produce",
+        unit: "lb",
+        availableQuantity: 1,
+        unitPriceCents: 250,
+        availabilityState: "VERIFIED",
+        priceState: "UNKNOWN",
+        serviceAreaState: "VERIFIED_MATCH",
+        fulfillmentMode: "PICKUP",
+        evidenceObservedAt: "2026-10-01T20:00:00.000Z",
+      },
+    ],
+  });
+
+  assert.equal(plan.authority, "RECOMMEND_ONLY");
+  assert.equal(plan.canExecute, false);
+  assert.equal(plan.allocations.length, 1);
+  assert.equal(plan.allocations[0]?.unitPriceCents, null);
+  assert.equal(plan.allocations[0]?.knownCostCents, null);
+  assert.equal(plan.allocations[0]?.verificationRequired, true);
+  assert.equal(plan.knownCostCents, 0);
+  assert.equal(plan.hasUnknownCosts, true);
+  assert.equal(plan.requiresHumanVerification, true);
+});
+
+test("STALE numeric price remains unknown cost and requires verification", () => {
+  const plan = buildProposedFulfillmentPlan({
+    now: NOW,
+    partners: [candidate()],
+    demand: [
+      { id: "tomatoes", category: "produce", quantity: 1, unit: "lb" },
+    ],
+    offers: [
+      {
+        partnerCandidateId: "farm-a",
+        demandLineId: "tomatoes",
+        category: "produce",
+        unit: "lb",
+        availableQuantity: 1,
+        unitPriceCents: 275,
+        availabilityState: "VERIFIED",
+        priceState: "STALE",
+        serviceAreaState: "VERIFIED_MATCH",
+        fulfillmentMode: "PICKUP",
+        evidenceObservedAt: "2026-10-01T20:00:00.000Z",
+      },
+    ],
+  });
+
+  assert.equal(plan.allocations.length, 1);
+  assert.equal(plan.allocations[0]?.unitPriceCents, null);
+  assert.equal(plan.allocations[0]?.knownCostCents, null);
+  assert.equal(plan.allocations[0]?.verificationRequired, true);
+  assert.equal(plan.knownCostCents, 0);
+  assert.equal(plan.hasUnknownCosts, true);
+  assert.equal(plan.requiresHumanVerification, true);
+});
+
+test("CLAIMED numeric price is not promoted to known cost", () => {
+  const plan = buildProposedFulfillmentPlan({
+    now: NOW,
+    partners: [candidate()],
+    demand: [
+      { id: "tomatoes", category: "produce", quantity: 1, unit: "lb" },
+    ],
+    offers: [
+      {
+        partnerCandidateId: "farm-a",
+        demandLineId: "tomatoes",
+        category: "produce",
+        unit: "lb",
+        availableQuantity: 1,
+        unitPriceCents: 300,
+        availabilityState: "VERIFIED",
+        priceState: "CLAIMED",
+        serviceAreaState: "VERIFIED_MATCH",
+        fulfillmentMode: "PICKUP",
+        evidenceObservedAt: "2026-10-01T20:00:00.000Z",
+      },
+    ],
+  });
+
+  assert.equal(plan.allocations[0]?.knownCostCents, null);
+  assert.equal(plan.allocations[0]?.verificationRequired, true);
+  assert.equal(plan.knownCostCents, 0);
+  assert.equal(plan.hasUnknownCosts, true);
+});
+
+test("mixed plan sums only VERIFIED known costs and preserves unknown-cost state", () => {
+  const farmA = candidate();
+  const farmB = candidate({
+    id: "farm-b",
+    name: "Farm B",
+    evidence: [
+      {
+        id: "ev-b-price-state",
+        sourceId: "usda-ams-local-food-directories",
+        sourceUrl: "https://example.test/farm-b",
+        observedAt: "2026-09-21T00:00:00.000Z",
+        claimKinds: ["identity", "location", "products"],
+      },
+    ],
+  });
+
+  const plan = buildProposedFulfillmentPlan({
+    now: NOW,
+    partners: [farmA, farmB],
+    demand: [
+      { id: "tomatoes", category: "produce", quantity: 2, unit: "lb" },
+    ],
+    offers: [
+      {
+        partnerCandidateId: "farm-a",
+        demandLineId: "tomatoes",
+        category: "produce",
+        unit: "lb",
+        availableQuantity: 1,
+        unitPriceCents: 250,
+        availabilityState: "VERIFIED",
+        priceState: "VERIFIED",
+        serviceAreaState: "VERIFIED_MATCH",
+        fulfillmentMode: "PICKUP",
+        evidenceObservedAt: "2026-10-01T20:00:00.000Z",
+      },
+      {
+        partnerCandidateId: "farm-b",
+        demandLineId: "tomatoes",
+        category: "produce",
+        unit: "lb",
+        availableQuantity: 1,
+        unitPriceCents: 999,
+        availabilityState: "VERIFIED",
+        priceState: "UNKNOWN",
+        serviceAreaState: "VERIFIED_MATCH",
+        fulfillmentMode: "LOCAL_DELIVERY",
+        evidenceObservedAt: "2026-10-01T20:00:00.000Z",
+      },
+    ],
+  });
+
+  const verifiedAllocation = plan.allocations.find(
+    (allocation) => allocation.partnerCandidateId === "farm-a"
+  );
+  const unknownAllocation = plan.allocations.find(
+    (allocation) => allocation.partnerCandidateId === "farm-b"
+  );
+
+  assert.equal(plan.authority, "RECOMMEND_ONLY");
+  assert.equal(plan.canExecute, false);
+  assert.equal(plan.allocations.length, 2);
+  assert.equal(verifiedAllocation?.unitPriceCents, 250);
+  assert.equal(verifiedAllocation?.knownCostCents, 250);
+  assert.equal(unknownAllocation?.unitPriceCents, null);
+  assert.equal(unknownAllocation?.knownCostCents, null);
+  assert.equal(unknownAllocation?.verificationRequired, true);
+  assert.equal(plan.knownCostCents, 250);
+  assert.equal(plan.hasUnknownCosts, true);
+  assert.equal(plan.requiresHumanVerification, true);
+});
