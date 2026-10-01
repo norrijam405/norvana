@@ -108,6 +108,8 @@ export type DemandLine = {
 export type PartnerOffer = {
   partnerCandidateId: string;
   demandLineId: string;
+  category: string;
+  unit: string;
   availableQuantity: number | null;
   unitPriceCents: number | null;
   availabilityState: ClaimState;
