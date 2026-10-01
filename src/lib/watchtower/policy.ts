@@ -484,6 +484,32 @@ export function evaluateGitHubObserveProofClaims(
   return { ok: true };
 }
 
+export function evaluateGitHubR1QueueClaims(
+  claims: Record<string, unknown>
+): R0GateDecision {
+  const base = evaluateGitHubObserveProofClaims(claims);
+  if (!base.ok) return base;
+
+  if (String(claims.workflow_ref || "") !== WATCHTOWER_R1_WORKFLOW_REF) {
+    return {
+      ok: false,
+      code: "WATCHTOWER_R1_OIDC_WORKFLOW_MISMATCH",
+      reason: "R1 queue OIDC identity must come from the exact R1 workflow.",
+    };
+  }
+
+  const eventName = String(claims.event_name || "");
+  if (eventName !== "schedule" && eventName !== "workflow_dispatch") {
+    return {
+      ok: false,
+      code: "WATCHTOWER_R1_OIDC_EVENT_MISMATCH",
+      reason: "R1 queue OIDC event must be schedule or controlled workflow_dispatch.",
+    };
+  }
+
+  return { ok: true };
+}
+
 export function evaluateObserveProofEnvironmentSnapshot(input: {
   queueEnabled: boolean;
   executorEnabled: boolean;
