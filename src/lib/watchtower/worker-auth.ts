@@ -1,6 +1,10 @@
 import { createPublicKey, timingSafeEqual, verify, type JsonWebKeyInput } from "node:crypto";
 import { NextRequest, NextResponse } from "next/server";
-import { evaluateGitHubHarnessClaims, evaluateGitHubObserveProofClaims } from "@/lib/watchtower/policy";
+import {
+  evaluateGitHubHarnessClaims,
+  evaluateGitHubObserveProofClaims,
+  evaluateGitHubR1QueueClaims,
+} from "@/lib/watchtower/policy";
 
 const GITHUB_OIDC_JWKS_URL = "https://token.actions.githubusercontent.com/.well-known/jwks";
 const TOKEN_CLOCK_SKEW_SECONDS = 60;
@@ -349,6 +353,73 @@ export async function requireWatchtowerObserveProofWorker(
       {
         error: "GitHub OIDC observe-proof verification is temporarily unavailable.",
         code: "WATCHTOWER_OBSERVE_PROOF_OIDC_VERIFICATION_UNAVAILABLE",
+      },
+      { status: 503 }
+    );
+  }
+}
+
+
+export async function requireWatchtowerR1Worker(
+  req: NextRequest
+): Promise<NextResponse | null> {
+  if (process.env.VERCEL_ENV !== "preview") {
+    return NextResponse.json(
+      {
+        error: "GitHub OIDC R1 authentication is restricted to Vercel Preview.",
+        code: "WATCHTOWER_R1_OIDC_PREVIEW_ONLY",
+      },
+      { status: 409 }
+    );
+  }
+
+  const token = req.headers.get("x-norvana-github-oidc-token");
+  if (!token) {
+    return NextResponse.json(
+      {
+        error: "GitHub OIDC R1 token is required in the Norvana forwarding header.",
+        code: "WATCHTOWER_R1_OIDC_REQUIRED",
+      },
+      { status: 401 }
+    );
+  }
+
+  try {
+    const baseDecision = await verifyGitHubObserveProofOidc(token);
+    if (!baseDecision.ok) {
+      return NextResponse.json(
+        { error: baseDecision.reason, code: baseDecision.code },
+        { status: 401 }
+      );
+    }
+
+    const parts = token.split(".");
+    const claims = parts.length === 3 ? decodeJsonSegment(parts[1]) : null;
+    if (!claims) {
+      return NextResponse.json(
+        {
+          error: "R1 OIDC token claims cannot be decoded.",
+          code: "WATCHTOWER_R1_OIDC_MALFORMED",
+        },
+        { status: 401 }
+      );
+    }
+
+    const decision = evaluateGitHubR1QueueClaims(claims);
+    if (!decision.ok) {
+      return NextResponse.json(
+        { error: decision.reason, code: decision.code },
+        { status: 401 }
+      );
+    }
+
+    return null;
+  } catch (error) {
+    console.error("Watchtower R1 GitHub OIDC verification unavailable:", error);
+    return NextResponse.json(
+      {
+        error: "GitHub OIDC R1 verification is temporarily unavailable.",
+        code: "WATCHTOWER_R1_OIDC_VERIFICATION_UNAVAILABLE",
       },
       { status: 503 }
     );
