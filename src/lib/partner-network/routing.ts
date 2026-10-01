@@ -35,11 +35,6 @@ function offerTrustScore(offer: PartnerOffer, now: Date) {
   else if (offer.serviceAreaState === "CLAIMED_MATCH") score += 15;
   else if (offer.serviceAreaState === "UNKNOWN") score += 2;
 
-  if (offer.fulfillmentMode === "FOOD_HUB") score += 8;
-  else if (offer.fulfillmentMode === "LOCAL_DELIVERY") score += 6;
-  else if (offer.fulfillmentMode === "PICKUP") score += 4;
-  else if (offer.fulfillmentMode === "COURIER") score += 3;
-
   const age = offerAgeDays(offer, now);
   if (age <= 1) score += 8;
   else if (age <= OFFER_REVERIFY_AFTER_DAYS) score += 5;
