@@ -3,7 +3,7 @@ import type {
   PartnerCandidate,
   PartnerQualification,
   PartnerStage,
-} from "./types";
+} from "./types.ts";
 
 export const R2_AUTHORITY = "RECOMMEND_ONLY" as const;
 export const MAX_EVIDENCE_AGE_DAYS = 180;
