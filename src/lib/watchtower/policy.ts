@@ -364,6 +364,14 @@ export const WATCHTOWER_OBSERVE_PROOF_ADVISORY_LOCK_KEY_1 =
 export const WATCHTOWER_OBSERVE_PROOF_ADVISORY_LOCK_KEY_2 =
   WATCHTOWER_HARNESS_ADVISORY_LOCK_KEY_2;
 
+export const WATCHTOWER_REQUIRED_JOB_SLUGS = [
+  "free-supplier-watch",
+  "global-resale-sourcing-watch",
+  "local-producer-watch",
+  "operating-cost-watch",
+  "drop-opportunity-watch",
+] as const;
+
 export const WATCHTOWER_OBSERVE_PROOF_TARGET_SLUG = "local-producer-watch";
 
 export const WATCHTOWER_OBSERVE_PROOF_MANUAL_WORKFLOW_REF =
@@ -584,12 +592,46 @@ export function evaluateObserveProofWatcherSnapshot(
     budgetCents: number;
   }>
 ): R0GateDecision {
-  if (!jobs.length) {
+  if (jobs.length !== WATCHTOWER_REQUIRED_JOB_SLUGS.length) {
     return {
       ok: false,
-      code: "WATCHTOWER_OBSERVE_PROOF_WATCHERS_MISSING",
-      reason: "Observe proof requires initialized Watchtower jobs.",
+      code: "WATCHTOWER_OBSERVE_PROOF_TOPOLOGY_CARDINALITY_INVALID",
+      reason:
+        "Observe proof requires exactly the five canonical Watchtower jobs.",
     };
+  }
+
+  const expectedSlugs = new Set<string>(WATCHTOWER_REQUIRED_JOB_SLUGS);
+  const seenSlugs = new Set<string>();
+
+  for (const job of jobs) {
+    if (seenSlugs.has(job.slug)) {
+      return {
+        ok: false,
+        code: "WATCHTOWER_OBSERVE_PROOF_TOPOLOGY_DUPLICATE_SLUG",
+        reason: "Observe proof rejects duplicate Watchtower job identities.",
+      };
+    }
+
+    seenSlugs.add(job.slug);
+
+    if (!expectedSlugs.has(job.slug)) {
+      return {
+        ok: false,
+        code: "WATCHTOWER_OBSERVE_PROOF_TOPOLOGY_MISMATCH",
+        reason: "Observe proof rejects unknown or substituted Watchtower jobs.",
+      };
+    }
+  }
+
+  for (const slug of WATCHTOWER_REQUIRED_JOB_SLUGS) {
+    if (!seenSlugs.has(slug)) {
+      return {
+        ok: false,
+        code: "WATCHTOWER_OBSERVE_PROOF_TOPOLOGY_MISMATCH",
+        reason: "Observe proof requires every canonical Watchtower job identity.",
+      };
+    }
   }
 
   const enabled = jobs.filter((job) => job.status === "ENABLED");
