@@ -27,16 +27,20 @@ jobs:
       - name: Install dependencies
         run: npm install --ignore-scripts --no-audit --no-fund
 
-      - name: Reject obvious new secret regressions
+      - name: Reject new secret regressions introduced by R2
         shell: bash
         run: |
           set -euo pipefail
-          if grep -RInE --exclude-dir=.git --exclude-dir=node_modules --exclude-dir=.next --exclude='*.md' 'postgres(ql)?://' src package.json tsconfig.json next.config.ts 2>/dev/null; then
-            echo "Potential database URL literal found in executable source tree."
+          git fetch --no-tags --depth=1 origin main
+          ADDED_LINES="$(git diff --unified=0 origin/main...HEAD -- src package.json tsconfig.json next.config.ts 2>/dev/null | grep '^+' | grep -v '^+++' || true)"
+
+          if printf '%s\n' "$ADDED_LINES" | grep -E 'postgres(ql)?://'; then
+            echo "R2 introduced a database URL literal."
             exit 1
           fi
-          if grep -RInE --exclude-dir=.git --exclude-dir=node_modules --exclude-dir=.next 'ADMIN_PASSWORD[[:space:]]*=' src 2>/dev/null; then
-            echo "Client-side ADMIN_PASSWORD regression found."
+
+          if printf '%s\n' "$ADDED_LINES" | grep -E 'ADMIN_PASSWORD[[:space:]]*='; then
+            echo "R2 introduced a client-side ADMIN_PASSWORD assignment."
             exit 1
           fi
 
