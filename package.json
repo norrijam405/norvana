@@ -6,7 +6,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint .",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test:r2": "node --test --experimental-strip-types tests/partner-network.test.ts"
   },
   "dependencies": {
     "@stripe/stripe-js": "^9.10.0",
