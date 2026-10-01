@@ -7,7 +7,23 @@ import type {
 } from "./types";
 import { qualifyPartnerCandidate } from "./policy";
 
-function offerTrustScore(offer: PartnerOffer) {
+export const MAX_OFFER_EVIDENCE_AGE_DAYS = 30;
+export const OFFER_REVERIFY_AFTER_DAYS = 7;
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+function normalizeCategory(value: string) {
+  return value.trim().toLowerCase();
+}
+
+function offerAgeDays(offer: PartnerOffer, now: Date) {
+  const observed = new Date(offer.evidenceObservedAt).getTime();
+  if (!Number.isFinite(observed)) return Number.POSITIVE_INFINITY;
+  const ageMs = now.getTime() - observed;
+  if (ageMs < 0) return Number.POSITIVE_INFINITY;
+  return ageMs / DAY_MS;
+}
+
+function offerTrustScore(offer: PartnerOffer, now: Date) {
   let score = 0;
   if (offer.availabilityState === "VERIFIED") score += 35;
   else if (offer.availabilityState === "CLAIMED") score += 15;
@@ -24,7 +40,45 @@ function offerTrustScore(offer: PartnerOffer) {
   else if (offer.fulfillmentMode === "PICKUP") score += 4;
   else if (offer.fulfillmentMode === "COURIER") score += 3;
 
+  const age = offerAgeDays(offer, now);
+  if (age <= 1) score += 8;
+  else if (age <= OFFER_REVERIFY_AFTER_DAYS) score += 5;
+  else if (age <= MAX_OFFER_EVIDENCE_AGE_DAYS) score += 1;
+
   return score;
+}
+
+function selectOneOfferPerPartner(
+  offers: PartnerOffer[],
+  now: Date
+) {
+  const selected = new Map<string, PartnerOffer>();
+
+  for (const offer of offers) {
+    const current = selected.get(offer.partnerCandidateId);
+    if (!current) {
+      selected.set(offer.partnerCandidateId, offer);
+      continue;
+    }
+
+    const currentScore = offerTrustScore(current, now);
+    const nextScore = offerTrustScore(offer, now);
+
+    if (nextScore > currentScore) {
+      selected.set(offer.partnerCandidateId, offer);
+      continue;
+    }
+
+    if (nextScore === currentScore) {
+      const currentPrice = current.unitPriceCents ?? Number.MAX_SAFE_INTEGER;
+      const nextPrice = offer.unitPriceCents ?? Number.MAX_SAFE_INTEGER;
+      if (nextPrice < currentPrice) {
+        selected.set(offer.partnerCandidateId, offer);
+      }
+    }
+  }
+
+  return [...selected.values()];
 }
 
 export function buildProposedFulfillmentPlan(input: {
@@ -52,27 +106,42 @@ export function buildProposedFulfillmentPlan(input: {
   for (const line of input.demand) {
     let remaining = line.quantity;
 
-    const lineOffers = input.offers
-      .filter((offer) => offer.demandLineId === line.id)
-      .filter((offer) => {
-        const partner = partnerMap.get(offer.partnerCandidateId);
-        const qualification = qualifications.get(offer.partnerCandidateId);
-        if (!partner || !qualification?.eligibleForRecommendation) return false;
-        if (offer.serviceAreaState === "NO_MATCH") return false;
-        if (offer.availabilityState === "UNKNOWN" || offer.availabilityState === "STALE") return false;
-        if (offer.availableQuantity === null || offer.availableQuantity <= 0) return false;
-        return true;
-      })
-      .sort((a, b) => {
-        const trustDelta = offerTrustScore(b) - offerTrustScore(a);
-        if (trustDelta !== 0) return trustDelta;
+    const rawLineOffers = input.offers.filter(
+      (offer) => offer.demandLineId === line.id
+    );
 
-        const aPrice = a.unitPriceCents ?? Number.MAX_SAFE_INTEGER;
-        const bPrice = b.unitPriceCents ?? Number.MAX_SAFE_INTEGER;
-        if (aPrice !== bPrice) return aPrice - bPrice;
+    const eligibleOffers = rawLineOffers.filter((offer) => {
+      const partner = partnerMap.get(offer.partnerCandidateId);
+      const qualification = qualifications.get(offer.partnerCandidateId);
 
-        return a.partnerCandidateId.localeCompare(b.partnerCandidateId);
-      });
+      if (!partner || !qualification?.eligibleForRecommendation) return false;
+      if (normalizeCategory(offer.category) !== normalizeCategory(line.category)) return false;
+      if (offer.unit !== line.unit) return false;
+      if (offer.serviceAreaState === "NO_MATCH") return false;
+      if (offer.availabilityState === "UNKNOWN" || offer.availabilityState === "STALE") return false;
+      if (offer.availableQuantity === null || offer.availableQuantity <= 0) return false;
+      if (offerAgeDays(offer, input.now) > MAX_OFFER_EVIDENCE_AGE_DAYS) return false;
+
+      const partnerCategories = new Set(partner.categories.map(normalizeCategory));
+      if (!partnerCategories.has(normalizeCategory(line.category))) return false;
+
+      return true;
+    });
+
+    const lineOffers = selectOneOfferPerPartner(
+      eligibleOffers,
+      input.now
+    ).sort((a, b) => {
+      const trustDelta =
+        offerTrustScore(b, input.now) - offerTrustScore(a, input.now);
+      if (trustDelta !== 0) return trustDelta;
+
+      const aPrice = a.unitPriceCents ?? Number.MAX_SAFE_INTEGER;
+      const bPrice = b.unitPriceCents ?? Number.MAX_SAFE_INTEGER;
+      if (aPrice !== bPrice) return aPrice - bPrice;
+
+      return a.partnerCandidateId.localeCompare(b.partnerCandidateId);
+    });
 
     for (const offer of lineOffers) {
       if (remaining <= 0) {
@@ -88,14 +157,17 @@ export function buildProposedFulfillmentPlan(input: {
       if (quantity <= 0) continue;
 
       const warnings: string[] = [];
+      const ageDays = offerAgeDays(offer, input.now);
       const verificationRequired =
         offer.availabilityState !== "VERIFIED" ||
         offer.priceState !== "VERIFIED" ||
-        offer.serviceAreaState !== "VERIFIED_MATCH";
+        offer.serviceAreaState !== "VERIFIED_MATCH" ||
+        ageDays > OFFER_REVERIFY_AFTER_DAYS;
 
       if (offer.availabilityState !== "VERIFIED") warnings.push("Availability is claimed, not verified.");
       if (offer.priceState !== "VERIFIED") warnings.push("Price is not verified.");
       if (offer.serviceAreaState !== "VERIFIED_MATCH") warnings.push("Service-area match requires verification.");
+      if (ageDays > OFFER_REVERIFY_AFTER_DAYS) warnings.push("Offer evidence should be reverified before human approval.");
 
       const knownCost =
         offer.unitPriceCents === null ? null : quantity * offer.unitPriceCents;
@@ -120,36 +192,46 @@ export function buildProposedFulfillmentPlan(input: {
       remaining -= quantity;
     }
 
-    const unusableAlternates = input.offers.filter(
-      (offer) =>
-        offer.demandLineId === line.id &&
-        !allocations.some(
-          (allocation) =>
-            allocation.demandLineId === line.id &&
-            allocation.partnerCandidateId === offer.partnerCandidateId
-        )
+    const allocatedPartnerIds = new Set(
+      allocations
+        .filter((allocation) => allocation.demandLineId === line.id)
+        .map((allocation) => allocation.partnerCandidateId)
     );
 
-    for (const offer of unusableAlternates) {
+    const alternateKeys = new Set(
+      alternates
+        .filter((alternate) => alternate.demandLineId === line.id)
+        .map((alternate) => alternate.partnerCandidateId)
+    );
+
+    for (const offer of rawLineOffers) {
       if (
-        alternates.some(
-          (a) =>
-            a.demandLineId === line.id &&
-            a.partnerCandidateId === offer.partnerCandidateId
-        )
-      ) continue;
+        allocatedPartnerIds.has(offer.partnerCandidateId) ||
+        alternateKeys.has(offer.partnerCandidateId)
+      ) {
+        continue;
+      }
+
+      const partner = partnerMap.get(offer.partnerCandidateId);
+      const qualification = qualifications.get(offer.partnerCandidateId);
 
       let reason = "Offer is not currently eligible for allocation.";
-      if (offer.serviceAreaState === "NO_MATCH") reason = "Service area does not match.";
+      if (!partner || !qualification?.eligibleForRecommendation) reason = "Partner is not recommendation-eligible.";
+      else if (normalizeCategory(offer.category) !== normalizeCategory(line.category)) reason = "Offer category does not match demand.";
+      else if (!partner.categories.map(normalizeCategory).includes(normalizeCategory(line.category))) reason = "Partner evidence does not cover the demanded category.";
+      else if (offer.unit !== line.unit) reason = "Offer quantity unit does not match demand unit.";
+      else if (offer.serviceAreaState === "NO_MATCH") reason = "Service area does not match.";
       else if (offer.availableQuantity === null) reason = "Available quantity is unknown.";
       else if (offer.availabilityState === "STALE") reason = "Availability evidence is stale.";
       else if (offer.availabilityState === "UNKNOWN") reason = "Availability is unknown.";
+      else if (offerAgeDays(offer, input.now) > MAX_OFFER_EVIDENCE_AGE_DAYS) reason = "Offer evidence is too old for allocation.";
 
       alternates.push({
         demandLineId: line.id,
         partnerCandidateId: offer.partnerCandidateId,
         reason,
       });
+      alternateKeys.add(offer.partnerCandidateId);
     }
 
     if (remaining > 0) {
