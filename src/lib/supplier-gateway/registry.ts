@@ -25,7 +25,7 @@ export const SUPPLIER_REGISTRY_R0: readonly SupplierRegistryProfile[] = [
     lane: "GENERAL_MERCHANDISE",
     priority: 1,
     disposition: "QUALIFY",
-    qualificationState: "EVIDENCE_COLLECTED",
+    qualificationState: "FREIGHT_QUOTE_PROVEN",
     apiEntitlementState: "SOURCE_REPORTED_FREE",
     monthlyPlatformCostClaimCents: 0,
     noInventoryClaim: true,
@@ -53,6 +53,7 @@ export const SUPPLIER_REGISTRY_R0: readonly SupplierRegistryProfile[] = [
     ],
     notes: [
       "First general-merchandise proving adapter.",
+      "Live Preview proof on 2026-09-29 established CJ authentication, catalog/product/variant/stock/origin reads, and a non-empty normalized freight quote using NORVANA_CJ_API_KEY.",
       "Do not subscribe to entire catalog; qualify selected products only.",
       "No order creation or payment authority in R0.",
     ],
