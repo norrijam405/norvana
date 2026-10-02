@@ -68,6 +68,9 @@ export const reviews = pgTable(
     uniqueIndex("reviews_verified_order_product_idx")
       .on(table.productId, table.sourceOrderId)
       .where(sql`${table.sourceOrderId} IS NOT NULL`),
+    uniqueIndex("reviews_external_source_id_idx")
+      .on(table.sourceChannel, table.sourceLabel, table.sourceReviewId)
+      .where(sql`${table.sourceReviewId} IS NOT NULL`),
   ]
 );
 
