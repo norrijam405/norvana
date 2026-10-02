@@ -16,6 +16,10 @@ CREATE UNIQUE INDEX IF NOT EXISTS reviews_verified_order_product_idx
   ON reviews (product_id, source_order_id)
   WHERE source_order_id IS NOT NULL;
 
+CREATE UNIQUE INDEX IF NOT EXISTS reviews_external_source_id_idx
+  ON reviews (source_channel, source_label, source_review_id)
+  WHERE source_review_id IS NOT NULL;
+
 CREATE TABLE IF NOT EXISTS review_events (
   id serial PRIMARY KEY,
   review_id integer NOT NULL,
