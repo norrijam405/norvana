@@ -1,0 +1,72 @@
+name: Norvana R2 Partner Network CI
+
+on:
+  push:
+    branches:
+      - "feature/2026-10-01-norvana-r2-local-partner-network"
+  workflow_dispatch:
+
+concurrency:
+  group: norvana-r2-partner-network-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  static-verification:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 22
+          package-manager-cache: false
+
+      - name: Install dependencies
+        run: npm install --ignore-scripts --no-audit --no-fund
+
+      - name: Reject new secret regressions introduced by R2
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch --no-tags --depth=1 origin main
+          ADDED_LINES="$(git diff --unified=0 origin/main...HEAD -- src package.json tsconfig.json next.config.ts 2>/dev/null | grep '^+' | grep -v '^+++' || true)"
+
+          if printf '%s\n' "$ADDED_LINES" | grep -E 'postgres(ql)?://'; then
+            echo "R2 introduced a database URL literal."
+            exit 1
+          fi
+
+          if printf '%s\n' "$ADDED_LINES" | grep -E 'ADMIN_PASSWORD[[:space:]]*='; then
+            echo "R2 introduced a client-side ADMIN_PASSWORD assignment."
+            exit 1
+          fi
+
+      - name: R2 partner-network tests
+        run: npm run test:r2
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Lint R2 surface
+        run: npx eslint src/lib/partner-network tests/partner-network.test.ts
+
+      - name: Production build
+        env:
+          DATABASE_URL: postgresql://norvana_ci:norvana_ci@127.0.0.1:5432/norvana_ci
+          STRIPE_SECRET_KEY: sk_test_norvana_ci_placeholder
+          STRIPE_WEBHOOK_SECRET: whsec_norvana_ci_placeholder
+          NORVANA_SITE_URL: http://localhost:3000
+          NORVANA_EXTERNAL_FULFILLMENT_ENABLED: "false"
+          NORVANA_SUPPLIER_CONNECTORS_ENABLED: "false"
+          IGNIAQUA_FEDERATION_ENABLED: "false"
+          NEXT_TELEMETRY_DISABLED: "1"
+        run: npm run build
+
+      - name: Runtime dependency audit
+        run: npm audit --omit=dev --audit-level=moderate
+
+      - name: Full dependency high-severity gate
+        run: npm audit --audit-level=high
