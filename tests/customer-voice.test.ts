@@ -51,10 +51,10 @@ test("purchase verification inputs must be supplied as a pair", () => {
 
 test("order item membership is product specific", () => {
   assert.equal(
-    containsProduct([{ productId: 4 }, { productId: 9 }], 9),
+    containsProduct([{ productId: 4, quantity: 1 }, { productId: 9, quantity: 2 }], 9),
     true
   );
-  assert.equal(containsProduct([{ productId: 4 }], 9), false);
+  assert.equal(containsProduct([{ productId: 4, quantity: 1 }], 9), false);
 });
 
 test("ratings outside 1 through 5 fail closed", () => {
