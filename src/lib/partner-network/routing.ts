@@ -154,7 +154,7 @@ export function buildProposedFulfillmentPlan(input: {
       uncovered.push({
         demandLineId: line.id,
         remainingQuantity: null,
-        unit: demandUnit,
+        unit: line.unit,
         reason: "Demand quantity is invalid; expected a finite positive number.",
       });
       requiresHumanVerification = true;
@@ -277,7 +277,7 @@ export function buildProposedFulfillmentPlan(input: {
         demandLineId: line.id,
         partnerCandidateId: offer.partnerCandidateId,
         quantity,
-        unit: line.unit,
+        unit: demandUnit,
         unitPriceCents,
         knownCostCents: knownCost,
         fulfillmentMode: offer.fulfillmentMode,
