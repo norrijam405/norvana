@@ -2,6 +2,8 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import {
   containsProduct,
+  productQuantityFromOrder,
+  purchaseQuantityBand,
   reviewVisibilityDecision,
   validateReviewSubmission,
 } from "../src/lib/customer-voice/policy.ts";
@@ -66,4 +68,41 @@ test("ratings outside 1 through 5 fail closed", () => {
     });
     assert.equal(result.ok, false);
   }
+});
+
+
+test("optional fulfillment and buying-experience ratings are separately validated", () => {
+  const good = validateReviewSubmission({
+    productId: 10,
+    author: "Buyer",
+    rating: 5,
+    fulfillmentRating: 2,
+    purchaseExperienceRating: 4,
+    title: "Product was strong, delivery was not",
+    body: "The product itself worked well but fulfillment was late.",
+  });
+  assert.equal(good.ok, true);
+
+  const bad = validateReviewSubmission({
+    productId: 10,
+    author: "Buyer",
+    rating: 5,
+    fulfillmentRating: 6,
+    title: "Invalid fulfillment dimension",
+    body: "This should fail structural validation.",
+  });
+  assert.equal(bad.ok, false);
+});
+
+test("purchase quantity bands do not expose exact large order quantities", () => {
+  const items = [
+    { productId: 10, quantity: 3 },
+    { productId: 10, quantity: 8 },
+    { productId: 11, quantity: 99 },
+  ];
+  assert.equal(productQuantityFromOrder(items, 10), 11);
+  assert.equal(purchaseQuantityBand(1), "1 unit");
+  assert.equal(purchaseQuantityBand(3), "2–9 units");
+  assert.equal(purchaseQuantityBand(11), "10–49 units");
+  assert.equal(purchaseQuantityBand(75), "50+ units");
 });
