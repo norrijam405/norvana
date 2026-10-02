@@ -101,6 +101,23 @@ export const reviewReactions = pgTable(
   ]
 );
 
+export const customerVoiceThrottle = pgTable(
+  "customer_voice_throttle",
+  {
+    keyHash: varchar("key_hash", { length: 64 }).notNull(),
+    action: varchar("action", { length: 30 }).notNull(),
+    windowStartedAt: timestamp("window_started_at").notNull(),
+    requestCount: integer("request_count").notNull().default(0),
+    updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  },
+  (table) => [
+    uniqueIndex("customer_voice_throttle_key_action_idx").on(
+      table.keyHash,
+      table.action
+    ),
+  ]
+);
+
 export const orders = pgTable("orders", {
   id: serial("id").primaryKey(),
   orderNumber: varchar("order_number", { length: 50 }).notNull().unique(),
