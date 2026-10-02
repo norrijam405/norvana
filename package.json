@@ -7,7 +7,7 @@
     "start": "next start",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
-    "test:r2": "node --test --experimental-strip-types tests/partner-network.test.ts"
+    "test:r2": "node --test --experimental-strip-types tests/partner-network.test.ts tests/r2-wave1-post-uifrc-fresh-rechallenger-repro-2026-10-02.ts"
   },
   "dependencies": {
     "@stripe/stripe-js": "^9.10.0",
