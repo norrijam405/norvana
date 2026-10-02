@@ -32,6 +32,15 @@ Account proof required:
 - read-only product/SKU/stock/freight request receipts;
 - product-scoped webhook behavior if used.
 
+Current official setup path:
+- log in to CJ;
+- Apps -> Install App -> install the API app if it is not already installed;
+- open the account API area -> Add API;
+- create an API Key entry;
+- copy the API key once and place it only in approved secret storage;
+- exchange that API key for a CJ access token from the backend.
+CJ's current documentation says access and refresh tokens are long-lived and should remain backend-only.
+
 Do not enable order creation or payment endpoints during authentication proving.
 
 ### Banggood Dropship — QUALIFY
@@ -57,7 +66,13 @@ Account proof required:
 - exact authentication method supplied by EPROLO;
 - catalog/product and shipping read proof.
 
-Because supplied research says API access may be provided through an account representative, do not invent endpoints or credential formats before that documentation is received.
+Current official setup path:
+- create the EPROLO account;
+- from the dashboard, message the assigned Account Support Rep and request API access;
+- receive the API documentation through the EPROLO message channel;
+- preserve the documentation version/title and only then implement authentication.
+
+Do not invent endpoints or credential formats before that account-specific documentation is received.
 
 ### HyperSKU — HOLD
 
@@ -92,6 +107,13 @@ Account proof required:
 - shipping and delivery estimate;
 - webhook proof where available.
 
+Current official key-management path:
+- log in to the Gelato API Portal;
+- Developer -> API Keys;
+- Add API key;
+- give the key a Norvana-specific name;
+- store the generated value only in approved secret storage.
+
 ### Prodigi — QUALIFY
 
 Code state: read-only scaffold present.
@@ -103,6 +125,14 @@ Account proof required:
 - shipping/delivery read;
 - branding/packing-slip evidence where used.
 
+Current official environment path:
+- create the Prodigi account;
+- confirm both Sandbox and Live environments are present;
+- use the Sandbox API key first;
+- keep Sandbox and Live keys separate;
+- authenticate API calls with the `X-API-Key` header.
+Do not test Norvana authentication by placing a Live order.
+
 ### Printful — QUALIFY
 
 Code state: read-only scaffold present.
@@ -113,6 +143,13 @@ Account proof required:
 - catalog/product read;
 - shipping read;
 - branding/packing-slip option read.
+
+Current official token path:
+- open the Printful Developer Portal;
+- create a Private Token for Norvana's own account/store;
+- select the narrowest access level and scopes needed for read proving;
+- prefer read-only scopes where available;
+- save the token securely because the portal does not continuously expose it.
 
 Keep optional warehousing outside the zero-inventory lane.
 
@@ -129,6 +166,12 @@ Account proof required:
 - production/delivery estimate;
 - return/defect policy evidence;
 - branding option evidence.
+
+Current official credential path:
+- log in to Merchize;
+- Integration / Integrations -> API;
+- retrieve the account's API credential/access token and Base URL from the API area;
+- store both as secrets/configuration without committing either value.
 
 Do not opt into a paid hosted storefront merely to use fulfillment.
 
