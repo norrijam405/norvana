@@ -35,6 +35,18 @@ function knownCostCentsForQuantity(
   return cost;
 }
 
+function addKnownPlanCostCents(
+  current: number | null,
+  next: number
+) {
+  if (current === null) return null;
+  if (!Number.isSafeInteger(next) || next < 0) return null;
+
+  const total = current + next;
+  if (!Number.isSafeInteger(total) || total < 0) return null;
+  return total;
+}
+
 function offerAgeDays(offer: PartnerOffer, now: Date) {
   const observed = new Date(offer.evidenceObservedAt).getTime();
   if (!Number.isFinite(observed)) return Number.POSITIVE_INFINITY;
@@ -117,9 +129,10 @@ export function buildProposedFulfillmentPlan(input: {
   const uncovered: ProposedFulfillmentPlan["uncovered"] = [];
   const alternates: ProposedFulfillmentPlan["alternates"] = [];
   const planWarnings: string[] = [];
-  let knownCostCents = 0;
+  let knownCostCents: number | null = 0;
   let hasUnknownCosts = false;
   let requiresHumanVerification = false;
+  let aggregateCostOverflow = false;
 
   for (const line of input.demand) {
     let remaining = line.quantity;
@@ -205,8 +218,23 @@ export function buildProposedFulfillmentPlan(input: {
       if (offer.serviceAreaState !== "VERIFIED_MATCH") warnings.push("Service-area match requires verification.");
       if (ageDays > OFFER_REVERIFY_AFTER_DAYS) warnings.push("Offer evidence should be reverified before human approval.");
 
-      if (knownCost === null) hasUnknownCosts = true;
-      else knownCostCents += knownCost;
+      if (knownCost === null) {
+        hasUnknownCosts = true;
+      } else {
+        const nextKnownCostCents = addKnownPlanCostCents(
+          knownCostCents,
+          knownCost
+        );
+
+        if (nextKnownCostCents === null) {
+          knownCostCents = null;
+          aggregateCostOverflow = true;
+          hasUnknownCosts = true;
+          requiresHumanVerification = true;
+        } else {
+          knownCostCents = nextKnownCostCents;
+        }
+      }
 
       if (verificationRequired) requiresHumanVerification = true;
 
@@ -279,7 +307,10 @@ export function buildProposedFulfillmentPlan(input: {
   }
 
   if (hasUnknownCosts) {
-    planWarnings.push("At least one proposed allocation has unknown current cost.");
+    planWarnings.push("At least one proposed allocation or plan-level cost total is not authoritative.");
+  }
+  if (aggregateCostOverflow) {
+    planWarnings.push("Known-cost aggregate exceeded the safe-integer cents boundary and is not representable as an authoritative numeric total.");
   }
   if (uncovered.length > 0) {
     planWarnings.push("The proposed network does not fully cover all demand.");
