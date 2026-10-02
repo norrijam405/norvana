@@ -17,12 +17,14 @@ The same canonical Norvana product can accumulate review provenance from Norvana
 - Customers can publish product reviews from the product page.
 - Positive and negative reviews use the same publication path. Sentiment is not used to suppress or delay a review.
 - A reviewer can identify as an individual or as a business / organization buyer.
+- Product quality is rated separately from optional fulfillment/delivery and buying-experience ratings; only the product rating contributes to the product's aggregate stars.
 - A Norvana order number plus purchase email can verify that:
   - the order exists;
   - the payment state is `paid`;
   - the email matches the order;
   - the order contains the reviewed product.
 - The purchase email is used transiently for verification and is not copied onto the review record.
+- Verified Norvana purchases may expose only privacy-safe buyer signals: a quantity band (`1 unit`, `2–9 units`, `10–49 units`, or `50+ units`) and whether the buyer has more than one paid Norvana order. Exact larger-order quantities and the email are not displayed on the review.
 - A verified purchase receives `NORVANA_PURCHASE` provenance.
 - An opinion without purchase proof remains clearly labeled as not purchase-verified.
 - Review counts and aggregate rating include only `PUBLISHED` reviews.
@@ -37,6 +39,10 @@ Review records preserve:
 - canonical product id;
 - buyer type;
 - optional business name;
+- optional fulfillment rating;
+- optional buying-experience rating;
+- optional verified purchase-quantity band;
+- optional repeat-buyer signal;
 - verification state;
 - moderation state;
 - source channel;
