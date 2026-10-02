@@ -1797,7 +1797,7 @@ test("valid allocation followed by invalid unit preserves uncovered remainder", 
 
 
 test("format-only demand units are unrouteable and force verification", () => {
-  for (const unit of ["\\u200B", "\\u200C", "\\u2060"]) {
+  for (const unit of ["\u200B", "\u200C", "\u2060"]) {
     const plan = buildProposedFulfillmentPlan({
       now: NOW,
       partners: [candidate()],
@@ -1826,7 +1826,7 @@ test("format-only demand units are unrouteable and force verification", () => {
 });
 
 test("format-only offer units cannot allocate valid demand", () => {
-  for (const unit of ["\\u200B", "\\u200C", "\\u2060"]) {
+  for (const unit of ["\u200B", "\u200C", "\u2060"]) {
     const plan = buildProposedFulfillmentPlan({
       now: NOW,
       partners: [candidate()],
@@ -1860,7 +1860,7 @@ test("format-only offer units cannot allocate valid demand", () => {
 });
 
 test("embedded Unicode format characters cannot create visually deceptive compatible units", () => {
-  const deceptive = "l\\u200Bb";
+  const deceptive = "l\u200Bb";
   const plan = buildProposedFulfillmentPlan({
     now: NOW,
     partners: [candidate()],
@@ -1886,7 +1886,7 @@ test("embedded Unicode format characters cannot create visually deceptive compat
 });
 
 test("embedded control characters cannot create compatible units", () => {
-  const deceptive = "l\\tb";
+  const deceptive = "l\tb";
   const plan = buildProposedFulfillmentPlan({
     now: NOW,
     partners: [candidate()],
