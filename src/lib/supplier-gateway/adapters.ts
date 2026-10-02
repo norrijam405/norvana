@@ -95,4 +95,5 @@ export const FIRST_WAVE_READ_ONLY_ADAPTERS = [
   "gelato",
   "prodigi",
   "printful",
+  "merchize",
 ] as const;
