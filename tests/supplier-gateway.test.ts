@@ -38,7 +38,7 @@ test("declared supplier read capabilities remain read-only", () => {
 });
 
 test("registry never grants execution authority", () => {
-  assert.ok(SUPPLIER_REGISTRY_R0.length >= 9);
+  assert.ok(SUPPLIER_REGISTRY_R0.length >= 14);
   for (const profile of SUPPLIER_REGISTRY_R0) {
     assert.equal(profile.executionAuthority, "LOCKED_R0");
     assert.notEqual(profile.qualificationState, "FULFILLMENT_APPROVED");
@@ -54,12 +54,17 @@ test("general merchandise qualification order is CJ then Banggood then EPROLO", 
   );
 });
 
-test("POD order keeps Printify on entitlement hold", () => {
+test("POD order adds Merchize while keeping Printify on entitlement hold", () => {
   const queue = getSupplierQualificationQueue("POD");
   assert.deepEqual(
     queue.map((profile) => profile.providerId),
-    ["gelato", "prodigi", "printful", "printify"]
+    ["gelato", "prodigi", "printful", "merchize", "printify"]
   );
+
+  const merchize = getSupplierRegistryProfile("merchize");
+  assert.ok(merchize);
+  assert.equal(merchize.disposition, "QUALIFY");
+  assert.equal(merchize.customStoreApiClaim, true);
 
   const printify = getSupplierRegistryProfile("printify");
   assert.ok(printify);
@@ -68,8 +73,8 @@ test("POD order keeps Printify on entitlement hold", () => {
   assert.equal(printify.readCapabilities.length, 0);
 });
 
-test("Spocket and AppScenic remain excluded from free fulfillment pool", () => {
-  for (const providerId of ["spocket", "appscenic"]) {
+test("false-free suppliers remain excluded from free fulfillment pool", () => {
+  for (const providerId of ["spocket", "appscenic", "syncee", "zendrop", "supliful"]) {
     const profile = getSupplierRegistryProfile(providerId);
     assert.ok(profile);
     assert.equal(profile.disposition, "EXCLUDE");
@@ -94,6 +99,7 @@ test("read-only adapter scaffolds expose no action methods and make no network c
     "gelato",
     "prodigi",
     "printful",
+    "merchize",
   ]);
 
   const adapter = createSupplierReadOnlyScaffold("cjdropshipping") as unknown as Record<string, unknown>;
@@ -114,7 +120,29 @@ test("read-only adapter scaffolds expose no action methods and make no network c
   if (!result.ok) assert.equal(result.code, "SUPPLIER_CREDENTIAL_NOT_BOUND");
 });
 
-test("Printify read proving fails closed until entitlement is verified", () => {
+
+test("HyperSKU and Modalyst stay fail-closed until custom-store entitlement is proven", () => {
+  for (const providerId of ["hypersku", "modalyst"]) {
+    const profile = getSupplierRegistryProfile(providerId);
+    assert.ok(profile);
+    assert.equal(profile.disposition, "HOLD");
+    assert.equal(profile.apiEntitlementState, "NEEDS_ACCOUNT_VERIFICATION");
+    assert.equal(profile.readCapabilities.length, 0);
+
+    const result = evaluateSupplierReadiness(profile, "catalog.search");
+    assert.equal(result.ok, false);
+    if (!result.ok) {
+      assert.equal(result.code, "NORVANA_SUPPLIER_API_ENTITLEMENT_NOT_VERIFIED");
+    }
+  }
+});
+
+test("Merchize scaffold is read-only and unbound", async () => {
+  const result = await createSupplierReadOnlyScaffold("merchize").searchCatalog("shirt");
+  assert.equal(result.ok, false);
+  if (!result.ok) assert.equal(result.code, "SUPPLIER_CREDENTIAL_NOT_BOUND");
+});
+\ntest("Printify read proving fails closed until entitlement is verified", () => {
   const profile = getSupplierRegistryProfile("printify");
   assert.ok(profile);
   const result = evaluateSupplierReadiness(profile, "catalog.search");
