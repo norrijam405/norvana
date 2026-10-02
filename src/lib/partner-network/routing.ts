@@ -15,6 +15,11 @@ function normalizeCategory(value: string) {
   return value.trim().toLowerCase();
 }
 
+function isFinitePositiveQuantity(value: number | null) {
+  return value !== null && Number.isFinite(value) && value > 0;
+}
+
+
 function verifiedUnitPriceCents(offer: PartnerOffer) {
   if (offer.priceState !== "VERIFIED") return null;
   const value = offer.unitPriceCents;
@@ -135,11 +140,22 @@ export function buildProposedFulfillmentPlan(input: {
   let aggregateCostOverflow = false;
 
   for (const line of input.demand) {
-    let remaining = line.quantity;
-
     const rawLineOffers = input.offers.filter(
       (offer) => offer.demandLineId === line.id
     );
+
+    if (!isFinitePositiveQuantity(line.quantity)) {
+      uncovered.push({
+        demandLineId: line.id,
+        remainingQuantity: null,
+        unit: line.unit,
+        reason: "Demand quantity is invalid; expected a finite positive number.",
+      });
+      requiresHumanVerification = true;
+      continue;
+    }
+
+    let remaining = line.quantity;
 
     const eligibleOffers = rawLineOffers.filter((offer) => {
       const partner = partnerMap.get(offer.partnerCandidateId);
@@ -150,7 +166,7 @@ export function buildProposedFulfillmentPlan(input: {
       if (offer.unit !== line.unit) return false;
       if (offer.serviceAreaState === "NO_MATCH") return false;
       if (offer.availabilityState === "UNKNOWN" || offer.availabilityState === "STALE") return false;
-      if (offer.availableQuantity === null || offer.availableQuantity <= 0) return false;
+      if (!isFinitePositiveQuantity(offer.availableQuantity)) return false;
       if (offerAgeDays(offer, input.now) > MAX_OFFER_EVIDENCE_AGE_DAYS) return false;
 
       const partnerCategories = new Set(partner.categories.map(normalizeCategory));
@@ -186,8 +202,8 @@ export function buildProposedFulfillmentPlan(input: {
         continue;
       }
 
-      const quantity = Math.min(remaining, offer.availableQuantity ?? 0);
-      if (quantity <= 0) continue;
+      const quantity = Math.min(remaining, offer.availableQuantity as number);
+      if (!Number.isFinite(quantity) || quantity <= 0) continue;
 
       const warnings: string[] = [];
       const ageDays = offerAgeDays(offer, input.now);
@@ -283,6 +299,7 @@ export function buildProposedFulfillmentPlan(input: {
       else if (offer.unit !== line.unit) reason = "Offer quantity unit does not match demand unit.";
       else if (offer.serviceAreaState === "NO_MATCH") reason = "Service area does not match.";
       else if (offer.availableQuantity === null) reason = "Available quantity is unknown.";
+      else if (!isFinitePositiveQuantity(offer.availableQuantity)) reason = "Available quantity is invalid; expected a finite positive number.";
       else if (offer.availabilityState === "STALE") reason = "Availability evidence is stale.";
       else if (offer.availabilityState === "UNKNOWN") reason = "Availability is unknown.";
       else if (offerAgeDays(offer, input.now) > MAX_OFFER_EVIDENCE_AGE_DAYS) reason = "Offer evidence is too old for allocation.";
