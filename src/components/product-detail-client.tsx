@@ -25,6 +25,10 @@ type Review = {
   id: number;
   author: string;
   rating: number;
+  fulfillmentRating?: number | null;
+  purchaseExperienceRating?: number | null;
+  purchaseQuantityBand?: string | null;
+  repeatBuyer?: boolean | null;
   title: string;
   body: string;
   verified: boolean;
@@ -53,6 +57,8 @@ const PRODUCT_EMOJIS: Record<string, string> = {
 const EMPTY_REVIEW = {
   author: "",
   rating: 5,
+  fulfillmentRating: "",
+  purchaseExperienceRating: "",
   title: "",
   body: "",
   buyerType: "INDIVIDUAL",
@@ -337,9 +343,27 @@ export function ProductDetailClient({
                       {review.buyerType === "BUSINESS" && (
                         <span className="badge bg-surface-hover text-xs">Business buyer</span>
                       )}
+                      {review.verified && review.purchaseQuantityBand && (
+                        <span className="badge bg-surface-hover text-xs">
+                          {review.purchaseQuantityBand}
+                        </span>
+                      )}
+                      {review.verified && review.repeatBuyer && (
+                        <span className="badge bg-surface-hover text-xs">Repeat buyer</span>
+                      )}
                     </div>
                     <h4 className="font-semibold mt-2">{review.title}</h4>
                     <p className="text-sm text-muted mt-1 whitespace-pre-wrap">{review.body}</p>
+                    {(review.fulfillmentRating || review.purchaseExperienceRating) && (
+                      <div className="text-xs text-muted mt-3 flex flex-wrap gap-3">
+                        {review.fulfillmentRating && (
+                          <span>Fulfillment: {review.fulfillmentRating}/5</span>
+                        )}
+                        {review.purchaseExperienceRating && (
+                          <span>Buying experience: {review.purchaseExperienceRating}/5</span>
+                        )}
+                      </div>
+                    )}
                     <div className="text-xs text-muted mt-3 space-y-1">
                       <p>
                         — {review.author}
@@ -417,7 +441,7 @@ export function ProductDetailClient({
                 )}
 
                 <div>
-                  <label className="text-sm text-muted block mb-1">Rating</label>
+                  <label className="text-sm text-muted block mb-1">Product rating</label>
                   <div className="flex gap-1">
                     {[1, 2, 3, 4, 5].map((s) => (
                       <button
@@ -434,6 +458,49 @@ export function ProductDetailClient({
                       </button>
                     ))}
                   </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <label className="text-sm text-muted">
+                    Fulfillment / delivery (optional)
+                    <select
+                      className="input mt-1"
+                      value={reviewForm.fulfillmentRating}
+                      onChange={(e) =>
+                        setReviewForm({
+                          ...reviewForm,
+                          fulfillmentRating: e.target.value,
+                        })
+                      }
+                    >
+                      <option value="">Not rated</option>
+                      {[1, 2, 3, 4, 5].map((rating) => (
+                        <option key={rating} value={rating}>
+                          {rating}/5
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <label className="text-sm text-muted">
+                    Buying experience (optional)
+                    <select
+                      className="input mt-1"
+                      value={reviewForm.purchaseExperienceRating}
+                      onChange={(e) =>
+                        setReviewForm({
+                          ...reviewForm,
+                          purchaseExperienceRating: e.target.value,
+                        })
+                      }
+                    >
+                      <option value="">Not rated</option>
+                      {[1, 2, 3, 4, 5].map((rating) => (
+                        <option key={rating} value={rating}>
+                          {rating}/5
+                        </option>
+                      ))}
+                    </select>
+                  </label>
                 </div>
 
                 <input
