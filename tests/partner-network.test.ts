@@ -977,3 +977,318 @@ test("non-integer calculated cents fail closed even with a valid unit price", ()
   assert.equal(plan.hasUnknownCosts, true);
   assert.equal(plan.requiresHumanVerification, true);
 });
+
+
+test("plan-level known-cost aggregation fails closed above MAX_SAFE_INTEGER", () => {
+  const farmA = candidate();
+  const farmB = candidate({
+    id: "farm-b",
+    name: "Farm B",
+    evidence: [{
+      id: "ev-b-aggregate-overflow",
+      sourceId: "usda-ams-local-food-directories",
+      sourceUrl: "https://example.test/farm-b",
+      observedAt: "2026-09-21T00:00:00.000Z",
+      claimKinds: ["identity", "location", "products"],
+    }],
+  });
+
+  const plan = buildProposedFulfillmentPlan({
+    now: NOW,
+    partners: [farmA, farmB],
+    demand: [{ id: "tomatoes", category: "produce", quantity: 2, unit: "lb" }],
+    offers: [
+      {
+        partnerCandidateId: "farm-a",
+        demandLineId: "tomatoes",
+        category: "produce",
+        unit: "lb",
+        availableQuantity: 1,
+        unitPriceCents: Number.MAX_SAFE_INTEGER,
+        availabilityState: "VERIFIED",
+        priceState: "VERIFIED",
+        serviceAreaState: "VERIFIED_MATCH",
+        fulfillmentMode: "PICKUP",
+        evidenceObservedAt: "2026-10-01T20:00:00.000Z",
+      },
+      {
+        partnerCandidateId: "farm-b",
+        demandLineId: "tomatoes",
+        category: "produce",
+        unit: "lb",
+        availableQuantity: 1,
+        unitPriceCents: 1,
+        availabilityState: "VERIFIED",
+        priceState: "VERIFIED",
+        serviceAreaState: "VERIFIED_MATCH",
+        fulfillmentMode: "LOCAL_DELIVERY",
+        evidenceObservedAt: "2026-10-01T20:00:00.000Z",
+      },
+    ],
+  });
+
+  assert.deepEqual(
+    plan.allocations.map((allocation) => allocation.knownCostCents).sort((a, b) => Number(a) - Number(b)),
+    [1, Number.MAX_SAFE_INTEGER]
+  );
+  assert.equal(plan.knownCostCents, null);
+  assert.equal(plan.hasUnknownCosts, true);
+  assert.equal(plan.requiresHumanVerification, true);
+  assert.ok(
+    plan.warnings.some((warning) => warning.includes("safe-integer cents boundary"))
+  );
+});
+
+test("plan aggregate remains unknown after overflow even when later known allocations are safe", () => {
+  const partners = [
+    candidate(),
+    candidate({
+      id: "farm-b",
+      name: "Farm B",
+      evidence: [{
+        id: "ev-b-overflow-sticky",
+        sourceId: "usda-ams-local-food-directories",
+        sourceUrl: "https://example.test/farm-b",
+        observedAt: "2026-09-21T00:00:00.000Z",
+        claimKinds: ["identity", "location", "products"],
+      }],
+    }),
+    candidate({
+      id: "farm-c",
+      name: "Farm C",
+      evidence: [{
+        id: "ev-c-overflow-sticky",
+        sourceId: "usda-ams-local-food-directories",
+        sourceUrl: "https://example.test/farm-c",
+        observedAt: "2026-09-22T00:00:00.000Z",
+        claimKinds: ["identity", "location", "products"],
+      }],
+    }),
+  ];
+
+  const plan = buildProposedFulfillmentPlan({
+    now: NOW,
+    partners,
+    demand: [{ id: "tomatoes", category: "produce", quantity: 3, unit: "lb" }],
+    offers: [
+      {
+        partnerCandidateId: "farm-a",
+        demandLineId: "tomatoes",
+        category: "produce",
+        unit: "lb",
+        availableQuantity: 1,
+        unitPriceCents: Number.MAX_SAFE_INTEGER,
+        availabilityState: "VERIFIED",
+        priceState: "VERIFIED",
+        serviceAreaState: "VERIFIED_MATCH",
+        fulfillmentMode: "PICKUP",
+        evidenceObservedAt: "2026-10-01T20:00:00.000Z",
+      },
+      {
+        partnerCandidateId: "farm-b",
+        demandLineId: "tomatoes",
+        category: "produce",
+        unit: "lb",
+        availableQuantity: 1,
+        unitPriceCents: 1,
+        availabilityState: "VERIFIED",
+        priceState: "VERIFIED",
+        serviceAreaState: "VERIFIED_MATCH",
+        fulfillmentMode: "PICKUP",
+        evidenceObservedAt: "2026-10-01T20:00:00.000Z",
+      },
+      {
+        partnerCandidateId: "farm-c",
+        demandLineId: "tomatoes",
+        category: "produce",
+        unit: "lb",
+        availableQuantity: 1,
+        unitPriceCents: 0,
+        availabilityState: "VERIFIED",
+        priceState: "VERIFIED",
+        serviceAreaState: "VERIFIED_MATCH",
+        fulfillmentMode: "PICKUP",
+        evidenceObservedAt: "2026-10-01T20:00:00.000Z",
+      },
+    ],
+  });
+
+  assert.equal(plan.allocations.length, 3);
+  assert.equal(plan.knownCostCents, null);
+  assert.equal(plan.hasUnknownCosts, true);
+  assert.equal(plan.requiresHumanVerification, true);
+});
+
+test("plan aggregate may equal MAX_SAFE_INTEGER exactly", () => {
+  const plan = buildProposedFulfillmentPlan({
+    now: NOW,
+    partners: [candidate()],
+    demand: [{ id: "tomatoes", category: "produce", quantity: 1, unit: "lb" }],
+    offers: [{
+      partnerCandidateId: "farm-a",
+      demandLineId: "tomatoes",
+      category: "produce",
+      unit: "lb",
+      availableQuantity: 1,
+      unitPriceCents: Number.MAX_SAFE_INTEGER,
+      availabilityState: "VERIFIED",
+      priceState: "VERIFIED",
+      serviceAreaState: "VERIFIED_MATCH",
+      fulfillmentMode: "PICKUP",
+      evidenceObservedAt: "2026-10-01T20:00:00.000Z",
+    }],
+  });
+
+  assert.equal(plan.knownCostCents, Number.MAX_SAFE_INTEGER);
+  assert.equal(plan.hasUnknownCosts, false);
+  assert.equal(plan.requiresHumanVerification, false);
+});
+
+test("unknown allocation preserves safe known subtotal without claiming a full known total", () => {
+  const farmA = candidate();
+  const farmB = candidate({
+    id: "farm-b",
+    name: "Farm B",
+    evidence: [{
+      id: "ev-b-unknown-subtotal",
+      sourceId: "usda-ams-local-food-directories",
+      sourceUrl: "https://example.test/farm-b",
+      observedAt: "2026-09-21T00:00:00.000Z",
+      claimKinds: ["identity", "location", "products"],
+    }],
+  });
+
+  const plan = buildProposedFulfillmentPlan({
+    now: NOW,
+    partners: [farmA, farmB],
+    demand: [{ id: "tomatoes", category: "produce", quantity: 2, unit: "lb" }],
+    offers: [
+      {
+        partnerCandidateId: "farm-a",
+        demandLineId: "tomatoes",
+        category: "produce",
+        unit: "lb",
+        availableQuantity: 1,
+        unitPriceCents: 250,
+        availabilityState: "VERIFIED",
+        priceState: "VERIFIED",
+        serviceAreaState: "VERIFIED_MATCH",
+        fulfillmentMode: "PICKUP",
+        evidenceObservedAt: "2026-10-01T20:00:00.000Z",
+      },
+      {
+        partnerCandidateId: "farm-b",
+        demandLineId: "tomatoes",
+        category: "produce",
+        unit: "lb",
+        availableQuantity: 1,
+        unitPriceCents: null,
+        availabilityState: "VERIFIED",
+        priceState: "VERIFIED",
+        serviceAreaState: "VERIFIED_MATCH",
+        fulfillmentMode: "PICKUP",
+        evidenceObservedAt: "2026-10-01T20:00:00.000Z",
+      },
+    ],
+  });
+
+  assert.equal(plan.knownCostCents, 250);
+  assert.equal(plan.hasUnknownCosts, true);
+  assert.equal(plan.requiresHumanVerification, true);
+});
+
+test("zero-cost allocations do not destabilize plan-level known-cost aggregation", () => {
+  const farmA = candidate();
+  const farmB = candidate({
+    id: "farm-b",
+    name: "Farm B",
+    evidence: [{
+      id: "ev-b-zero-aggregate",
+      sourceId: "usda-ams-local-food-directories",
+      sourceUrl: "https://example.test/farm-b",
+      observedAt: "2026-09-21T00:00:00.000Z",
+      claimKinds: ["identity", "location", "products"],
+    }],
+  });
+
+  const plan = buildProposedFulfillmentPlan({
+    now: NOW,
+    partners: [farmA, farmB],
+    demand: [{ id: "tomatoes", category: "produce", quantity: 2, unit: "lb" }],
+    offers: [
+      {
+        partnerCandidateId: "farm-a",
+        demandLineId: "tomatoes",
+        category: "produce",
+        unit: "lb",
+        availableQuantity: 1,
+        unitPriceCents: 0,
+        availabilityState: "VERIFIED",
+        priceState: "VERIFIED",
+        serviceAreaState: "VERIFIED_MATCH",
+        fulfillmentMode: "PICKUP",
+        evidenceObservedAt: "2026-10-01T20:00:00.000Z",
+      },
+      {
+        partnerCandidateId: "farm-b",
+        demandLineId: "tomatoes",
+        category: "produce",
+        unit: "lb",
+        availableQuantity: 1,
+        unitPriceCents: 1,
+        availabilityState: "VERIFIED",
+        priceState: "VERIFIED",
+        serviceAreaState: "VERIFIED_MATCH",
+        fulfillmentMode: "PICKUP",
+        evidenceObservedAt: "2026-10-01T20:00:00.000Z",
+      },
+    ],
+  });
+
+  assert.equal(plan.knownCostCents, 1);
+  assert.equal(plan.hasUnknownCosts, false);
+  assert.equal(plan.requiresHumanVerification, false);
+});
+
+test("aggregate overflow fails closed regardless of allocation ordering", () => {
+  const makePartner = (id: string) =>
+    candidate({
+      id,
+      name: id,
+      evidence: [{
+        id: `ev-${id}`,
+        sourceId: "usda-ams-local-food-directories",
+        sourceUrl: `https://example.test/${id}`,
+        observedAt: "2026-09-21T00:00:00.000Z",
+        claimKinds: ["identity", "location", "products"],
+      }],
+    });
+
+  const partners = [makePartner("farm-a"), makePartner("farm-b")];
+  const prices = [Number.MAX_SAFE_INTEGER, 1];
+
+  for (const orderedPrices of [prices, [...prices].reverse()]) {
+    const plan = buildProposedFulfillmentPlan({
+      now: NOW,
+      partners,
+      demand: [{ id: "tomatoes", category: "produce", quantity: 2, unit: "lb" }],
+      offers: orderedPrices.map((price, index) => ({
+        partnerCandidateId: index === 0 ? "farm-a" : "farm-b",
+        demandLineId: "tomatoes",
+        category: "produce",
+        unit: "lb",
+        availableQuantity: 1,
+        unitPriceCents: price,
+        availabilityState: "VERIFIED" as const,
+        priceState: "VERIFIED" as const,
+        serviceAreaState: "VERIFIED_MATCH" as const,
+        fulfillmentMode: "PICKUP" as const,
+        evidenceObservedAt: "2026-10-01T20:00:00.000Z",
+      })),
+    });
+
+    assert.equal(plan.knownCostCents, null);
+    assert.equal(plan.hasUnknownCosts, true);
+    assert.equal(plan.requiresHumanVerification, true);
+  }
+});
