@@ -45,6 +45,10 @@ export const reviews = pgTable(
     verified: boolean("verified").notNull().default(false),
     buyerType: varchar("buyer_type", { length: 30 }).notNull().default("INDIVIDUAL"),
     businessName: varchar("business_name", { length: 255 }),
+    fulfillmentRating: integer("fulfillment_rating"),
+    purchaseExperienceRating: integer("purchase_experience_rating"),
+    purchaseQuantityBand: varchar("purchase_quantity_band", { length: 30 }),
+    repeatBuyer: boolean("repeat_buyer"),
     verificationState: varchar("verification_state", { length: 40 })
       .notNull()
       .default("UNVERIFIED"),
