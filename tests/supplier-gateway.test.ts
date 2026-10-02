@@ -142,7 +142,8 @@ test("Merchize scaffold is read-only and unbound", async () => {
   assert.equal(result.ok, false);
   if (!result.ok) assert.equal(result.code, "SUPPLIER_CREDENTIAL_NOT_BOUND");
 });
-\ntest("Printify read proving fails closed until entitlement is verified", () => {
+
+test("Printify read proving fails closed until entitlement is verified", () => {
   const profile = getSupplierRegistryProfile("printify");
   assert.ok(profile);
   const result = evaluateSupplierReadiness(profile, "catalog.search");
