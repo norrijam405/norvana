@@ -45,3 +45,12 @@ CREATE UNIQUE INDEX IF NOT EXISTS review_reactions_review_actor_idx
 
 CREATE INDEX IF NOT EXISTS review_reactions_review_id_idx
   ON review_reactions (review_id);
+
+CREATE TABLE IF NOT EXISTS customer_voice_throttle (
+  key_hash varchar(64) NOT NULL,
+  action varchar(30) NOT NULL,
+  window_started_at timestamp NOT NULL,
+  request_count integer NOT NULL DEFAULT 0,
+  updated_at timestamp NOT NULL DEFAULT now(),
+  PRIMARY KEY (key_hash, action)
+);
