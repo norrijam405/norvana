@@ -1,6 +1,6 @@
 import { db } from "@/db";
 import { products, reviews } from "@/db/schema";
-import { eq, desc } from "drizzle-orm";
+import { and, desc, eq } from "drizzle-orm";
 import { notFound } from "next/navigation";
 import { ProductDetailClient } from "@/components/product-detail-client";
 
@@ -19,7 +19,7 @@ export default async function ProductDetailPage({
   const productReviews = await db
     .select()
     .from(reviews)
-    .where(eq(reviews.productId, product.id))
+    .where(and(eq(reviews.productId, product.id), eq(reviews.moderationState, "PUBLISHED")))
     .orderBy(desc(reviews.createdAt));
 
   return <ProductDetailClient product={product} reviews={productReviews} />;
