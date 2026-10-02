@@ -9,6 +9,8 @@ export type ReviewSubmissionInput = {
   productId: number;
   author: string;
   rating: number;
+  fulfillmentRating?: number | null;
+  purchaseExperienceRating?: number | null;
   title: string;
   body: string;
   buyerType?: BuyerType;
@@ -32,6 +34,18 @@ export function validateReviewSubmission(input: unknown) {
   const value = input as Record<string, unknown>;
   const productId = Number(value.productId);
   const rating = Number(value.rating);
+  const fulfillmentRating =
+    value.fulfillmentRating === undefined ||
+    value.fulfillmentRating === null ||
+    value.fulfillmentRating === ""
+      ? null
+      : Number(value.fulfillmentRating);
+  const purchaseExperienceRating =
+    value.purchaseExperienceRating === undefined ||
+    value.purchaseExperienceRating === null ||
+    value.purchaseExperienceRating === ""
+      ? null
+      : Number(value.purchaseExperienceRating);
   const author = cleanText(value.author, 80);
   const title = cleanText(value.title, 160);
   const body = cleanText(value.body, 3000);
@@ -54,7 +68,21 @@ export function validateReviewSubmission(input: unknown) {
     return { ok: false as const, reason: "A valid product is required." };
   }
   if (!Number.isInteger(rating) || rating < 1 || rating > 5) {
-    return { ok: false as const, reason: "Rating must be an integer from 1 to 5." };
+    return { ok: false as const, reason: "Product rating must be an integer from 1 to 5." };
+  }
+  for (const [label, optionalRating] of [
+    ["Fulfillment rating", fulfillmentRating],
+    ["Purchase-experience rating", purchaseExperienceRating],
+  ] as const) {
+    if (
+      optionalRating !== null &&
+      (!Number.isInteger(optionalRating) || optionalRating < 1 || optionalRating > 5)
+    ) {
+      return {
+        ok: false as const,
+        reason: label + " must be an integer from 1 to 5 when supplied.",
+      };
+    }
   }
   if (!author) {
     return { ok: false as const, reason: "Display name is required and must be 80 characters or fewer." };
@@ -80,6 +108,8 @@ export function validateReviewSubmission(input: unknown) {
     value: {
       productId,
       rating,
+      fulfillmentRating,
+      purchaseExperienceRating,
       author,
       title,
       body,
@@ -97,12 +127,27 @@ export function reviewVisibilityDecision() {
   return { moderationState: "PUBLISHED" as const };
 }
 
+export function productQuantityFromOrder(orderItems: unknown, productId: number) {
+  if (!Array.isArray(orderItems)) return 0;
+  return orderItems.reduce((total, item) => {
+    if (!item || typeof item !== "object") return total;
+    const row = item as Record<string, unknown>;
+    if (Number(row.productId) !== productId) return total;
+    const quantity = Number(row.quantity);
+    return Number.isInteger(quantity) && quantity > 0 ? total + quantity : total;
+  }, 0);
+}
+
 export function containsProduct(orderItems: unknown, productId: number) {
-  if (!Array.isArray(orderItems)) return false;
-  return orderItems.some((item) => {
-    if (!item || typeof item !== "object") return false;
-    return Number((item as Record<string, unknown>).productId) === productId;
-  });
+  return productQuantityFromOrder(orderItems, productId) > 0;
+}
+
+export function purchaseQuantityBand(quantity: number) {
+  if (!Number.isFinite(quantity) || quantity <= 0) return null;
+  if (quantity >= 50) return "50+ units";
+  if (quantity >= 10) return "10–49 units";
+  if (quantity >= 2) return "2–9 units";
+  return "1 unit";
 }
 
 export function publicReviewShape<T extends Record<string, unknown>>(review: T) {
