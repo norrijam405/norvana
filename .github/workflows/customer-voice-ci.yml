@@ -1,0 +1,53 @@
+name: Norvana Customer Voice CI
+
+on:
+  push:
+    branches:
+      - "feature/2026-10-02-norvana-customer-voice-r0"
+  pull_request:
+    branches:
+      - "recovery/2026-09-26-norvana-modernization-r0"
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+        with:
+          node-version: 22
+          package-manager-cache: false
+
+      - name: Install dependencies
+        run: npm install --ignore-scripts --no-audit --no-fund
+
+      - name: Customer Voice tests
+        run: npm run test:voice
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Lint Customer Voice surface
+        run: npx eslint src/lib/customer-voice src/app/api/reviews src/components/product-detail-client.tsx src/app/shop/[slug]/page.tsx tests/customer-voice.test.ts
+
+      - name: Production build
+        env:
+          DATABASE_URL: postgresql://norvana_ci:norvana_ci@127.0.0.1:5432/norvana_ci
+          STRIPE_SECRET_KEY: sk_test_norvana_ci_placeholder
+          STRIPE_WEBHOOK_SECRET: whsec_norvana_ci_placeholder
+          NORVANA_SITE_URL: http://localhost:3000
+          NORVANA_EXTERNAL_FULFILLMENT_ENABLED: "false"
+          NORVANA_SUPPLIER_CONNECTORS_ENABLED: "false"
+          IGNIAQUA_FEDERATION_ENABLED: "false"
+          NEXT_TELEMETRY_DISABLED: "1"
+        run: npm run build
+
+      - name: Runtime dependency audit
+        run: npm audit --omit=dev --audit-level=moderate
+
+      - name: High severity dependency gate
+        run: npm audit --audit-level=high
