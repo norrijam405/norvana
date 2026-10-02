@@ -1,6 +1,10 @@
 ALTER TABLE reviews
   ADD COLUMN IF NOT EXISTS buyer_type varchar(30) NOT NULL DEFAULT 'INDIVIDUAL',
   ADD COLUMN IF NOT EXISTS business_name varchar(255),
+  ADD COLUMN IF NOT EXISTS fulfillment_rating integer,
+  ADD COLUMN IF NOT EXISTS purchase_experience_rating integer,
+  ADD COLUMN IF NOT EXISTS purchase_quantity_band varchar(30),
+  ADD COLUMN IF NOT EXISTS repeat_buyer boolean,
   ADD COLUMN IF NOT EXISTS verification_state varchar(40) NOT NULL DEFAULT 'UNVERIFIED',
   ADD COLUMN IF NOT EXISTS moderation_state varchar(30) NOT NULL DEFAULT 'PUBLISHED',
   ADD COLUMN IF NOT EXISTS source_channel varchar(60) NOT NULL DEFAULT 'NORVANA',
