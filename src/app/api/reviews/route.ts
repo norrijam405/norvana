@@ -4,6 +4,8 @@ import { orders, products, reviewEvents, reviews } from "@/db/schema";
 import { desc, eq, sql } from "drizzle-orm";
 import {
   containsProduct,
+  productQuantityFromOrder,
+  purchaseQuantityBand,
   reviewVisibilityDecision,
   validateReviewSubmission,
 } from "@/lib/customer-voice/policy";
@@ -61,6 +63,8 @@ export async function POST(req: NextRequest) {
     let verified = false;
     let verificationState = "UNVERIFIED";
     let sourceOrderId: number | null = null;
+    let purchaseQuantityBandValue: string | null = null;
+    let repeatBuyer: boolean | null = null;
 
     if (input.orderNumber && input.purchaseEmail) {
       const [order] = await db
@@ -87,6 +91,20 @@ export async function POST(req: NextRequest) {
       verified = true;
       verificationState = "NORVANA_PURCHASE";
       sourceOrderId = order.id;
+      purchaseQuantityBandValue = purchaseQuantityBand(
+        productQuantityFromOrder(order.items, input.productId)
+      );
+
+      const customerOrders = await db
+        .select({
+          id: orders.id,
+          paymentStatus: orders.paymentStatus,
+        })
+        .from(orders)
+        .where(eq(orders.customerEmail, input.purchaseEmail));
+
+      repeatBuyer =
+        customerOrders.filter((candidate) => candidate.paymentStatus === "paid").length > 1;
     }
 
     const visibility = reviewVisibilityDecision();
@@ -98,11 +116,15 @@ export async function POST(req: NextRequest) {
           productId: input.productId,
           author: input.author,
           rating: input.rating,
+          fulfillmentRating: input.fulfillmentRating,
+          purchaseExperienceRating: input.purchaseExperienceRating,
           title: input.title,
           body: input.body,
           verified,
           buyerType: input.buyerType,
           businessName: input.businessName,
+          purchaseQuantityBand: purchaseQuantityBandValue,
+          repeatBuyer,
           verificationState,
           moderationState: visibility.moderationState,
           sourceChannel: "NORVANA",
@@ -117,6 +139,8 @@ export async function POST(req: NextRequest) {
         payload: {
           verificationState,
           buyerType: input.buyerType,
+          purchaseQuantityBand: purchaseQuantityBandValue,
+          repeatBuyer,
           moderationState: visibility.moderationState,
         },
       });
