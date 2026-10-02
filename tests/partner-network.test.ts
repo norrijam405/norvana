@@ -1292,3 +1292,237 @@ test("aggregate overflow fails closed regardless of allocation ordering", () => 
     assert.equal(plan.requiresHumanVerification, true);
   }
 });
+
+
+test("NaN available quantity cannot allocate or suppress uncovered demand", () => {
+  const plan = buildProposedFulfillmentPlan({
+    now: NOW,
+    partners: [candidate()],
+    demand: [{ id: "tomatoes", category: "produce", quantity: 1, unit: "lb" }],
+    offers: [{
+      partnerCandidateId: "farm-a",
+      demandLineId: "tomatoes",
+      category: "produce",
+      unit: "lb",
+      availableQuantity: Number.NaN,
+      unitPriceCents: 250,
+      availabilityState: "VERIFIED",
+      priceState: "VERIFIED",
+      serviceAreaState: "VERIFIED_MATCH",
+      fulfillmentMode: "PICKUP",
+      evidenceObservedAt: "2026-10-01T20:00:00.000Z",
+    }],
+  });
+
+  assert.equal(plan.allocations.length, 0);
+  assert.equal(plan.uncovered.length, 1);
+  assert.equal(plan.uncovered[0]?.remainingQuantity, 1);
+  assert.equal(Number.isFinite(plan.uncovered[0]?.remainingQuantity), true);
+  assert.ok(
+    plan.alternates.some((alternate) =>
+      alternate.reason.includes("finite positive number")
+    )
+  );
+  assert.equal(plan.requiresHumanVerification, true);
+});
+
+test("non-finite and non-positive available quantities cannot allocate", () => {
+  for (const availableQuantity of [
+    Number.POSITIVE_INFINITY,
+    Number.NEGATIVE_INFINITY,
+    0,
+    -1,
+  ]) {
+    const plan = buildProposedFulfillmentPlan({
+      now: NOW,
+      partners: [candidate()],
+      demand: [{ id: "tomatoes", category: "produce", quantity: 1, unit: "lb" }],
+      offers: [{
+        partnerCandidateId: "farm-a",
+        demandLineId: "tomatoes",
+        category: "produce",
+        unit: "lb",
+        availableQuantity,
+        unitPriceCents: 250,
+        availabilityState: "VERIFIED",
+        priceState: "VERIFIED",
+        serviceAreaState: "VERIFIED_MATCH",
+        fulfillmentMode: "PICKUP",
+        evidenceObservedAt: "2026-10-01T20:00:00.000Z",
+      }],
+    });
+
+    assert.equal(plan.allocations.length, 0);
+    assert.equal(plan.uncovered[0]?.remainingQuantity, 1);
+    assert.equal(Number.isFinite(plan.uncovered[0]?.remainingQuantity), true);
+  }
+});
+
+test("positive fractional available quantity remains routable", () => {
+  const plan = buildProposedFulfillmentPlan({
+    now: NOW,
+    partners: [candidate()],
+    demand: [{ id: "tomatoes", category: "produce", quantity: 1, unit: "lb" }],
+    offers: [{
+      partnerCandidateId: "farm-a",
+      demandLineId: "tomatoes",
+      category: "produce",
+      unit: "lb",
+      availableQuantity: 0.5,
+      unitPriceCents: 200,
+      availabilityState: "VERIFIED",
+      priceState: "VERIFIED",
+      serviceAreaState: "VERIFIED_MATCH",
+      fulfillmentMode: "PICKUP",
+      evidenceObservedAt: "2026-10-01T20:00:00.000Z",
+    }],
+  });
+
+  assert.equal(plan.allocations.length, 1);
+  assert.equal(plan.allocations[0]?.quantity, 0.5);
+  assert.equal(plan.uncovered[0]?.remainingQuantity, 0.5);
+  assert.equal(plan.allocations[0]?.knownCostCents, 100);
+});
+
+test("invalid demand quantities are unrouteable and never enter allocation arithmetic", () => {
+  for (const quantity of [
+    Number.NaN,
+    Number.POSITIVE_INFINITY,
+    Number.NEGATIVE_INFINITY,
+    0,
+    -1,
+  ]) {
+    const plan = buildProposedFulfillmentPlan({
+      now: NOW,
+      partners: [candidate()],
+      demand: [{ id: "tomatoes", category: "produce", quantity, unit: "lb" }],
+      offers: [{
+        partnerCandidateId: "farm-a",
+        demandLineId: "tomatoes",
+        category: "produce",
+        unit: "lb",
+        availableQuantity: 10,
+        unitPriceCents: 250,
+        availabilityState: "VERIFIED",
+        priceState: "VERIFIED",
+        serviceAreaState: "VERIFIED_MATCH",
+        fulfillmentMode: "PICKUP",
+        evidenceObservedAt: "2026-10-01T20:00:00.000Z",
+      }],
+    });
+
+    assert.equal(plan.allocations.length, 0);
+    assert.equal(plan.uncovered.length, 1);
+    assert.equal(plan.uncovered[0]?.remainingQuantity, null);
+    assert.ok(plan.uncovered[0]?.reason.includes("Demand quantity is invalid"));
+    assert.equal(plan.requiresHumanVerification, true);
+  }
+});
+
+test("valid allocation followed by invalid availability preserves finite uncovered remainder", () => {
+  const farmA = candidate();
+  const farmB = candidate({
+    id: "farm-b",
+    name: "Farm B",
+    evidence: [{
+      id: "ev-b-invalid-after-valid",
+      sourceId: "usda-ams-local-food-directories",
+      sourceUrl: "https://example.test/farm-b",
+      observedAt: "2026-09-21T00:00:00.000Z",
+      claimKinds: ["identity", "location", "products"],
+    }],
+  });
+
+  const plan = buildProposedFulfillmentPlan({
+    now: NOW,
+    partners: [farmA, farmB],
+    demand: [{ id: "tomatoes", category: "produce", quantity: 2, unit: "lb" }],
+    offers: [
+      {
+        partnerCandidateId: "farm-a",
+        demandLineId: "tomatoes",
+        category: "produce",
+        unit: "lb",
+        availableQuantity: 1,
+        unitPriceCents: 250,
+        availabilityState: "VERIFIED",
+        priceState: "VERIFIED",
+        serviceAreaState: "VERIFIED_MATCH",
+        fulfillmentMode: "PICKUP",
+        evidenceObservedAt: "2026-10-01T20:00:00.000Z",
+      },
+      {
+        partnerCandidateId: "farm-b",
+        demandLineId: "tomatoes",
+        category: "produce",
+        unit: "lb",
+        availableQuantity: Number.NaN,
+        unitPriceCents: 250,
+        availabilityState: "VERIFIED",
+        priceState: "VERIFIED",
+        serviceAreaState: "VERIFIED_MATCH",
+        fulfillmentMode: "PICKUP",
+        evidenceObservedAt: "2026-10-01T20:00:00.000Z",
+      },
+    ],
+  });
+
+  assert.equal(plan.allocations.length, 1);
+  assert.equal(plan.allocations[0]?.quantity, 1);
+  assert.equal(plan.uncovered[0]?.remainingQuantity, 1);
+  assert.equal(Number.isFinite(plan.uncovered[0]?.remainingQuantity), true);
+});
+
+test("invalid availability followed by valid allocation cannot poison remaining coverage", () => {
+  const farmA = candidate();
+  const farmB = candidate({
+    id: "farm-b",
+    name: "Farm B",
+    evidence: [{
+      id: "ev-b-valid-after-invalid",
+      sourceId: "usda-ams-local-food-directories",
+      sourceUrl: "https://example.test/farm-b",
+      observedAt: "2026-09-21T00:00:00.000Z",
+      claimKinds: ["identity", "location", "products"],
+    }],
+  });
+
+  const plan = buildProposedFulfillmentPlan({
+    now: NOW,
+    partners: [farmA, farmB],
+    demand: [{ id: "tomatoes", category: "produce", quantity: 2, unit: "lb" }],
+    offers: [
+      {
+        partnerCandidateId: "farm-a",
+        demandLineId: "tomatoes",
+        category: "produce",
+        unit: "lb",
+        availableQuantity: Number.NaN,
+        unitPriceCents: 250,
+        availabilityState: "VERIFIED",
+        priceState: "VERIFIED",
+        serviceAreaState: "VERIFIED_MATCH",
+        fulfillmentMode: "PICKUP",
+        evidenceObservedAt: "2026-10-01T20:00:00.000Z",
+      },
+      {
+        partnerCandidateId: "farm-b",
+        demandLineId: "tomatoes",
+        category: "produce",
+        unit: "lb",
+        availableQuantity: 1,
+        unitPriceCents: 250,
+        availabilityState: "VERIFIED",
+        priceState: "VERIFIED",
+        serviceAreaState: "VERIFIED_MATCH",
+        fulfillmentMode: "PICKUP",
+        evidenceObservedAt: "2026-10-01T20:00:00.000Z",
+      },
+    ],
+  });
+
+  assert.equal(plan.allocations.length, 1);
+  assert.equal(plan.allocations[0]?.partnerCandidateId, "farm-b");
+  assert.equal(plan.uncovered[0]?.remainingQuantity, 1);
+  assert.equal(Number.isFinite(plan.uncovered[0]?.remainingQuantity), true);
+});
