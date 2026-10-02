@@ -146,7 +146,7 @@ export type ProposedFulfillmentPlan = {
     partnerCandidateId: string;
     reason: string;
   }>;
-  knownCostCents: number;
+  knownCostCents: number | null;
   hasUnknownCosts: boolean;
   requiresHumanVerification: boolean;
   warnings: string[];
