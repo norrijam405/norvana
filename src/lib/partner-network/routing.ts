@@ -15,7 +15,7 @@ function normalizeCategory(value: string) {
   return value.trim().toLowerCase();
 }
 
-const UNSAFE_UNIT_CHARACTERS = /[\p{Cc}\p{Cf}]/u;
+const UNSAFE_UNIT_CHARACTERS = /[\p{Cc}\p{Cf}\p{Default_Ignorable_Code_Point}]/u;
 
 function normalizeUnit(value: unknown) {
   if (typeof value !== "string") return null;

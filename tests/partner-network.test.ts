@@ -1935,3 +1935,61 @@ test("visible multi-token units remain valid after outer whitespace normalizatio
   assert.equal(plan.allocations[0]?.unit, "fl oz");
   assert.equal(plan.uncovered.length, 0);
 });
+
+test("default-ignorable unit-only demand tokens are unrouteable and force verification", () => {
+  for (const unit of ["\u034F", "\uFE0F", "\u{E0100}"]) {
+    const plan = buildProposedFulfillmentPlan({
+      now: NOW,
+      partners: [candidate()],
+      demand: [{ id: "tomatoes", category: "produce", quantity: 1, unit }],
+      offers: [{
+        partnerCandidateId: "farm-a",
+        demandLineId: "tomatoes",
+        category: "produce",
+        unit,
+        availableQuantity: 1,
+        unitPriceCents: 250,
+        availabilityState: "VERIFIED",
+        priceState: "VERIFIED",
+        serviceAreaState: "VERIFIED_MATCH",
+        fulfillmentMode: "PICKUP",
+        evidenceObservedAt: "2026-10-01T20:00:00.000Z",
+      }],
+    });
+
+    assert.equal(plan.allocations.length, 0);
+    assert.equal(plan.uncovered.length, 1);
+    assert.equal(plan.uncovered[0]?.remainingQuantity, null);
+    assert.ok(plan.uncovered[0]?.reason.includes("unit is invalid"));
+    assert.equal(plan.requiresHumanVerification, true);
+  }
+});
+
+test("embedded default-ignorable marks cannot create visually deceptive compatible units", () => {
+  for (const unit of ["l\u034Fb", "l\uFE0Fb"]) {
+    const plan = buildProposedFulfillmentPlan({
+      now: NOW,
+      partners: [candidate()],
+      demand: [{ id: "tomatoes", category: "produce", quantity: 1, unit }],
+      offers: [{
+        partnerCandidateId: "farm-a",
+        demandLineId: "tomatoes",
+        category: "produce",
+        unit,
+        availableQuantity: 1,
+        unitPriceCents: 250,
+        availabilityState: "VERIFIED",
+        priceState: "VERIFIED",
+        serviceAreaState: "VERIFIED_MATCH",
+        fulfillmentMode: "PICKUP",
+        evidenceObservedAt: "2026-10-01T20:00:00.000Z",
+      }],
+    });
+
+    assert.equal(plan.allocations.length, 0);
+    assert.equal(plan.uncovered.length, 1);
+    assert.equal(plan.uncovered[0]?.remainingQuantity, null);
+    assert.equal(plan.requiresHumanVerification, true);
+  }
+});
+
