@@ -32,16 +32,70 @@ export const products = pgTable("products", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
-export const reviews = pgTable("reviews", {
+export const reviews = pgTable(
+  "reviews",
+  {
+    id: serial("id").primaryKey(),
+    productId: integer("product_id").notNull(),
+    author: varchar("author", { length: 255 }).notNull(),
+    rating: integer("rating").notNull(),
+    title: varchar("title", { length: 255 }).notNull().default(""),
+    body: text("body").notNull().default(""),
+    verified: boolean("verified").notNull().default(false),
+    buyerType: varchar("buyer_type", { length: 30 }).notNull().default("INDIVIDUAL"),
+    businessName: varchar("business_name", { length: 255 }),
+    verificationState: varchar("verification_state", { length: 40 })
+      .notNull()
+      .default("UNVERIFIED"),
+    moderationState: varchar("moderation_state", { length: 30 })
+      .notNull()
+      .default("PUBLISHED"),
+    sourceChannel: varchar("source_channel", { length: 60 })
+      .notNull()
+      .default("NORVANA"),
+    sourceLabel: varchar("source_label", { length: 255 })
+      .notNull()
+      .default("Norvana"),
+    sourceOrderId: integer("source_order_id"),
+    sourceReviewId: varchar("source_review_id", { length: 255 }),
+    sourceUrl: varchar("source_url", { length: 1000 }),
+    helpfulCount: integer("helpful_count").notNull().default(0),
+    notHelpfulCount: integer("not_helpful_count").notNull().default(0),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  },
+  (table) => [
+    uniqueIndex("reviews_verified_order_product_idx")
+      .on(table.productId, table.sourceOrderId)
+      .where(sql`${table.sourceOrderId} IS NOT NULL`),
+  ]
+);
+
+export const reviewEvents = pgTable("review_events", {
   id: serial("id").primaryKey(),
-  productId: integer("product_id").notNull(),
-  author: varchar("author", { length: 255 }).notNull(),
-  rating: integer("rating").notNull(),
-  title: varchar("title", { length: 255 }).notNull().default(""),
-  body: text("body").notNull().default(""),
-  verified: boolean("verified").notNull().default(false),
+  reviewId: integer("review_id").notNull(),
+  eventType: varchar("event_type", { length: 60 }).notNull(),
+  payload: json("payload").$type<Record<string, unknown>>().notNull().default({}),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
+
+export const reviewReactions = pgTable(
+  "review_reactions",
+  {
+    id: serial("id").primaryKey(),
+    reviewId: integer("review_id").notNull(),
+    actorKeyHash: varchar("actor_key_hash", { length: 64 }).notNull(),
+    reaction: varchar("reaction", { length: 30 }).notNull(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  },
+  (table) => [
+    uniqueIndex("review_reactions_review_actor_idx").on(
+      table.reviewId,
+      table.actorKeyHash
+    ),
+  ]
+);
 
 export const orders = pgTable("orders", {
   id: serial("id").primaryKey(),
