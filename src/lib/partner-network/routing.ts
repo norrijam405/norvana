@@ -15,6 +15,12 @@ function normalizeCategory(value: string) {
   return value.trim().toLowerCase();
 }
 
+function normalizeUnit(value: unknown) {
+  if (typeof value !== "string") return null;
+  const normalized = value.trim();
+  return normalized.length > 0 ? normalized : null;
+}
+
 function isFinitePositiveQuantity(value: number | null) {
   return value !== null && Number.isFinite(value) && value > 0;
 }
@@ -148,8 +154,20 @@ export function buildProposedFulfillmentPlan(input: {
       uncovered.push({
         demandLineId: line.id,
         remainingQuantity: null,
-        unit: line.unit,
+        unit: demandUnit,
         reason: "Demand quantity is invalid; expected a finite positive number.",
+      });
+      requiresHumanVerification = true;
+      continue;
+    }
+
+    const demandUnit = normalizeUnit(line.unit);
+    if (demandUnit === null) {
+      uncovered.push({
+        demandLineId: line.id,
+        remainingQuantity: null,
+        unit: line.unit,
+        reason: "Demand quantity unit is invalid; expected a non-blank unit.",
       });
       requiresHumanVerification = true;
       continue;
@@ -163,7 +181,8 @@ export function buildProposedFulfillmentPlan(input: {
 
       if (!partner || !qualification?.eligibleForRecommendation) return false;
       if (normalizeCategory(offer.category) !== normalizeCategory(line.category)) return false;
-      if (offer.unit !== line.unit) return false;
+      const offerUnit = normalizeUnit(offer.unit);
+      if (offerUnit === null || offerUnit !== demandUnit) return false;
       if (offer.serviceAreaState === "NO_MATCH") return false;
       if (offer.availabilityState === "UNKNOWN" || offer.availabilityState === "STALE") return false;
       if (!isFinitePositiveQuantity(offer.availableQuantity)) return false;
@@ -293,10 +312,12 @@ export function buildProposedFulfillmentPlan(input: {
       const qualification = qualifications.get(offer.partnerCandidateId);
 
       let reason = "Offer is not currently eligible for allocation.";
+      const offerUnit = normalizeUnit(offer.unit);
       if (!partner || !qualification?.eligibleForRecommendation) reason = "Partner is not recommendation-eligible.";
       else if (normalizeCategory(offer.category) !== normalizeCategory(line.category)) reason = "Offer category does not match demand.";
       else if (!partner.categories.map(normalizeCategory).includes(normalizeCategory(line.category))) reason = "Partner evidence does not cover the demanded category.";
-      else if (offer.unit !== line.unit) reason = "Offer quantity unit does not match demand unit.";
+      else if (offerUnit === null) reason = "Offer quantity unit is invalid; expected a non-blank unit.";
+      else if (offerUnit !== demandUnit) reason = "Offer quantity unit does not match demand unit.";
       else if (offer.serviceAreaState === "NO_MATCH") reason = "Service area does not match.";
       else if (offer.availableQuantity === null) reason = "Available quantity is unknown.";
       else if (!isFinitePositiveQuantity(offer.availableQuantity)) reason = "Available quantity is invalid; expected a finite positive number.";
@@ -316,7 +337,7 @@ export function buildProposedFulfillmentPlan(input: {
       uncovered.push({
         demandLineId: line.id,
         remainingQuantity: remaining,
-        unit: line.unit,
+        unit: demandUnit,
         reason: "Verified/recommendable partner evidence does not cover the full requested quantity.",
       });
       requiresHumanVerification = true;
