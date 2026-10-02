@@ -9,7 +9,8 @@ import {
   timestamp,
   json,
   uniqueIndex,
-} from "drizzle-orm/pg-core";\nimport { sql } from "drizzle-orm";
+} from "drizzle-orm/pg-core";
+import { sql } from "drizzle-orm";
 
 export const products = pgTable("products", {
   id: serial("id").primaryKey(),
