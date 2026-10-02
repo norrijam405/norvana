@@ -7,6 +7,7 @@ import {
   reviewVisibilityDecision,
   validateReviewSubmission,
 } from "@/lib/customer-voice/policy";
+import { consumeCustomerVoiceQuota } from "@/lib/customer-voice/throttle";
 
 export async function GET(req: NextRequest) {
   const productId = Number(req.nextUrl.searchParams.get("productId"));
@@ -32,6 +33,16 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
+    const quota = await consumeCustomerVoiceQuota(req, "REVIEW_SUBMIT");
+    if (!quota.allowed) {
+      return NextResponse.json(
+        { error: "Too many review submissions. Please try again later." },
+        {
+          status: 429,
+          headers: { "Retry-After": String(quota.retryAfterSeconds) },
+        }
+      );
+    }
     const parsed = validateReviewSubmission(await req.json());
     if (!parsed.ok) {
       return NextResponse.json({ error: parsed.reason }, { status: 400 });
