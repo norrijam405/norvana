@@ -3,12 +3,16 @@
 import { useCart } from "./cart-context";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { FREE_SHIPPING_THRESHOLD } from "@/lib/constants";
 
 export function CartDrawer() {
+  const pathname = usePathname();
   const { items, removeItem, updateQuantity, subtotal, isOpen, setIsOpen } = useCart();
   const freeShipping = subtotal >= FREE_SHIPPING_THRESHOLD;
   const remaining = FREE_SHIPPING_THRESHOLD - subtotal;
+
+  if (pathname.startsWith("/supplier-lab")) return null;
 
   return (
     <AnimatePresence>

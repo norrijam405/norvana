@@ -11,7 +11,7 @@ export function Navbar() {
   const { itemCount, setIsOpen } = useCart();
   const [mobileOpen, setMobileOpen] = useState(false);
 
-  if (pathname.startsWith("/admin")) return null;
+  if (pathname.startsWith("/admin") || pathname.startsWith("/supplier-lab")) return null;
 
   const links = [
     { href: "/", label: "Home" },
