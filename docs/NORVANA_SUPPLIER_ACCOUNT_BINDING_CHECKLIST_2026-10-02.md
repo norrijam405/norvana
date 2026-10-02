@@ -21,27 +21,28 @@ This checklist is the operator bridge from code-scaffolded supplier connectors t
 
 ## General merchandise
 
-### CJdropshipping — QUALIFY
+### CJdropshipping — QUALIFY / ACCOUNT BINDING ALREADY COMPLETE
 
-Code state: existing Norvana Supplier Gateway / qualification lane.
+Code state: existing Norvana CJ read-only qualification lane.
 
-Account proof required:
-- merchant/developer account ownership;
-- current free API entitlement;
-- current API point/quota terms;
-- read-only product/SKU/stock/freight request receipts;
-- product-scoped webhook behavior if used.
+No founder action is currently required for the CJ key.
 
-Current official setup path:
-- log in to CJ;
-- Apps -> Install App -> install the API app if it is not already installed;
-- open the account API area -> Add API;
-- create an API Key entry;
-- copy the API key once and place it only in approved secret storage;
-- exchange that API key for a CJ access token from the backend.
-CJ's current documentation says access and refresh tokens are long-lived and should remain backend-only.
+Preserved proof:
+- Vercel Preview secret name: `NORVANA_CJ_API_KEY`;
+- authentication succeeded against CJ;
+- live catalog/product/variant/stock/origin reads succeeded;
+- a strict live freight quote proof succeeded and normalized at least one quote;
+- no key or access token was returned to the browser or committed to GitHub;
+- execution authority remains `LOCKED_R0`.
 
-Do not enable order creation or payment endpoints during authentication proving.
+Banked evidence:
+- `docs/NORVANA_CJ_LIVE_READ_CONNECTION_PASS_2026-09-29.md`;
+- `docs/NORVANA_CJ_FREIGHT_QUOTE_PROOF_R0_2026-09-29.md`;
+- controlled Preview deployment `dpl_BdZCC3njGHn2V7orZfonRDdDiu5A`.
+
+Do not rotate, re-enter, or expose the current CJ key merely to repeat already-banked proof. The next CJ milestone is read-only shadow verification, not account setup.
+
+Do not enable order creation or payment endpoints.
 
 ### Banggood Dropship — QUALIFY
 
