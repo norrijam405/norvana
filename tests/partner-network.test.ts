@@ -1794,3 +1794,144 @@ test("valid allocation followed by invalid unit preserves uncovered remainder", 
   assert.equal(plan.allocations[0]?.unit, "lb");
   assert.equal(plan.uncovered[0]?.remainingQuantity, 1);
 });
+
+
+test("format-only demand units are unrouteable and force verification", () => {
+  for (const unit of ["\\u200B", "\\u200C", "\\u2060"]) {
+    const plan = buildProposedFulfillmentPlan({
+      now: NOW,
+      partners: [candidate()],
+      demand: [{ id: "tomatoes", category: "produce", quantity: 1, unit }],
+      offers: [{
+        partnerCandidateId: "farm-a",
+        demandLineId: "tomatoes",
+        category: "produce",
+        unit,
+        availableQuantity: 1,
+        unitPriceCents: 250,
+        availabilityState: "VERIFIED",
+        priceState: "VERIFIED",
+        serviceAreaState: "VERIFIED_MATCH",
+        fulfillmentMode: "PICKUP",
+        evidenceObservedAt: "2026-10-01T20:00:00.000Z",
+      }],
+    });
+
+    assert.equal(plan.allocations.length, 0);
+    assert.equal(plan.uncovered.length, 1);
+    assert.equal(plan.uncovered[0]?.remainingQuantity, null);
+    assert.ok(plan.uncovered[0]?.reason.includes("unit is invalid"));
+    assert.equal(plan.requiresHumanVerification, true);
+  }
+});
+
+test("format-only offer units cannot allocate valid demand", () => {
+  for (const unit of ["\\u200B", "\\u200C", "\\u2060"]) {
+    const plan = buildProposedFulfillmentPlan({
+      now: NOW,
+      partners: [candidate()],
+      demand: [{ id: "tomatoes", category: "produce", quantity: 1, unit: "lb" }],
+      offers: [{
+        partnerCandidateId: "farm-a",
+        demandLineId: "tomatoes",
+        category: "produce",
+        unit,
+        availableQuantity: 1,
+        unitPriceCents: 250,
+        availabilityState: "VERIFIED",
+        priceState: "VERIFIED",
+        serviceAreaState: "VERIFIED_MATCH",
+        fulfillmentMode: "PICKUP",
+        evidenceObservedAt: "2026-10-01T20:00:00.000Z",
+      }],
+    });
+
+    assert.equal(plan.allocations.length, 0);
+    assert.equal(plan.uncovered.length, 1);
+    assert.equal(plan.uncovered[0]?.remainingQuantity, 1);
+    assert.equal(plan.uncovered[0]?.unit, "lb");
+    assert.ok(
+      plan.alternates.some((alternate) =>
+        alternate.reason.includes("unit is invalid")
+      )
+    );
+    assert.equal(plan.requiresHumanVerification, true);
+  }
+});
+
+test("embedded Unicode format characters cannot create visually deceptive compatible units", () => {
+  const deceptive = "l\\u200Bb";
+  const plan = buildProposedFulfillmentPlan({
+    now: NOW,
+    partners: [candidate()],
+    demand: [{ id: "tomatoes", category: "produce", quantity: 1, unit: deceptive }],
+    offers: [{
+      partnerCandidateId: "farm-a",
+      demandLineId: "tomatoes",
+      category: "produce",
+      unit: deceptive,
+      availableQuantity: 1,
+      unitPriceCents: 250,
+      availabilityState: "VERIFIED",
+      priceState: "VERIFIED",
+      serviceAreaState: "VERIFIED_MATCH",
+      fulfillmentMode: "PICKUP",
+      evidenceObservedAt: "2026-10-01T20:00:00.000Z",
+    }],
+  });
+
+  assert.equal(plan.allocations.length, 0);
+  assert.equal(plan.uncovered[0]?.remainingQuantity, null);
+  assert.equal(plan.requiresHumanVerification, true);
+});
+
+test("embedded control characters cannot create compatible units", () => {
+  const deceptive = "l\\tb";
+  const plan = buildProposedFulfillmentPlan({
+    now: NOW,
+    partners: [candidate()],
+    demand: [{ id: "tomatoes", category: "produce", quantity: 1, unit: deceptive }],
+    offers: [{
+      partnerCandidateId: "farm-a",
+      demandLineId: "tomatoes",
+      category: "produce",
+      unit: deceptive,
+      availableQuantity: 1,
+      unitPriceCents: 250,
+      availabilityState: "VERIFIED",
+      priceState: "VERIFIED",
+      serviceAreaState: "VERIFIED_MATCH",
+      fulfillmentMode: "PICKUP",
+      evidenceObservedAt: "2026-10-01T20:00:00.000Z",
+    }],
+  });
+
+  assert.equal(plan.allocations.length, 0);
+  assert.equal(plan.uncovered[0]?.remainingQuantity, null);
+  assert.equal(plan.requiresHumanVerification, true);
+});
+
+test("visible multi-token units remain valid after outer whitespace normalization", () => {
+  const plan = buildProposedFulfillmentPlan({
+    now: NOW,
+    partners: [candidate()],
+    demand: [{ id: "tomatoes", category: "produce", quantity: 1, unit: " fl oz " }],
+    offers: [{
+      partnerCandidateId: "farm-a",
+      demandLineId: "tomatoes",
+      category: "produce",
+      unit: "fl oz",
+      availableQuantity: 1,
+      unitPriceCents: 250,
+      availabilityState: "VERIFIED",
+      priceState: "VERIFIED",
+      serviceAreaState: "VERIFIED_MATCH",
+      fulfillmentMode: "PICKUP",
+      evidenceObservedAt: "2026-10-01T20:00:00.000Z",
+    }],
+  });
+
+  assert.equal(plan.allocations.length, 1);
+  assert.equal(plan.allocations[0]?.unit, "fl oz");
+  assert.equal(plan.uncovered.length, 0);
+});

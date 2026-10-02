@@ -15,10 +15,14 @@ function normalizeCategory(value: string) {
   return value.trim().toLowerCase();
 }
 
+const UNSAFE_UNIT_CHARACTERS = /[\p{Cc}\p{Cf}]/u;
+
 function normalizeUnit(value: unknown) {
   if (typeof value !== "string") return null;
   const normalized = value.trim();
-  return normalized.length > 0 ? normalized : null;
+  if (normalized.length === 0) return null;
+  if (UNSAFE_UNIT_CHARACTERS.test(normalized)) return null;
+  return normalized;
 }
 
 function isFinitePositiveQuantity(value: number | null) {
