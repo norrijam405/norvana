@@ -137,7 +137,7 @@ export type ProposedFulfillmentPlan = {
   allocations: ProposedAllocation[];
   uncovered: Array<{
     demandLineId: string;
-    remainingQuantity: number;
+    remainingQuantity: number | null;
     unit: string;
     reason: string;
   }>;
