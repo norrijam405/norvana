@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db";
 import { reviewEvents, reviewReactions, reviews } from "@/db/schema";
 import { eq, sql } from "drizzle-orm";
+import { consumeCustomerVoiceQuota } from "@/lib/customer-voice/throttle";
 
 const ACTOR_COOKIE = "norvana_review_actor";
 
@@ -14,6 +15,17 @@ export async function POST(
   req: NextRequest,
   context: { params: Promise<{ id: string }> }
 ) {
+  const quota = await consumeCustomerVoiceQuota(req, "REVIEW_REACT");
+  if (!quota.allowed) {
+    return NextResponse.json(
+      { error: "Too many review reactions. Please try again later." },
+      {
+        status: 429,
+        headers: { "Retry-After": String(quota.retryAfterSeconds) },
+      }
+    );
+  }
+
   const { id } = await context.params;
   const reviewId = Number(id);
   if (!Number.isSafeInteger(reviewId) || reviewId <= 0) {
