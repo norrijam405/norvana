@@ -165,7 +165,7 @@ export function HomeClient({
               </div>
             </div>
 
-            <div className="self-end rounded-[2rem] border border-cream/15 bg-cream/8 p-6 backdrop-blur-md">
+            <div className="self-end rounded-[2rem] border border-cream/15 bg-cream/[0.08] p-6 backdrop-blur-md">
               <p className="text-xs font-semibold uppercase tracking-[0.22em] text-wheat">The Acre Era standard</p>
               <div className="mt-6 grid gap-4">
                 {[
@@ -216,7 +216,7 @@ export function HomeClient({
         </section>
 
         {activeVolume ? (
-          <section id="era-drop" className="border-y border-soil/10 bg-wheat/18">
+          <section id="era-drop" className="border-y border-soil/10 bg-wheat/[0.18]">
             <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
               <div className="grid gap-6 md:grid-cols-[auto_1fr_auto] md:items-center">
                 <div className="flex h-16 w-16 items-center justify-center rounded-full bg-soil font-display text-xl font-black text-wheat">
