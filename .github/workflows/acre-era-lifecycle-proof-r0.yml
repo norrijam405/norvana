@@ -56,8 +56,8 @@ jobs:
             psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f "$file"
           done
 
-      - name: Run isolated full lifecycle proof
-        run: node --experimental-strip-types scripts/verify-acre-era-lifecycle-r0.mjs
+      - name: Run isolated full lifecycle application-path proof
+        run: node --experimental-strip-types --experimental-loader ./scripts/node-ts-alias-loader.mjs scripts/verify-acre-era-lifecycle-r0.mjs
 
       - name: Typecheck
         run: npm run typecheck
