@@ -1,15 +1,23 @@
-import { existsSync } from "node:fs";
+import { statSync } from "node:fs";
 import { dirname, extname, resolve as resolvePath } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
 const root = process.cwd();
 
+function isFile(path) {
+  try {
+    return statSync(path).isFile();
+  } catch {
+    return false;
+  }
+}
+
 function candidateUrl(basePath) {
   const candidates = extname(basePath)
     ? [basePath]
-    : [basePath, basePath + ".ts", basePath + ".tsx", resolvePath(basePath, "index.ts")];
+    : [basePath + ".ts", basePath + ".tsx", resolvePath(basePath, "index.ts")];
   for (const candidate of candidates) {
-    if (existsSync(candidate)) return pathToFileURL(candidate).href;
+    if (isFile(candidate)) return pathToFileURL(candidate).href;
   }
   return null;
 }
