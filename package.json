@@ -9,7 +9,9 @@
     "typecheck": "tsc --noEmit",
     "admin:credentials": "node scripts/hash-admin-password.mjs",
     "test:watchtower": "node --test --experimental-strip-types tests/watchtower-policy.test.ts",
-    "test:suppliers": "node --test --experimental-strip-types tests/supplier-gateway.test.ts"
+    "test:suppliers": "node --test --experimental-strip-types tests/supplier-gateway.test.ts",
+    "test:merchize": "node --test --experimental-strip-types tests/merchize-live-read.test.ts",
+    "prebuild": "node --experimental-strip-types scripts/merchize-live-probe-build-once.mjs"
   },
   "dependencies": {
     "@stripe/stripe-js": "^9.10.0",
