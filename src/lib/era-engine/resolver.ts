@@ -50,17 +50,27 @@ async function resolveArchivedPublicEra(
   era: typeof eras.$inferSelect,
   now: Date
 ): Promise<PublicEra | null> {
-  const [row] = await db
-    .select()
-    .from(eraArchiveSnapshots)
-    .where(eq(eraArchiveSnapshots.eraId, era.id))
-    .orderBy(
-      desc(eraArchiveSnapshots.createdAt),
-      desc(eraArchiveSnapshots.id)
-    )
-    .limit(1);
+  const [[row], currentMediaRows] = await Promise.all([
+    db
+      .select()
+      .from(eraArchiveSnapshots)
+      .where(eq(eraArchiveSnapshots.eraId, era.id))
+      .orderBy(
+        desc(eraArchiveSnapshots.createdAt),
+        desc(eraArchiveSnapshots.id)
+      )
+      .limit(1),
+    db
+      .select()
+      .from(eraMediaAssets)
+      .where(eq(eraMediaAssets.eraId, era.id)),
+  ]);
 
   if (!row) return null;
+
+  const currentMediaById = new Map(
+    currentMediaRows.map((asset) => [asset.id, asset])
+  );
 
   const snapshot = objectValue(row.snapshot);
   if (!snapshot || snapshot.schema !== "ACRE_ERA_ARCHIVE_SNAPSHOT_R0") return null;
@@ -86,19 +96,26 @@ async function resolveArchivedPublicEra(
   const media = arrayValue(snapshot.media)
     .map(objectValue)
     .filter((value): value is Record<string, unknown> => Boolean(value))
-    .filter((asset) =>
-      isEraMediaPublic(
+    .filter((asset) => {
+      const assetId = numberValue(asset.id);
+      const current = currentMediaById.get(assetId);
+      if (!current) return false;
+
+      const historicalUrl = stringValue(asset.mediaUrl);
+      if (!historicalUrl || current.mediaUrl !== historicalUrl) return false;
+
+      return isEraMediaPublic(
         {
-          rightsState: stringValue(asset.rightsState),
-          rightsEvidenceRef: stringValue(asset.rightsEvidenceRef) || null,
-          mediaUrl: stringValue(asset.mediaUrl),
-          rightsStartsAt: stringValue(asset.rightsStartsAt) || null,
-          rightsEndsAt: stringValue(asset.rightsEndsAt) || null,
-          status: stringValue(asset.status),
+          rightsState: current.rightsState,
+          rightsEvidenceRef: current.rightsEvidenceRef,
+          mediaUrl: historicalUrl,
+          rightsStartsAt: current.rightsStartsAt,
+          rightsEndsAt: current.rightsEndsAt,
+          status: current.status,
         },
         now
-      )
-    )
+      );
+    })
     .map((asset) => ({
       id: numberValue(asset.id),
       assetType: stringValue(asset.assetType),
