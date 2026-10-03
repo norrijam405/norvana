@@ -177,8 +177,10 @@ async function resolveArchivedPublicEra(
     kind: stringValue(eraSnapshot.kind) || era.kind,
     lifecycleState: era.lifecycleState,
     isPrimary: false,
-    startAt: era.startAt?.toISOString() ?? stringValue(eraSnapshot.startAt) || null,
-    endAt: era.endAt?.toISOString() ?? stringValue(eraSnapshot.endAt) || null,
+    startAt:
+      era.startAt?.toISOString() ?? (stringValue(eraSnapshot.startAt) || null),
+    endAt:
+      era.endAt?.toISOString() ?? (stringValue(eraSnapshot.endAt) || null),
     theme: normalizeThemeTokens(eraSnapshot.themeTokens),
     media,
     sections: sectionRows,
