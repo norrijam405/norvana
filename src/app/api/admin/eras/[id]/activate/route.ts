@@ -34,6 +34,7 @@ export async function POST(
   }
 
   const activationEvidenceRef = clean(body.activationEvidenceRef, 1500);
+  const expectedReadinessDigest = clean(body.expectedReadinessDigest, 64);
   const makePrimary = body.makePrimary === true;
 
   if (!activationEvidenceRef) {
@@ -43,11 +44,29 @@ export async function POST(
     );
   }
 
+  if (!/^[a-f0-9]{64}$/.test(expectedReadinessDigest)) {
+    return NextResponse.json(
+      { error: "A valid readiness digest is required." },
+      { status: 409 }
+    );
+  }
+
   const readiness = await evaluateEraActivationReadiness(eraId);
   if (!readiness) return NextResponse.json({ error: "Era not found." }, { status: 404 });
   if (!readiness.ready) {
     return NextResponse.json(
       { error: "Era is not ready for activation.", blockers: readiness.blockers, warnings: readiness.warnings },
+      { status: 409 }
+    );
+  }
+
+  if (readiness.readinessDigest !== expectedReadinessDigest) {
+    return NextResponse.json(
+      {
+        error: "Era readiness changed. Re-read readiness before activation.",
+        expectedReadinessDigest,
+        currentReadinessDigest: readiness.readinessDigest,
+      },
       { status: 409 }
     );
   }
@@ -100,6 +119,7 @@ export async function POST(
           activationEvidenceRef,
           makePrimary,
           readiness,
+          expectedReadinessDigest,
         },
       });
 
@@ -114,6 +134,7 @@ export async function POST(
           activationEvidenceRef,
           makePrimary,
           readiness,
+          expectedReadinessDigest,
         },
       });
 
