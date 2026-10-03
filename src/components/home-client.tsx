@@ -2,9 +2,12 @@
 
 import { motion } from "framer-motion";
 import Link from "next/link";
-import { useEffect, useState } from "react";
 import { useCart } from "./cart-context";
 import { Footer } from "./footer";
+import { EvolvingField } from "./acre-era/evolving-field";
+import { FarmLifeStory } from "./acre-era/farm-life-story";
+import { BringItHere } from "./acre-era/bring-it-here";
+import { ACRE_ERA_WORLDS } from "@/lib/acre-era/brand";
 
 type Product = {
   id: number;
@@ -37,52 +40,25 @@ type Review = {
   verified: boolean;
 };
 
-const HERO_SLIDES = [
-  { title: "Volume III", subtitle: "Garden & Wellness", cta: "Explore the Collection" },
-  { title: "Curated Objects", subtitle: "For Intentional Living", cta: "Shop Now" },
-  { title: "Artisan Made", subtitle: "Globally Sourced", cta: "Discover More" },
-];
-
-function CountdownTimer() {
-  const [timeLeft, setTimeLeft] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0 });
-
-  useEffect(() => {
-    const endDate = new Date();
-    endDate.setDate(endDate.getDate() + 14);
-
-    const timer = setInterval(() => {
-      const now = new Date().getTime();
-      const diff = endDate.getTime() - now;
-      if (diff <= 0) return;
-      setTimeLeft({
-        days: Math.floor(diff / (1000 * 60 * 60 * 24)),
-        hours: Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)),
-        minutes: Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60)),
-        seconds: Math.floor((diff % (1000 * 60)) / 1000),
-      });
-    }, 1000);
-    return () => clearInterval(timer);
-  }, []);
-
-  return (
-    <div className="flex gap-4">
-      {Object.entries(timeLeft).map(([label, value]) => (
-        <div key={label} className="text-center">
-          <div className="w-16 h-16 bg-surface rounded-lg flex items-center justify-center border border-border">
-            <span className="font-display text-2xl font-bold text-obsidian">{value}</span>
-          </div>
-          <span className="text-xs text-muted mt-1 block capitalize">{label}</span>
-        </div>
-      ))}
-    </div>
-  );
-}
+const PRODUCT_EMOJIS: Record<string, string> = {
+  "home-fragrance": "🕯️",
+  kitchen: "☕",
+  "home-decor": "🛋️",
+  workspace: "🖊️",
+  art: "🎨",
+  garden: "🌿",
+  wellness: "🧘",
+  bath: "🧼",
+  stationery: "📓",
+  grocery: "🥕",
+  food: "🍎",
+};
 
 function StarRating({ rating }: { rating: number }) {
   return (
-    <div className="flex gap-0.5">
+    <div className="flex gap-0.5" aria-label={rating.toFixed(1) + " out of 5 stars"}>
       {[1, 2, 3, 4, 5].map((i) => (
-        <span key={i} className={i <= Math.round(rating) ? "text-yellow-400" : "text-gray-300"}>
+        <span key={i} className={i <= Math.round(rating) ? "text-ember" : "text-soil/15"}>
           ★
         </span>
       ))}
@@ -90,17 +66,63 @@ function StarRating({ rating }: { rating: number }) {
   );
 }
 
-const PRODUCT_EMOJIS: Record<string, string> = {
-  "home-fragrance": "🕯️",
-  "kitchen": "☕",
-  "home-decor": "🛋️",
-  "workspace": "🖊️",
-  "art": "🎨",
-  "garden": "🌿",
-  "wellness": "🧘",
-  "bath": "🧼",
-  "stationery": "📓",
-};
+function ProductCard({ product, index }: { product: Product; index: number }) {
+  const { addItem } = useCart();
+  const stage =
+    product.reviewCount > 8
+      ? "Customer signal building"
+      : product.reviewCount > 0
+        ? "Early buyer signal"
+        : "New Find";
+
+  return (
+    <motion.article
+      initial={{ opacity: 0, y: 18 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, margin: "-40px" }}
+      transition={{ delay: Math.min(index * 0.06, 0.24) }}
+      className="group rounded-[1.6rem] border border-soil/10 bg-cream p-4 shadow-[0_18px_50px_rgba(48,46,35,.06)] transition hover:-translate-y-1"
+    >
+      <Link href={"/shop/" + product.slug}>
+        <div className="relative flex aspect-square items-center justify-center overflow-hidden rounded-[1.25rem] bg-sage-wash text-6xl">
+          <div className="absolute inset-0 acre-contours opacity-25" />
+          <span className="relative transition-transform duration-300 group-hover:scale-110">
+            {PRODUCT_EMOJIS[product.niche] || "📦"}
+          </span>
+          <span className="absolute left-3 top-3 rounded-full bg-cream/90 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.15em] text-soil backdrop-blur">
+            {stage}
+          </span>
+        </div>
+        <div className="pt-4">
+          <div className="flex items-center gap-2">
+            <StarRating rating={product.rating || 0} />
+            <span className="text-xs text-muted">({product.reviewCount})</span>
+          </div>
+          <h3 className="mt-2 font-display text-lg font-bold text-soil">{product.name}</h3>
+          <p className="mt-1 line-clamp-2 text-sm text-muted">{product.description}</p>
+          <div className="mt-3 flex items-center gap-2">
+            <span className="font-semibold text-soil">{"$"}{product.price.toFixed(2)}</span>
+            {product.compareAtPrice ? (
+              <span className="text-sm text-muted line-through">{"$"}{product.compareAtPrice.toFixed(2)}</span>
+            ) : null}
+          </div>
+          <p className="mt-4 text-xs font-semibold uppercase tracking-[0.16em] text-leaf">
+            Open the passport →
+          </p>
+        </div>
+      </Link>
+      <button
+        type="button"
+        onClick={() =>
+          addItem({ id: product.id, name: product.name, price: product.price, slug: product.slug })
+        }
+        className="btn-primary mt-4 w-full text-sm"
+      >
+        Add to cart
+      </button>
+    </motion.article>
+  );
+}
 
 export function HomeClient({
   featuredProducts,
@@ -113,236 +135,170 @@ export function HomeClient({
   recentReviews: Review[];
   stats: { products: number; orders: number; subscribers: number };
 }) {
-  const [slideIndex, setSlideIndex] = useState(0);
-  const { addItem } = useCart();
-  const [seeded, setSeeded] = useState(false);
-
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setSlideIndex((i) => (i + 1) % HERO_SLIDES.length);
-    }, 5000);
-    return () => clearInterval(timer);
-  }, []);
-
-  const handleSeed = async () => {
-    await fetch("/api/seed", { method: "POST" });
-    setSeeded(true);
-    window.location.reload();
-  };
-
-  const slide = HERO_SLIDES[slideIndex];
-
   return (
     <>
-      <main className="min-h-screen">
-        {/* Hero */}
-        <section className="relative overflow-hidden bg-gradient-to-br from-obsidian via-gray-900 to-obsidian text-white">
-          <div className="absolute inset-0 opacity-10">
-            <div className="absolute inset-0" style={{
-              backgroundImage: "radial-gradient(circle at 25% 25%, #6366F1 0%, transparent 50%), radial-gradient(circle at 75% 75%, #6366F1 0%, transparent 50%)"
-            }} />
-          </div>
-          <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24 md:py-36">
-            <motion.div
-              key={slideIndex}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
-              transition={{ duration: 0.6 }}
-            >
-              <p className="text-indigo-light text-sm font-medium tracking-widest uppercase mb-4">
-                {slide.subtitle}
+      <main>
+        <section className="relative isolate overflow-hidden bg-soil text-cream">
+          <EvolvingField />
+          <div className="relative mx-auto grid max-w-7xl gap-10 px-4 py-24 sm:px-6 md:py-32 lg:grid-cols-[1.08fr_.92fr] lg:px-8 lg:py-40">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.3em] text-wheat">
+                A new era for the everyday market
               </p>
-              <h1 className="font-display text-5xl md:text-7xl font-bold leading-tight">
-                {slide.title}
+              <h1 className="mt-5 max-w-4xl font-display text-5xl font-black leading-[.94] md:text-7xl lg:text-8xl">
+                Common needs.
+                <br />
+                Curious finds.
+                <br />
+                <span className="text-wheat">Clear reasons.</span>
               </h1>
-              <p className="mt-6 text-white/60 text-lg max-w-xl">
-                Handpicked artisan goods from the world&apos;s best makers. New volumes drop quarterly.
+              <p className="mt-7 max-w-2xl text-base leading-7 text-cream/70 md:text-lg">
+                Acre Era brings groceries, local producers, practical goods, and rotating discoveries into one curated marketplace. We show what we know, what is still being proven, and why an item is being shown.
               </p>
-              <div className="mt-8 flex flex-wrap gap-4">
-                <Link href="/shop" className="btn-primary text-base px-8 py-4">
-                  {slide.cta}
+              <div className="mt-8 flex flex-wrap gap-3">
+                <Link href="/shop" className="btn-primary">
+                  Shop Acre Era
                 </Link>
-                <Link href="/archive" className="btn-secondary border-white/20 text-white hover:bg-white/10 text-base px-8 py-4">
-                  View Archive
+                <Link href="/market" className="btn-ghost-light">
+                  Enter the Market
                 </Link>
               </div>
-            </motion.div>
+            </div>
 
-            {/* Slide indicators */}
-            <div className="flex gap-2 mt-12">
-              {HERO_SLIDES.map((_, i) => (
-                <button
-                  key={i}
-                  onClick={() => setSlideIndex(i)}
-                  className={`h-1 rounded-full transition-all duration-300 ${
-                    i === slideIndex ? "w-8 bg-indigo-accent" : "w-4 bg-white/30"
-                  }`}
-                />
-              ))}
+            <div className="self-end rounded-[2rem] border border-cream/15 bg-cream/8 p-6 backdrop-blur-md">
+              <p className="text-xs font-semibold uppercase tracking-[0.22em] text-wheat">The Acre Era standard</p>
+              <div className="mt-6 grid gap-4">
+                {[
+                  ["Why it’s here", "Every product should have a reason beyond “a supplier had it.”"],
+                  ["What we know", "Product, delivery, and buying-experience signals stay separate."],
+                  ["What’s changing", "Era Drops and customer requests continuously shape the catalog."],
+                ].map(([title, copy]) => (
+                  <div key={title} className="border-t border-cream/10 pt-4 first:border-0 first:pt-0">
+                    <p className="font-display text-lg font-bold">{title}</p>
+                    <p className="mt-1 text-sm leading-6 text-cream/65">{copy}</p>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
         </section>
 
-        {/* Countdown Timer */}
-        {activeVolume && (
-          <section className="py-12 bg-surface border-b border-border">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row items-center justify-between gap-6">
-              <div>
-                <p className="text-sm text-muted uppercase tracking-wider">Current Volume Ends In</p>
-                <h3 className="font-display text-xl font-semibold mt-1">
-                  Vol. {activeVolume.volumeNumber} — {activeVolume.niche}
-                </h3>
-              </div>
-              <CountdownTimer />
-            </div>
-          </section>
-        )}
-
-        {/* Seed Data CTA (shows when no products) */}
-        {featuredProducts.length === 0 && !seeded && (
-          <section className="py-16">
-            <div className="max-w-md mx-auto text-center card">
-              <h2 className="font-display text-2xl font-bold">Welcome to NORVANA</h2>
-              <p className="mt-3 text-muted text-sm">Seed the database with sample products, suppliers, and volumes to get started.</p>
-              <button onClick={handleSeed} className="btn-primary mt-6">
-                🌱 Seed Database
-              </button>
-            </div>
-          </section>
-        )}
-
-        {/* Featured Products */}
-        {featuredProducts.length > 0 && (
-          <section className="py-20">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-              <div className="text-center mb-12">
-                <p className="text-sm text-indigo-accent font-medium tracking-widest uppercase">Handpicked</p>
-                <h2 className="font-display text-3xl md:text-4xl font-bold mt-2">Featured Products</h2>
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                {featuredProducts.map((product, i) => (
-                  <motion.div
-                    key={product.id}
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: i * 0.1 }}
-                    className="card group hover:shadow-md transition-all duration-300"
-                  >
-                    <Link href={`/shop/${product.slug}`}>
-                      <div className="aspect-square bg-surface-hover rounded-xl flex items-center justify-center text-5xl group-hover:scale-105 transition-transform duration-300">
-                        {PRODUCT_EMOJIS[product.niche] || "🎁"}
-                      </div>
-                      <div className="mt-4">
-                        <div className="flex items-center gap-2">
-                          <StarRating rating={product.rating} />
-                          <span className="text-xs text-muted">({product.reviewCount})</span>
-                        </div>
-                        <h3 className="font-display text-lg font-semibold mt-2 group-hover:text-indigo-accent transition-colors">
-                          {product.name}
-                        </h3>
-                        <div className="flex items-center gap-2 mt-1">
-                          <span className="font-semibold">${product.price.toFixed(2)}</span>
-                          {product.compareAtPrice && (
-                            <span className="text-sm text-muted line-through">
-                              ${product.compareAtPrice.toFixed(2)}
-                            </span>
-                          )}
-                        </div>
-                        <div className="flex gap-1.5 mt-3 flex-wrap">
-                          {product.tags.slice(0, 3).map((tag) => (
-                            <span key={tag} className="badge bg-surface-hover text-muted">
-                              {tag}
-                            </span>
-                          ))}
-                        </div>
-                      </div>
-                    </Link>
-                    <button
-                      onClick={() => addItem({ id: product.id, name: product.name, price: product.price, slug: product.slug })}
-                      className="btn-primary w-full mt-4 text-sm"
-                    >
-                      Add to Cart
-                    </button>
-                  </motion.div>
-                ))}
-              </div>
-              <div className="text-center mt-10">
-                <Link href="/shop" className="btn-secondary">
-                  View All Products →
-                </Link>
-              </div>
-            </div>
-          </section>
-        )}
-
-        {/* Review Carousel */}
-        {recentReviews.length > 0 && (
-          <section className="py-20 bg-surface border-y border-border">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-              <div className="text-center mb-12">
-                <p className="text-sm text-indigo-accent font-medium tracking-widest uppercase">Testimonials</p>
-                <h2 className="font-display text-3xl md:text-4xl font-bold mt-2">What People Say</h2>
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                {recentReviews.slice(0, 3).map((review, i) => (
-                  <motion.div
-                    key={review.id}
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: i * 0.1 }}
-                    className="bg-bone p-6 rounded-2xl"
-                  >
-                    <StarRating rating={review.rating} />
-                    <h4 className="font-semibold mt-3">{review.title}</h4>
-                    <p className="text-sm text-muted mt-2 line-clamp-3">{review.body}</p>
-                    <div className="flex items-center gap-2 mt-4">
-                      <div className="w-8 h-8 bg-indigo-accent/10 rounded-full flex items-center justify-center text-indigo-accent text-sm font-bold">
-                        {review.author.charAt(0)}
-                      </div>
-                      <span className="text-sm font-medium">{review.author}</span>
-                      {review.verified && <span className="badge bg-green-50 text-success text-xs">✓ Verified</span>}
-                    </div>
-                  </motion.div>
-                ))}
-              </div>
-            </div>
-          </section>
-        )}
-
-        {/* Archive Teaser */}
-        <section className="py-20">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="bg-gradient-to-br from-obsidian to-gray-800 rounded-3xl p-10 md:p-16 text-white text-center">
-              <p className="text-indigo-light text-sm font-medium tracking-widest uppercase">The Archive</p>
-              <h2 className="font-display text-3xl md:text-4xl font-bold mt-3">
-                Explore Past Volumes
+        <section className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
+          <div className="mb-8 flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.24em] text-leaf">Shop by world</p>
+              <h2 className="mt-2 font-display text-3xl font-bold text-soil md:text-5xl">
+                One marketplace. Different moods.
               </h2>
-              <p className="mt-4 text-white/60 max-w-xl mx-auto">
-                Revisit previous collections and discover the objects that defined each season.
-              </p>
-              <Link href="/archive" className="btn-primary mt-8 inline-flex">
-                Browse Archive →
-              </Link>
             </div>
+            <p className="max-w-lg text-sm leading-6 text-muted">
+              The parent brand stays broad; the experience changes when the category changes.
+            </p>
+          </div>
+          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+            {ACRE_ERA_WORLDS.map((world, index) => (
+              <motion.div
+                key={world.slug}
+                initial={{ opacity: 0, y: 15 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: index * 0.05 }}
+              >
+                <Link href={world.href} className="acre-world block h-full">
+                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-leaf">{world.eyebrow}</p>
+                  <h3 className="mt-4 font-display text-2xl font-bold">{world.label}</h3>
+                  <p className="mt-3 text-sm leading-6 text-muted">{world.description}</p>
+                  <span className="mt-8 inline-block text-sm font-semibold">Explore →</span>
+                </Link>
+              </motion.div>
+            ))}
           </div>
         </section>
 
-        {/* Stats */}
-        <section className="py-16 border-t border-border">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
-              {[
-                { label: "Curated Products", value: stats.products || "12+" },
-                { label: "Happy Customers", value: "500+" },
-                { label: "Artisan Makers", value: "15+" },
-                { label: "Countries Shipped", value: "12+" },
-              ].map((stat) => (
-                <div key={stat.label} className="text-center">
-                  <p className="font-display text-3xl md:text-4xl font-bold text-indigo-accent">{stat.value}</p>
-                  <p className="text-sm text-muted mt-1">{stat.label}</p>
+        {activeVolume ? (
+          <section id="era-drop" className="border-y border-soil/10 bg-wheat/18">
+            <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
+              <div className="grid gap-6 md:grid-cols-[auto_1fr_auto] md:items-center">
+                <div className="flex h-16 w-16 items-center justify-center rounded-full bg-soil font-display text-xl font-black text-wheat">
+                  {activeVolume.volumeNumber}
                 </div>
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-[0.22em] text-leaf">Current Era Drop</p>
+                  <h2 className="mt-1 font-display text-2xl font-bold text-soil">{activeVolume.niche}</h2>
+                  <p className="mt-2 max-w-2xl text-sm text-muted">{activeVolume.description}</p>
+                </div>
+                <Link href="/shop" className="btn-secondary">Explore this Era →</Link>
+              </div>
+            </div>
+          </section>
+        ) : null}
+
+        {featuredProducts.length > 0 ? (
+          <section className="mx-auto max-w-7xl px-4 py-20 sm:px-6 lg:px-8">
+            <div className="mb-10 flex items-end justify-between gap-4">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-[0.24em] text-leaf">Curated now</p>
+                <h2 className="mt-2 font-display text-3xl font-bold text-soil md:text-5xl">Worth a closer look.</h2>
+              </div>
+              <Link href="/shop" className="hidden text-sm font-semibold text-soil md:block">See all goods →</Link>
+            </div>
+            <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+              {featuredProducts.map((product, index) => (
+                <ProductCard product={product} index={index} key={product.id} />
               ))}
+            </div>
+          </section>
+        ) : (
+          <section className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
+            <div className="rounded-[2rem] border border-soil/10 bg-cream p-8 text-center">
+              <h2 className="font-display text-2xl font-bold">The catalog is being prepared.</h2>
+              <p className="mt-2 text-sm text-muted">We will show products here only when catalog data is actually available.</p>
+            </div>
+          </section>
+        )}
+
+        <div className="mx-auto max-w-7xl space-y-8 px-4 pb-20 sm:px-6 lg:px-8">
+          <FarmLifeStory />
+          <BringItHere />
+        </div>
+
+        {recentReviews.length > 0 ? (
+          <section className="border-y border-soil/10 bg-cream py-20">
+            <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+              <p className="text-xs font-semibold uppercase tracking-[0.24em] text-leaf">Customer Voice</p>
+              <div className="mt-3 flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
+                <h2 className="font-display text-3xl font-bold text-soil md:text-5xl">Signal, not decoration.</h2>
+                <p className="max-w-lg text-sm leading-6 text-muted">
+                  Product ratings stay separate from delivery and purchase experience on product pages.
+                </p>
+              </div>
+              <div className="mt-10 grid gap-5 md:grid-cols-3">
+                {recentReviews.slice(0, 3).map((review) => (
+                  <article key={review.id} className="rounded-[1.5rem] border border-soil/10 bg-bone p-6">
+                    <StarRating rating={review.rating} />
+                    <h3 className="mt-4 font-display text-lg font-bold">{review.title}</h3>
+                    <p className="mt-2 line-clamp-4 text-sm leading-6 text-muted">{review.body}</p>
+                    <div className="mt-5 flex items-center gap-2 text-xs">
+                      <strong>{review.author}</strong>
+                      {review.verified ? <span className="badge bg-leaf/10 text-leaf">Verified purchase</span> : null}
+                    </div>
+                  </article>
+                ))}
+              </div>
+            </div>
+          </section>
+        ) : null}
+
+        <section className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
+          <div className="grid gap-4 rounded-[2rem] border border-soil/10 bg-sage-wash p-8 md:grid-cols-3 md:p-10">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-leaf">Built to evolve</p>
+              <h2 className="mt-2 font-display text-3xl font-bold">The catalog should earn repeat visits.</h2>
+            </div>
+            <div className="grid gap-4 sm:grid-cols-3 md:col-span-2">
+              <div><strong className="text-2xl">{stats.products || 0}</strong><p className="mt-1 text-sm text-muted">catalog products</p></div>
+              <div><strong className="text-2xl">Era Drops</strong><p className="mt-1 text-sm text-muted">rotating discovery lanes</p></div>
+              <div><strong className="text-2xl">No silent ACT</strong><p className="mt-1 text-sm text-muted">curation does not equal supplier authority</p></div>
             </div>
           </div>
         </section>
