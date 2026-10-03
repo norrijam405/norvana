@@ -122,6 +122,23 @@ export const customerVoiceThrottle = pgTable(
   ]
 );
 
+export const marketRequests = pgTable(
+  "market_requests",
+  {
+    id: serial("id").primaryKey(),
+    requestKey: varchar("request_key", { length: 64 }).notNull(),
+    title: varchar("title", { length: 120 }).notNull(),
+    category: varchar("category", { length: 30 }).notNull().default("product"),
+    note: text("note").notNull().default(""),
+    requestCount: integer("request_count").notNull().default(1),
+    status: varchar("status", { length: 30 }).notNull().default("REQUESTED"),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  },
+  (table) => [uniqueIndex("market_requests_request_key_idx").on(table.requestKey)]
+);
+
+
 export const orders = pgTable("orders", {
   id: serial("id").primaryKey(),
   orderNumber: varchar("order_number", { length: 50 }).notNull().unique(),

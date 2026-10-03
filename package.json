@@ -9,7 +9,8 @@
     "typecheck": "tsc --noEmit",
     "admin:credentials": "node scripts/hash-admin-password.mjs",
     "test:watchtower": "node --test --experimental-strip-types tests/watchtower-policy.test.ts",
-    "test:voice": "node --test --experimental-strip-types tests/customer-voice.test.ts"
+    "test:voice": "node --test --experimental-strip-types tests/customer-voice.test.ts",
+    "test:acre-era": "node --test --experimental-strip-types tests/acre-era-marketplace.test.ts"
   },
   "dependencies": {
     "@stripe/stripe-js": "^9.10.0",

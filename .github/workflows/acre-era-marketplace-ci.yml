@@ -1,0 +1,62 @@
+name: Acre Era Marketplace CI
+
+on:
+  push:
+    branches:
+      - "feature/2026-10-02-acre-era-marketplace-r0"
+  pull_request:
+    branches:
+      - "feature/2026-10-02-norvana-customer-voice-r0"
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: 22
+
+      - name: Install dependencies
+        run: npm install --ignore-scripts --no-audit --no-fund
+
+      - name: Customer Voice regressions
+        run: npm run test:voice
+
+      - name: Acre Era marketplace tests
+        run: npm run test:acre-era
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Lint Acre Era surface
+        run: npx eslint src/lib/acre-era src/components/acre-era src/app/market src/app/api/market-requests src/components/home-client.tsx src/components/navbar.tsx src/components/footer.tsx src/components/product-detail-client.tsx tests/acre-era-marketplace.test.ts
+
+      - name: Production build
+        env:
+          DATABASE_URL: postgresql://acre_era_ci:acre_era_ci@127.0.0.1:5432/acre_era_ci
+          STRIPE_SECRET_KEY: sk_test_acre_era_ci_placeholder
+          STRIPE_WEBHOOK_SECRET: whsec_acre_era_ci_placeholder
+          NORVANA_SITE_URL: http://localhost:3000
+          NORVANA_CUSTOMER_VOICE_RATE_SECRET: acre-era-ci-rate-secret-not-production
+          NORVANA_EXTERNAL_FULFILLMENT_ENABLED: "false"
+          NORVANA_SUPPLIER_CONNECTORS_ENABLED: "false"
+          IGNIAQUA_FEDERATION_ENABLED: "false"
+          NEXT_TELEMETRY_DISABLED: "1"
+        run: npm run build
+
+      - name: Runtime dependency audit
+        run: npm audit --omit=dev --audit-level=moderate
+
+      - name: Production high severity dependency gate
+        run: npm audit --omit=dev --audit-level=high
+
+      - name: Development toolchain advisory visibility
+        run: |
+          npm audit --audit-level=high || {
+            echo "::warning::Known development-toolchain advisories remain visible; production dependency audit is blocking and passed separately."
+          }
