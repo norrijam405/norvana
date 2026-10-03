@@ -20,6 +20,9 @@ type Product = {
   images: string[];
   rating: number;
   reviewCount: number;
+  commerceModel?: string;
+  imageRightsState?: string;
+  externalSellerName?: string | null;
   tags: string[];
 };
 
@@ -68,6 +71,9 @@ function StarRating({ rating }: { rating: number }) {
 
 function ProductCard({ product, index }: { product: Product; index: number }) {
   const { addItem } = useCart();
+  const isAffiliate = product.commerceModel === "AFFILIATE_REFERRAL";
+  const imageRightsOk = ["OWNED", "BRAND_AUTHORIZED", "SUPPLIER_AUTHORIZED", "AFFILIATE_FEED_AUTHORIZED"].includes(product.imageRightsState || "");
+  const displayImage = imageRightsOk ? product.images?.[0] : null;
   const stage =
     product.reviewCount > 8
       ? "Customer signal building"
@@ -86,9 +92,14 @@ function ProductCard({ product, index }: { product: Product; index: number }) {
       <Link href={"/shop/" + product.slug}>
         <div className="relative flex aspect-square items-center justify-center overflow-hidden rounded-[1.25rem] bg-sage-wash text-6xl">
           <div className="absolute inset-0 acre-contours opacity-25" />
-          <span className="relative transition-transform duration-300 group-hover:scale-110">
-            {PRODUCT_EMOJIS[product.niche] || "📦"}
-          </span>
+          {displayImage ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={displayImage} alt={product.name} className="relative h-full w-full object-contain bg-white" referrerPolicy="no-referrer" />
+          ) : (
+            <span className="relative transition-transform duration-300 group-hover:scale-110">
+              {PRODUCT_EMOJIS[product.niche] || "📦"}
+            </span>
+          )}
           <span className="absolute left-3 top-3 rounded-full bg-cream/90 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.15em] text-soil backdrop-blur">
             {stage}
           </span>
@@ -111,15 +122,21 @@ function ProductCard({ product, index }: { product: Product; index: number }) {
           </p>
         </div>
       </Link>
-      <button
-        type="button"
-        onClick={() =>
-          addItem({ id: product.id, name: product.name, price: product.price, slug: product.slug })
-        }
-        className="btn-primary mt-4 w-full text-sm"
-      >
-        Add to cart
-      </button>
+      {isAffiliate ? (
+        <Link href={"/shop/" + product.slug} className="btn-primary mt-4 w-full text-sm">
+          View at {product.externalSellerName || "partner"} →
+        </Link>
+      ) : (
+        <button
+          type="button"
+          onClick={() =>
+            addItem({ id: product.id, name: product.name, price: product.price, slug: product.slug })
+          }
+          className="btn-primary mt-4 w-full text-sm"
+        >
+          Add to cart
+        </button>
+      )}
     </motion.article>
   );
 }
