@@ -16,6 +16,7 @@ import { WatchtowerSelfTest } from "@/components/admin/watchtower-self-test";
 import { WatchtowerWorkerSelfTest } from "@/components/admin/watchtower-worker-self-test";
 import { ownerCredentialState } from "@/lib/admin-identity";
 import { currentWatchtowerRuntimeId } from "@/lib/watchtower/runtime-id";
+import { AUTHORIZED_COMMERCE_PROVIDERS } from "@/lib/commerce/provider-registry";
 
 export const dynamic = "force-dynamic";
 
@@ -34,7 +35,7 @@ export default async function AdminPage() {
       <main className="min-h-screen bg-bone px-4 py-16 text-obsidian">
         <div className="mx-auto max-w-3xl">
           <section className="overflow-hidden rounded-3xl bg-gradient-to-br from-obsidian via-gray-900 to-obsidian p-8 text-white shadow-xl md:p-12">
-            <p className="text-xs font-medium tracking-[0.28em] text-indigo-light">NORVANA / WATCHTOWER</p>
+            <p className="text-xs font-medium tracking-[0.28em] text-indigo-light">ACRE ERA / WATCHTOWER</p>
             <h1 className="mt-4 font-display text-4xl font-bold">Owner login needs configuration</h1>
             <p className="mt-5 max-w-2xl leading-7 text-white/60">
               The historical browser password is retired. Watchtower now uses a server-side
@@ -175,11 +176,11 @@ export default async function AdminPage() {
           />
           <div className="relative grid gap-8 lg:grid-cols-[1.5fr_1fr] lg:items-end">
             <div>
-              <p className="text-xs font-medium tracking-[0.28em] text-indigo-light">NORVANA / OWNER CONTROL ROOM</p>
+              <p className="text-xs font-medium tracking-[0.28em] text-indigo-light">ACRE ERA / OWNER CONTROL ROOM</p>
               <h1 className="mt-3 font-display text-3xl font-bold md:text-5xl">Watchtower</h1>
               <p className="mt-4 max-w-2xl text-sm leading-6 text-white/60 md:text-base">
-                Monitor sourcing, operating opportunities, and evidence without giving automation
-                authority to spend, publish, order, or activate suppliers.
+                Monitor sourcing, brand authorization, product economics, demand, safety, and evidence
+                without giving automation authority to spend, publish, order, or activate suppliers.
               </p>
               <div className="mt-6 flex flex-wrap gap-2 text-xs">
                 <StatusChip tone="green">OBSERVE</StatusChip>
@@ -324,6 +325,58 @@ export default async function AdminPage() {
           </div>
         </section>
 
+        <section className="mt-8 grid gap-6 lg:grid-cols-[1.2fr_.8fr]">
+          <DataPanel eyebrow="AUTHORIZED COMMERCE" title="Provider qualification queue">
+            <div className="grid gap-3 md:grid-cols-2">
+              {AUTHORIZED_COMMERCE_PROVIDERS.map((provider) => (
+                <a
+                  key={provider.slug}
+                  href={provider.officialUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="rounded-2xl border border-border bg-bone p-4 transition hover:border-indigo-accent/40"
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <p className="font-medium">{provider.name}</p>
+                      <p className="mt-1 text-xs uppercase tracking-[0.12em] text-muted">
+                        {provider.lane} · {provider.models.join(" / ")}
+                      </p>
+                    </div>
+                    <span className="badge bg-surface font-mono text-[10px] text-muted">
+                      {provider.state}
+                    </span>
+                  </div>
+                  <p className="mt-3 text-xs leading-5 text-muted">
+                    {provider.capabilities.slice(0, 3).join(" · ")}
+                  </p>
+                </a>
+              ))}
+            </div>
+          </DataPanel>
+
+          <DataPanel eyebrow="INTELLIGENCE R2" title="Data we now preserve">
+            <div className="space-y-3">
+              {[
+                ["Identity", "Brand · GTIN/UPC · MPN/SKU · condition · source model"],
+                ["Pricing", "Retail · source cost · competitors · historical observations"],
+                ["Supply", "Stock · warehouse · freight · lead time · returns"],
+                ["Trust", "Authorization · provenance · authenticity · image rights · warranty · recalls"],
+                ["Demand", "Bring It Here · Customer Voice · trends · sell-through · competition"],
+                ["Economics", "Contribution after freight, fees, returns, fraud, warranty, auth and CAC"],
+              ].map(([label, detail]) => (
+                <div key={label} className="rounded-2xl border border-border bg-bone p-4">
+                  <p className="font-medium">{label}</p>
+                  <p className="mt-1 text-xs leading-5 text-muted">{detail}</p>
+                </div>
+              ))}
+            </div>
+            <p className="mt-4 text-xs leading-5 text-muted">
+              New intelligence watchers are seeded PAUSED and remain inside OBSERVE/RECOMMEND with a {"$"}0 automation budget.
+            </p>
+          </DataPanel>
+        </section>
+
         <section className="mt-8 grid gap-6 lg:grid-cols-2">
           <DataPanel eyebrow="OPERATIONS" title="Recent runs">
             {runs.length ? (
@@ -365,7 +418,7 @@ export default async function AdminPage() {
         </section>
 
         <footer className="mt-10 flex flex-wrap items-center gap-2 border-t border-border py-7 text-xs text-muted">
-          <span>Norvana owns business state.</span>
+          <span>Acre Era owns customer-facing commerce state.</span>
           <span>•</span>
           <span>IgniAqua services remain authority-bounded.</span>
           <span>•</span>
