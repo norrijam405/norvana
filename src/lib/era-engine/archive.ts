@@ -97,6 +97,8 @@ export async function buildEraArchiveSnapshot(eraId: number) {
       endAt: era.endAt?.toISOString() ?? null,
       themeTokens: era.themeTokens,
       archivePolicy: era.archivePolicy,
+      createdAt: era.createdAt.toISOString(),
+      updatedAt: era.updatedAt.toISOString(),
     },
     sections: sections.map((section) => ({
       id: section.id,
@@ -146,6 +148,7 @@ export async function buildEraArchiveSnapshot(eraId: number) {
   return {
     snapshot,
     digest: snapshotDigest(snapshot),
+    eraUpdatedAt: era.updatedAt.toISOString(),
   };
 }
 
