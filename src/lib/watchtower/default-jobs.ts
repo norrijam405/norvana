@@ -91,6 +91,9 @@ export const WATCHTOWER_JOB_TEMPLATES: WatchtowerJobTemplate[] = [
       requireMarginEstimate: true,
     },
   },
+];
+
+export const WATCHTOWER_INTELLIGENCE_R2_JOB_TEMPLATES: WatchtowerJobTemplate[] = [
   {
     slug: "consumer-electronics-devices-watch",
     name: "Consumer Electronics & Devices Watch",
@@ -216,4 +219,9 @@ export const WATCHTOWER_JOB_TEMPLATES: WatchtowerJobTemplate[] = [
       noAutoCatalogMutation: true,
     },
   },
+];
+
+export const WATCHTOWER_ALL_JOB_TEMPLATES: WatchtowerJobTemplate[] = [
+  ...WATCHTOWER_JOB_TEMPLATES,
+  ...WATCHTOWER_INTELLIGENCE_R2_JOB_TEMPLATES,
 ];
