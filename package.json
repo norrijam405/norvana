@@ -11,7 +11,8 @@
     "test:watchtower": "node --test --experimental-strip-types tests/watchtower-policy.test.ts",
     "test:voice": "node --test --experimental-strip-types tests/customer-voice.test.ts",
     "test:acre-era": "node --test --experimental-strip-types tests/acre-era-marketplace.test.ts",
-    "test:authorized-commerce": "node --test --experimental-strip-types tests/authorized-commerce-watchtower-r2.test.ts"
+    "test:authorized-commerce": "node --test --experimental-strip-types tests/authorized-commerce-watchtower-r2.test.ts",
+    "test:era-engine": "node --test --experimental-strip-types tests/era-engine-r0.test.ts"
   },
   "dependencies": {
     "@stripe/stripe-js": "^9.10.0",

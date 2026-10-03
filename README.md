@@ -1,6 +1,12 @@
-# NORVANA
+# ACRE ERA / NORVANA
 
-Norvana is a curated commerce platform being recovered and modernized from its original dropshipping storefront.
+> **Successor agents:** before material storefront, Era, merchandising, affiliate, or Watchtower work, start with [ACRE_ERA_START_HERE.md](ACRE_ERA_START_HERE.md). Do not ask the founder to reconstruct the product vision already preserved there.
+
+**Acre Era** is the current public-brand direction. **Norvana** remains the internal repository/infrastructure codename during controlled migration.
+
+The current customer-experience north star is [docs/ACRE_ERA_NORTH_STAR_SITE_MAP_AND_PAGE_BLUEPRINT_2026-10-03.md](docs/ACRE_ERA_NORTH_STAR_SITE_MAP_AND_PAGE_BLUEPRINT_2026-10-03.md). The backend-first Era model is defined in [docs/ACRE_ERA_ERA_ENGINE_BACKEND_CONTRACT_R0_2026-10-03.md](docs/ACRE_ERA_ERA_ENGINE_BACKEND_CONTRACT_R0_2026-10-03.md).
+
+Norvana is the historical/internal lineage of the curated commerce platform being recovered and modernized from its original dropshipping storefront.
 
 ## Product direction
 
