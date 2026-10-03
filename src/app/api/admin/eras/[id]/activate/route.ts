@@ -72,53 +72,52 @@ export async function POST(
   const now = new Date();
 
   try {
-    const [activated] = await db
-      .update(eras)
-      .set({
-        lifecycleState: "ACTIVE",
-        visibility: "PUBLIC",
-        isPrimary: makePrimary,
-        startAt: current.startAt ?? now,
-        updatedAt: now,
-      })
-      .where(
-        and(
-          eq(eras.id, eraId),
-          eq(eras.updatedAt, current.updatedAt)
+    const activated = await db.transaction(async (tx) => {
+      const [updated] = await tx
+        .update(eras)
+        .set({
+          lifecycleState: "ACTIVE",
+          visibility: "PUBLIC",
+          isPrimary: makePrimary,
+          startAt: current.startAt ?? now,
+          updatedAt: now,
+        })
+        .where(
+          and(
+            eq(eras.id, eraId),
+            eq(eras.updatedAt, current.updatedAt)
+          )
         )
-      )
-      .returning();
+        .returning();
 
-    if (!activated) {
-      return NextResponse.json(
-        { error: "Era changed before activation. Re-read and retry." },
-        { status: 409 }
-      );
-    }
+      if (!updated) throw new Error("ERA_CHANGED_BEFORE_ACTIVATION");
 
-    await db.insert(eraEvents).values({
-      eraId,
-      eventType: "ERA_ACTIVATED",
-      actor: "owner",
-      payload: {
-        activationEvidenceRef,
-        makePrimary,
-        readiness,
-      },
-    });
+      await tx.insert(eraEvents).values({
+        eraId,
+        eventType: "ERA_ACTIVATED",
+        actor: "owner",
+        payload: {
+          activationEvidenceRef,
+          makePrimary,
+          readiness,
+        },
+      });
 
-    await db.insert(actionReceipts).values({
-      actionType: "ERA_ACTIVATE",
-      authorityClass: "ACT",
-      subjectType: "era",
-      subjectId: String(eraId),
-      status: "PASS",
-      actor: "owner",
-      details: {
-        activationEvidenceRef,
-        makePrimary,
-        readiness,
-      },
+      await tx.insert(actionReceipts).values({
+        actionType: "ERA_ACTIVATE",
+        authorityClass: "ACT",
+        subjectType: "era",
+        subjectId: String(eraId),
+        status: "PASS",
+        actor: "owner",
+        details: {
+          activationEvidenceRef,
+          makePrimary,
+          readiness,
+        },
+      });
+
+      return updated;
     });
 
     return NextResponse.json({
