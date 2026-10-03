@@ -71,44 +71,51 @@ export async function POST(
     );
   }
 
-  const now = new Date();
-  const [activated] = await db
-    .update(productRoutes)
-    .set({ status: "ACTIVE", updatedAt: now })
-    .where(
-      and(
-        eq(productRoutes.id, routeId),
-        eq(productRoutes.status, "QUALIFYING")
-      )
-    )
-    .returning();
+  try {
+    const activated = await db.transaction(async (tx) => {
+      const now = new Date();
+      const [updated] = await tx
+        .update(productRoutes)
+        .set({ status: "ACTIVE", updatedAt: now })
+        .where(
+          and(
+            eq(productRoutes.id, routeId),
+            eq(productRoutes.status, "QUALIFYING"),
+            eq(productRoutes.updatedAt, route.updatedAt)
+          )
+        )
+        .returning();
 
-  if (!activated) {
+      if (!updated) throw new Error("ROUTE_CHANGED_BEFORE_ACTIVATION");
+
+      await tx.insert(actionReceipts).values({
+        actionType: "PRODUCT_ROUTE_ACTIVATE",
+        authorityClass: "ACT",
+        subjectType: "product_route",
+        subjectId: String(updated.id),
+        status: "PASS",
+        actor: "owner",
+        details: {
+          productId: updated.productId,
+          routeType: updated.routeType,
+          providerSlug: updated.providerSlug,
+          activationEvidenceRef,
+          minContributionCents: thresholdResult.policy.minContributionCents,
+          minContributionMarginBps: thresholdResult.policy.minContributionMarginBps,
+        },
+      });
+
+      return updated;
+    });
+
+    return NextResponse.json({
+      route: activated,
+      authority: "ADMIN_ACT_WITH_EVIDENCE",
+    });
+  } catch (error) {
     return NextResponse.json(
-      { error: "Route changed before activation. Re-read and retry." },
+      { error: error instanceof Error ? error.message : "ROUTE_ACTIVATION_FAILED" },
       { status: 409 }
     );
   }
-
-  await db.insert(actionReceipts).values({
-    actionType: "PRODUCT_ROUTE_ACTIVATE",
-    authorityClass: "ACT",
-    subjectType: "product_route",
-    subjectId: String(activated.id),
-    status: "PASS",
-    actor: "owner",
-    details: {
-      productId: activated.productId,
-      routeType: activated.routeType,
-      providerSlug: activated.providerSlug,
-      activationEvidenceRef,
-      minContributionCents: thresholdResult.policy.minContributionCents,
-      minContributionMarginBps: thresholdResult.policy.minContributionMarginBps,
-    },
-  });
-
-  return NextResponse.json({
-    route: activated,
-    authority: "ADMIN_ACT_WITH_EVIDENCE",
-  });
 }
