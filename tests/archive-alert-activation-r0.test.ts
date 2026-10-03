@@ -226,3 +226,17 @@ test("route activation policy remains deliberately unconfigured by default", asy
   assert.match(env, /NORVANA_ROUTE_MIN_CONTRIBUTION_CENTS=/);
   assert.match(env, /NORVANA_ROUTE_MIN_MARGIN_BPS=/);
 });
+
+
+test("closed and archived public Eras resolve from immutable snapshots, not live product joins", async () => {
+  const source = await readFile(
+    new URL("../src/lib/era-engine/resolver.ts", import.meta.url),
+    "utf8"
+  );
+
+  assert.match(source, /\["CLOSED", "ARCHIVED"\]\.includes\(era\.lifecycleState\)/);
+  assert.match(source, /eraArchiveSnapshots/);
+  assert.match(source, /resolveArchivedPublicEra/);
+  assert.match(source, /ACRE_ERA_ARCHIVE_SNAPSHOT_R0/);
+  assert.match(source, /Archived third-party imagery is hidden by default/);
+});
