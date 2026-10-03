@@ -1,6 +1,6 @@
 import pg from "pg";
-import { pool } from "../src/db/index.ts";
-import { closeEra } from "../src/lib/era-engine/lifecycle-service.ts";
+import { pool } from "../../src/db/index.ts";
+import { closeEra } from "../../src/lib/era-engine/lifecycle-service.ts";
 
 const { Client } = pg;
 const url = process.env.DATABASE_URL;
