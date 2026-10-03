@@ -177,3 +177,32 @@ test("affiliate feed importer is rights-gated and draft-only", async () => {
   assert.match(source, /DRAFT_ONLY_NO_AUTO_PUBLISH/);
   assert.doesNotMatch(source, /status: "active"/);
 });
+
+
+test("Partner Market has its own curation and archive surfaces", async () => {
+  const market = await readFile(
+    new URL("../src/app/partners/page.tsx", import.meta.url),
+    "utf8"
+  );
+  const archive = await readFile(
+    new URL("../src/app/partners/archive/page.tsx", import.meta.url),
+    "utf8"
+  );
+  const client = await readFile(
+    new URL("../src/components/partner-market-client.tsx", import.meta.url),
+    "utf8"
+  );
+  const migration = await readFile(
+    new URL("../drizzle/0010_partner_market_curations.sql", import.meta.url),
+    "utf8"
+  );
+
+  assert.match(market, /AFFILIATE_REFERRAL/);
+  assert.match(market, /partnerCollections/);
+  assert.match(archive, /partner_collection|partnerCollection/i);
+  assert.match(client, /Partner checkout/);
+  assert.match(client, /Acre Era may earn a commission/);
+  assert.match(client, /\/partners\/archive/);
+  assert.match(migration, /CREATE TABLE IF NOT EXISTS partner_collections/);
+  assert.match(migration, /CREATE TABLE IF NOT EXISTS partner_collection_products/);
+});
