@@ -39,9 +39,10 @@ Before material Acre Era storefront, merchandising, affiliate, Watchtower, or Er
 2. `docs/ACRE_ERA_ERA_ENGINE_BACKEND_CONTRACT_R0_2026-10-03.md`
 3. `docs/ACRE_ERA_CUSTOMER_INTENT_AND_ROUTE_ENGINE_R0_2026-10-03.md`
 4. `docs/ACRE_ERA_ARCHIVE_ALERT_ACTIVATION_GOVERNANCE_R0_2026-10-03.md`
-5. `docs/ACRE_ERA_MARKETPLACE_R0_2026-10-02.md`
-6. `docs/NORVANA_EXPERIENCE_ARCHITECTURE_R0.md` for historical continuity
-7. current open PRs and exact candidate/CI receipts before changing moving branches
+5. `docs/ACRE_ERA_WATCHTOWER_SIGNAL_BUS_R0_2026-10-03.md`
+6. `docs/ACRE_ERA_MARKETPLACE_R0_2026-10-02.md`
+7. `docs/NORVANA_EXPERIENCE_ARCHITECTURE_R0.md` for historical continuity
+8. current open PRs and exact candidate/CI receipts before changing moving branches
 
 If an older Norvana UX decision conflicts with the Acre Era north star, preserve the historical document but treat the dated Acre Era contract as the current product direction unless a newer founder-approved decision supersedes it.
 
