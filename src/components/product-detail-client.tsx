@@ -5,6 +5,7 @@ import { motion } from "framer-motion";
 import Link from "next/link";
 import { useCart } from "./cart-context";
 import { Footer } from "./footer";
+import { ProductTrustPanel } from "./acre-era/product-trust-panel";
 
 type Product = {
   id: number;
@@ -18,6 +19,7 @@ type Product = {
   rating: number;
   reviewCount: number;
   inventory: number;
+  supplierId?: number | null;
   tags: string[];
 };
 
@@ -156,7 +158,7 @@ export function ProductDetailClient({
       setReviewForm(EMPTY_REVIEW);
       setSubmitMessage(
         data.verification?.verified
-          ? "Published — verified Norvana purchase."
+          ? "Published — verified Acre Era purchase."
           : "Published. Purchase verification was not claimed."
       );
     } catch {
@@ -205,7 +207,7 @@ export function ProductDetailClient({
       <main className="min-h-screen py-8">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <nav className="flex items-center gap-2 text-sm text-muted mb-8">
-            <Link href="/shop" className="hover:text-obsidian transition-colors">Shop</Link>
+            <Link href="/shop" className="hover:text-obsidian transition-colors">Goods</Link>
             <span>/</span>
             <span className="text-obsidian">{product.name}</span>
           </nav>
@@ -306,6 +308,8 @@ export function ProductDetailClient({
             </motion.div>
           </div>
 
+          <ProductTrustPanel product={product} reviews={liveReviews} />
+
           <section className="mt-20">
             <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-3 mb-8">
               <div>
@@ -370,7 +374,7 @@ export function ProductDetailClient({
                         {review.businessName ? " · " + review.businessName : ""}
                       </p>
                       <p>
-                        {review.sourceLabel || "Norvana"}
+                        {review.sourceLabel || "Acre Era"}
                         {review.verified
                           ? " · purchase verified"
                           : " · opinion not purchase-verified"}
@@ -400,7 +404,7 @@ export function ProductDetailClient({
             <div className="card max-w-2xl">
               <h3 className="font-display text-lg font-semibold mb-2">Share your experience</h3>
               <p className="text-sm text-muted mb-5">
-                Order number + purchase email are optional. When both match a paid Norvana order containing this product,
+                Order number + purchase email are optional. When both match a paid Acre Era order containing this product,
                 the review receives a verified purchase badge. The email is used for the check and is not stored on the review.
               </p>
 
@@ -523,7 +527,7 @@ export function ProductDetailClient({
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   <input
                     type="text"
-                    placeholder="Norvana order # (optional)"
+                    placeholder="Acre Era order # (optional)"
                     className="input"
                     value={reviewForm.orderNumber}
                     onChange={(e) => setReviewForm({ ...reviewForm, orderNumber: e.target.value })}
