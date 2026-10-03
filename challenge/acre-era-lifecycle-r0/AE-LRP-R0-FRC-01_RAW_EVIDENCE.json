@@ -1,0 +1,68 @@
+{
+  "schema": "AE_LRP_R0_FRC01_RAW_EVIDENCE_V1",
+  "date": "2026-10-03",
+  "repository": "norrijam405/norvana",
+  "pullRequest": 15,
+  "role": "Fresh Re-Challenger",
+  "findingId": "AE-LRP-R0-FRC-01",
+  "title": "CLOSURE_SNAPSHOT_TOCTOU_CHILD_MUTATION_NOT_COVERED_BY_ERA_CAS",
+  "challengedCandidate": {
+    "commit": "7f8241e2dac3f044d03fd4627526e77884ff1c90",
+    "parent": "c123c154d98013b617167421c573249f14054c8e",
+    "tree": "a538bc0d4a67a860cd52a88f8e106d2df74d55c0"
+  },
+  "candidateApplicationBlobsPreserved": {
+    "lifecycleService": "3b8ce35527b8eb918b733f2495932c29e6f8f1bb",
+    "readiness": "44d15ba48be3dabe409b7409a6662741292af13b",
+    "archiveBuilder": "62063116b88bc9b2bfc7cb3388fa438ef9f524fb",
+    "resolver": "b2e567d5a71cceb7b47f3bb165be321b1f257289",
+    "signalBus": "c7a6560fc381248a4bb51573461657fd7e9dd655",
+    "alertEvaluator": "2088dd6b828d2d91a7df4fffec8ff5064c3713f8"
+  },
+  "challengerHarness": {
+    "branch": "evidence/2026-10-03-acre-era-lifecycle-fresh-rechallenge-fc02",
+    "reproducerPath": "challenge/acre-era-lifecycle-r0/AE-LRP-R0-FRC-01_REPRO.mjs",
+    "workflowPath": ".github/workflows/acre-era-fresh-rechallenge-frc01.yml",
+    "successfulHarnessCommit": "112a9c79bb9b28427e9d88a4371b1736cf3d97e4",
+    "githubActionsRun": 37154988141,
+    "job": 111296439748,
+    "postgres": "17",
+    "status": "REPRODUCED"
+  },
+  "runtimeObservation": {
+    "observedCloseEraBlockedAtEraUpdate": true,
+    "concurrentProductMutationCommittedBeforeCloseCompleted": true,
+    "closedLifecycleState": "CLOSED",
+    "persistedClosureSnapshotProductPrice": 125,
+    "liveProductPriceAtCloseCommit": 99
+  },
+  "mechanism": [
+    "closeEra calls buildEraArchiveSnapshot before opening its closure transaction.",
+    "buildEraArchiveSnapshot reads Era child rows outside the closure transaction.",
+    "closeEra later compares only eras.updated_at against the snapshot builder's eraUpdatedAt.",
+    "A product/media/section/membership/watchtower child mutation can commit without changing eras.updated_at.",
+    "The closure transaction can therefore persist a stale snapshot and still transition the Era to CLOSED."
+  ],
+  "consequence": "The CLOSURE snapshot is not guaranteed to represent a transactionally consistent state at closure. This can create historical evidence that is already stale before the CLOSED transition commits.",
+  "preservedPriorEvidence": {
+    "builderRun": 37152908083,
+    "builderJob": 111290271433,
+    "previousPostgresqlEvidenceRun": 37148461532,
+    "remainsValid": [
+      "production/shared implementations are imported and exercised by the R1 harness",
+      "future-start ACTIVE/PUBLIC/primary is rejected by resolveCurrentPublicEra",
+      "readiness digest mismatch is rejected",
+      "Era-row readiness mutation is rejected",
+      "archive requires a persisted CLOSURE snapshot",
+      "snapshot UPDATE/DELETE immutability is PostgreSQL-enforced",
+      "Signal Bus collision/private-payload/replay checks passed",
+      "alert sanitization/dedup/queue-only checks passed",
+      "TypeScript and reported regression suites passed"
+    ],
+    "notEstablished": [
+      "closure snapshot atomicity against concurrent child-row mutation",
+      "Fresh Re-Challenged PASS for candidate 7f8241e2dac3f044d03fd4627526e77884ff1c90"
+    ]
+  },
+  "fc01Disposition": "The original FC-01 substitution/future-start false-positive class was not reproduced after remediation, but the remediation candidate is still FAIL due to new material FRC-01."
+}
