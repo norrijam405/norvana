@@ -34,8 +34,8 @@ function objectConfig(value: unknown, maxSerialized = 20_000) {
     "dangerouslysetinnerhtml",
     "<script",
     "javascript:",
-    ""html"",
-    ""css"",
+    "\\"html\\"",
+    "\\"css\\"",
   ]) {
     if (lowered.includes(forbidden)) throw new Error("ERA_CONFIG_UNSAFE_CONTENT");
   }
