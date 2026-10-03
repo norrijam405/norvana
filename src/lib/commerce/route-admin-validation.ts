@@ -1,6 +1,8 @@
 import {
   PRODUCT_ROUTE_TYPES,
+  ROUTE_AUTHORIZATION_STATES,
   ROUTE_CHECKOUT_OWNERS,
+  ROUTE_PROVENANCE_STATES,
   safePartnerCheckoutUrl,
 } from "./route-engine";
 
@@ -90,6 +92,24 @@ export function parseRouteDraft(body: Record<string, unknown>) {
     throw new Error("ROUTE_MARGIN_INVALID");
   }
 
+  const authorizationState = clean(body.authorizationState || "UNVERIFIED", 60);
+  const provenanceState = clean(body.provenanceState || "UNVERIFIED", 60);
+
+  if (
+    !ROUTE_AUTHORIZATION_STATES.includes(
+      authorizationState as (typeof ROUTE_AUTHORIZATION_STATES)[number]
+    )
+  ) {
+    throw new Error("ROUTE_AUTHORIZATION_STATE_INVALID");
+  }
+  if (
+    !ROUTE_PROVENANCE_STATES.includes(
+      provenanceState as (typeof ROUTE_PROVENANCE_STATES)[number]
+    )
+  ) {
+    throw new Error("ROUTE_PROVENANCE_STATE_INVALID");
+  }
+
   return {
     routeType,
     providerSlug: clean(body.providerSlug, 120) || null,
@@ -106,8 +126,8 @@ export function parseRouteDraft(body: Record<string, unknown>) {
     deliveryMaxDays,
     warrantySummary: clean(body.warrantySummary, 3000),
     returnSummary: clean(body.returnSummary, 3000),
-    authorizationState: clean(body.authorizationState || "UNVERIFIED", 60),
-    provenanceState: clean(body.provenanceState || "UNVERIFIED", 60),
+    authorizationState,
+    provenanceState,
     evidenceRef,
     lastVerifiedAt: body.lastVerifiedAt ? new Date(String(body.lastVerifiedAt)) : null,
     internalContributionCents: contribution,
