@@ -161,3 +161,19 @@ test("migration seeds new intelligence watchers paused with zero budget", async 
   assert.match(migration, /brand-authorization-watch/);
   assert.match(migration, /'PAUSED'/);
 });
+
+
+test("affiliate feed importer is rights-gated and draft-only", async () => {
+  const source = await readFile(
+    new URL("../src/app/api/admin/affiliate-feed/import/route.ts", import.meta.url),
+    "utf8"
+  );
+
+  assert.match(source, /programApproved !== true/);
+  assert.match(source, /imageRightsConfirmed !== true/);
+  assert.match(source, /programEvidenceRef/);
+  assert.match(source, /rightsEvidenceRef/);
+  assert.match(source, /status: "draft"/);
+  assert.match(source, /DRAFT_ONLY_NO_AUTO_PUBLISH/);
+  assert.doesNotMatch(source, /status: "active"/);
+});
