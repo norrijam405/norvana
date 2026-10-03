@@ -190,6 +190,8 @@ test("media route and Era activation are evidence-gated and transactional", asyn
   assert.match(route, /PRODUCT_ROUTE_ACTIVATE/);
 
   assert.match(era, /activationEvidenceRef/);
+  assert.match(era, /expectedReadinessDigest/);
+  assert.match(era, /currentReadinessDigest/);
   assert.match(era, /evaluateEraActivationReadiness/);
   assert.match(era, /db\.transaction/);
   assert.match(era, /ERA_ACTIVATE/);
