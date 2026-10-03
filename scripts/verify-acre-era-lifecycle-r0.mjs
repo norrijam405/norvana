@@ -1,8 +1,19 @@
 import pg from "pg";
-import { createHash } from "node:crypto";
-import { projectWatchtowerSignalToCustomerAlert } from "../src/lib/watchtower/signal-projector.ts";
-import { alertFingerprint, watchMatchesAlertSignal } from "../src/lib/customer-intent/alert-policy.ts";
-import { isEraMediaPublic } from "../src/lib/era-engine/policy.ts";
+import { pool } from "../src/db/index.ts";
+import { evaluateEraActivationReadiness } from "../src/lib/era-engine/readiness.ts";
+import { buildEraArchiveSnapshot } from "../src/lib/era-engine/archive.ts";
+import {
+  resolveCurrentPublicEra,
+  resolvePublicEraBySlug,
+} from "../src/lib/era-engine/resolver.ts";
+import {
+  activateEra,
+  archiveEra,
+  closeEra,
+  EraLifecycleError,
+} from "../src/lib/era-engine/lifecycle-service.ts";
+import { ingestWatchtowerSignal } from "../src/lib/watchtower/signal-bus.ts";
+import { evaluateAndQueueCustomerAlerts } from "../src/lib/customer-intent/alert-evaluator.ts";
 
 const { Client } = pg;
 const databaseUrl = process.env.DATABASE_URL;
@@ -15,27 +26,30 @@ function assert(condition, message) {
   if (!condition) throw new Error(message);
 }
 
-function stable(value) {
-  if (value instanceof Date) return value.toISOString();
-  if (Array.isArray(value)) return value.map(stable);
-  if (value && typeof value === "object") {
-    return Object.fromEntries(
-      Object.entries(value)
-        .sort(([a], [b]) => a.localeCompare(b))
-        .map(([key, nested]) => [key, stable(nested)])
-    );
-  }
-  return value;
-}
-
-function digest(value) {
-  return createHash("sha256").update(JSON.stringify(stable(value))).digest("hex");
-}
-
 async function one(sql, params = []) {
   const { rows } = await client.query(sql, params);
   assert(rows.length === 1, "expected exactly one row");
   return rows[0];
+}
+
+async function expectCode(label, expectedCode, fn) {
+  let caught = null;
+  try {
+    await fn();
+  } catch (error) {
+    caught = error;
+  }
+  assert(caught, label + " unexpectedly succeeded");
+  const code =
+    caught instanceof EraLifecycleError
+      ? caught.code
+      : caught instanceof Error
+        ? caught.message
+        : String(caught);
+  assert(
+    code === expectedCode,
+    label + " rejected with " + code + " instead of " + expectedCode
+  );
 }
 
 async function expectReject(label, fn) {
@@ -48,7 +62,64 @@ async function expectReject(label, fn) {
   assert(rejected, label + " unexpectedly succeeded");
 }
 
-const now = new Date("2026-10-03T19:30:00.000Z");
+async function seedReadyEra({ slug, name, productId, mediaUrl, now }) {
+  const era = await one(
+    `insert into eras
+      (slug, name, eyebrow, story, kind, lifecycle_state, visibility, is_primary,
+       theme_tokens, watchtower_profile, archive_policy, created_at, updated_at)
+     values
+      ($1, $2, 'Synthetic proof',
+       'A synthetic Era used only to prove isolated backend application semantics.',
+       'CATEGORY', 'DRAFT', 'PRIVATE', false,
+       '{"preset":"cleanTech"}'::json,
+       '{"profile":"proof"}'::json,
+       '{"mode":"immutable-closure"}'::json,
+       $3, $3)
+     returning *`,
+    [slug, name, now]
+  );
+
+  await client.query(
+    `insert into era_sections (era_id, section_type, position, config, status)
+     values
+      ($1, 'HERO', 0, '{"headline":"Lifecycle Proof"}'::json, 'ENABLED'),
+      ($1, 'PRODUCT_GRID', 1, '{"columns":4}'::json, 'ENABLED')`,
+    [era.id]
+  );
+
+  const media = await one(
+    `insert into era_media_assets
+      (era_id, asset_type, media_url, rights_state, rights_evidence_ref,
+       source_label, status, sha256, alt_text, created_at, updated_at)
+     values
+      ($1, 'HERO_IMAGE', $2, 'OWNED', 'synthetic:rights:owned',
+       'Acre Era synthetic proof', 'APPROVED', $3,
+       'Synthetic Acre Era lifecycle proof hero', $4, $4)
+     returning *`,
+    [era.id, mediaUrl, "a".repeat(64), now]
+  );
+
+  await client.query(
+    `insert into era_products
+      (era_id, product_id, position, role, curation_reason, evidence_ref, status, assigned_at)
+     values
+      ($1, $2, 0, 'FEATURED', 'Synthetic lifecycle proof assignment',
+       'synthetic:lifecycle-proof:curation', 'ACTIVE', $3)`,
+    [era.id, productId, now]
+  );
+
+  await client.query(
+    `insert into era_watchtower_bindings
+      (era_id, watch_job_slug, importance, public_facet, config)
+     values
+      ($1, 'product-economics-watch', 10, 'price-history', '{"mode":"read-only"}'::json)`,
+    [era.id]
+  );
+
+  return { era, media };
+}
+
+const t0 = new Date("2026-10-03T19:30:00.000Z");
 const slug = "lifecycle-proof-era";
 const productSlug = "lifecycle-proof-product";
 const mediaUrl = "https://assets.example.invalid/acre-era/lifecycle-proof-hero.jpg";
@@ -73,150 +144,90 @@ const product = await one(
   ]
 );
 
-const era = await one(
-  `insert into eras
-    (slug, name, eyebrow, story, kind, lifecycle_state, visibility, is_primary,
-     theme_tokens, watchtower_profile, archive_policy, created_at, updated_at)
-   values
-    ($1, 'Lifecycle Proof Era', 'Synthetic proof',
-     'A synthetic Era used only to prove the isolated backend lifecycle.',
-     'CATEGORY', 'DRAFT', 'PRIVATE', false,
-     '{"preset":"cleanTech"}'::json,
-     '{"profile":"proof"}'::json,
-     '{"mode":"immutable-closure"}'::json,
-     $2, $2)
-   returning *`,
-  [slug, now]
-);
-
-await client.query(
-  `insert into era_sections (era_id, section_type, position, config, status)
-   values
-    ($1, 'HERO', 0, '{"headline":"Lifecycle Proof"}'::json, 'ENABLED'),
-    ($1, 'PRODUCT_GRID', 1, '{"columns":4}'::json, 'ENABLED')`,
-  [era.id]
-);
-
-const media = await one(
-  `insert into era_media_assets
-    (era_id, asset_type, media_url, rights_state, rights_evidence_ref,
-     source_label, status, sha256, alt_text, created_at, updated_at)
-   values
-    ($1, 'HERO_IMAGE', $2, 'OWNED', 'synthetic:rights:owned',
-     'Acre Era synthetic proof', 'APPROVED', $3,
-     'Synthetic Acre Era lifecycle proof hero', $4, $4)
-   returning *`,
-  [era.id, mediaUrl, "a".repeat(64), now]
-);
-
-await client.query(
-  `insert into era_products
-    (era_id, product_id, position, role, curation_reason, evidence_ref, status, assigned_at)
-   values
-    ($1, $2, 0, 'FEATURED', 'Synthetic lifecycle proof assignment',
-     'synthetic:lifecycle-proof:curation', 'ACTIVE', $3)`,
-  [era.id, product.id, now]
-);
-
-await client.query(
-  `insert into era_watchtower_bindings
-    (era_id, watch_job_slug, importance, public_facet, config)
-   values
-    ($1, 'product-economics-watch', 10, 'price-history', '{"mode":"read-only"}'::json)`,
-  [era.id]
-);
-
-const { rows: sections } = await client.query(
-  "select * from era_sections where era_id=$1 and status='ENABLED' order by position,id",
-  [era.id]
-);
-const { rows: mediaRows } = await client.query(
-  "select * from era_media_assets where era_id=$1 order by id",
-  [era.id]
-);
-const { rows: assignments } = await client.query(
-  `select ep.id as assignment_id, p.id as product_id, p.status as product_status,
-          p.commerce_model, p.authorization_state, p.external_checkout_url
-     from era_products ep
-     join products p on p.id=ep.product_id
-    where ep.era_id=$1 and ep.status='ACTIVE'
-    order by ep.id`,
-  [era.id]
-);
-
-assert(sections.some((row) => row.section_type === "HERO"), "missing HERO section");
-assert(
-  mediaRows.some((row) =>
-    isEraMediaPublic({
-      mediaUrl: row.media_url,
-      rightsState: row.rights_state,
-      rightsEvidenceRef: row.rights_evidence_ref,
-      rightsStartsAt: row.rights_starts_at,
-      rightsEndsAt: row.rights_ends_at,
-      status: row.status,
-    }, now)
-  ),
-  "no public hero media"
-);
-assert(assignments.length === 1, "expected one active product");
-
-const readinessDigest = digest({
-  era: {
-    id: era.id,
-    kind: era.kind,
-    lifecycleState: era.lifecycle_state,
-    visibility: era.visibility,
-    isPrimary: era.is_primary,
-    startAt: era.start_at ? new Date(era.start_at).toISOString() : null,
-    endAt: era.end_at ? new Date(era.end_at).toISOString() : null,
-    updatedAt: new Date(era.updated_at).toISOString(),
-  },
-  sections: sections.map((section) => ({
-    id: section.id,
-    sectionType: section.section_type,
-    position: section.position,
-    status: section.status,
-    config: section.config,
-  })),
-  media: mediaRows.map((asset) => ({
-    id: asset.id,
-    assetType: asset.asset_type,
-    status: asset.status,
-    rightsState: asset.rights_state,
-    rightsEvidenceRef: asset.rights_evidence_ref,
-    mediaUrl: asset.media_url,
-    posterUrl: asset.poster_url,
-    rightsStartsAt: asset.rights_starts_at ? new Date(asset.rights_starts_at).toISOString() : null,
-    rightsEndsAt: asset.rights_ends_at ? new Date(asset.rights_ends_at).toISOString() : null,
-    altText: asset.alt_text,
-  })),
-  products: assignments.map((assignment) => ({
-    assignmentId: assignment.assignment_id,
-    productId: assignment.product_id,
-    productStatus: assignment.product_status,
-    commerceModel: assignment.commerce_model,
-    authorizationState: assignment.authorization_state,
-    externalCheckoutUrl: assignment.external_checkout_url,
-  })),
+const seeded = await seedReadyEra({
+  slug,
+  name: "Lifecycle Proof Era",
+  productId: product.id,
+  mediaUrl,
+  now: t0,
 });
-assert(/^[a-f0-9]{64}$/.test(readinessDigest), "invalid readiness digest");
+const era = seeded.era;
+const media = seeded.media;
 
-const activationTime = new Date(now.getTime() + 60_000);
-const activated = await one(
-  `update eras
-      set lifecycle_state='ACTIVE', visibility='PUBLIC', is_primary=true,
-          start_at=$2, updated_at=$2
-    where id=$1 and lifecycle_state='DRAFT'
-    returning *`,
-  [era.id, activationTime]
+const initialReadiness = await evaluateEraActivationReadiness(
+  era.id,
+  new Date(t0.getTime() + 1_000)
 );
-assert(activated.lifecycle_state === "ACTIVE", "Era activation failed");
+assert(initialReadiness, "production readiness did not find Era");
+assert(initialReadiness.ready === true, "production readiness unexpectedly blocked");
+assert(/^[a-f0-9]{64}$/.test(initialReadiness.readinessDigest), "invalid readiness digest");
 
-const current = await one(
-  `select * from eras
-    where lifecycle_state='ACTIVE' and visibility='PUBLIC' and is_primary=true`
+await expectCode(
+  "mismatched readiness digest",
+  "ERA_READINESS_CHANGED",
+  () =>
+    activateEra({
+      eraId: era.id,
+      activationEvidenceRef: "synthetic:lifecycle-proof:activation",
+      expectedReadinessDigest: "0".repeat(64),
+      makePrimary: true,
+      actor: "ci",
+      now: new Date(t0.getTime() + 2_000),
+    })
 );
-assert(current.id === era.id, "current Era resolver invariant failed");
+
+await client.query(
+  "update eras set eyebrow='Mutated after readiness', updated_at=$2 where id=$1",
+  [era.id, new Date(t0.getTime() + 3_000)]
+);
+
+await expectCode(
+  "stale readiness after Era mutation",
+  "ERA_READINESS_CHANGED",
+  () =>
+    activateEra({
+      eraId: era.id,
+      activationEvidenceRef: "synthetic:lifecycle-proof:activation",
+      expectedReadinessDigest: initialReadiness.readinessDigest,
+      makePrimary: true,
+      actor: "ci",
+      now: new Date(t0.getTime() + 4_000),
+    })
+);
+
+const currentReadiness = await evaluateEraActivationReadiness(
+  era.id,
+  new Date(t0.getTime() + 5_000)
+);
+assert(currentReadiness?.ready === true, "remediated readiness not ready");
+
+const activation = await activateEra({
+  eraId: era.id,
+  activationEvidenceRef: "synthetic:lifecycle-proof:activation",
+  expectedReadinessDigest: currentReadiness.readinessDigest,
+  makePrimary: true,
+  actor: "ci",
+  now: new Date(t0.getTime() + 6_000),
+});
+assert(activation.era.lifecycleState === "ACTIVE", "production activation failed");
+
+const currentResolved = await resolveCurrentPublicEra(
+  new Date(t0.getTime() + 7_000)
+);
+assert(currentResolved.ok === true, "production current resolver did not resolve active Era");
+assert(currentResolved.era.slug === slug, "production current resolver returned wrong Era");
+
+await expectCode(
+  "archive without closure snapshot",
+  "ERA_ARCHIVE_CLOSURE_SNAPSHOT_REQUIRED",
+  () =>
+    archiveEra({
+      eraId: era.id,
+      archiveEvidenceRef: "synthetic:lifecycle-proof:archive-too-early",
+      actor: "ci",
+      now: new Date(t0.getTime() + 8_000),
+    })
+);
 
 const watchItem = await one(
   `insert into customer_watch_items
@@ -227,286 +238,133 @@ const watchItem = await one(
   ["b".repeat(64), productSlug]
 );
 
-const signal = {
+const signalInput = {
   signalKey: "synthetic:price:" + productSlug + ":1",
   signalType: "PRICE_OBSERVATION",
   subjectType: "PRODUCT",
   subjectKey: productSlug,
   truthState: "VERIFIED",
+  sourceKind: "MANUAL_EVIDENCE",
   evidenceRef: "synthetic:lifecycle-proof:price",
+  observedAt: new Date(t0.getTime() + 9_000).toISOString(),
   publicPayload: {
     productSlug,
     currentPriceCents: 11900,
     previousPriceCents: 12500,
     currency: "USD",
   },
+  privatePayload: {
+    internalNote: "synthetic non-sensitive proof detail",
+  },
 };
 
-const projected = projectWatchtowerSignalToCustomerAlert(signal);
-assert(projected?.eventType === "PRICE_DROP", "verified signal did not project");
+const firstIngest = await ingestWatchtowerSignal(signalInput);
+assert(firstIngest.inserted === true, "production signal bus did not insert");
+assert(firstIngest.idempotentReplay === false, "first signal ingest marked replay");
 
-const signalDigest = digest({
-  signalType: signal.signalType,
-  subjectType: signal.subjectType,
-  subjectKey: signal.subjectKey,
-  truthState: signal.truthState,
-  sourceKind: "SYNTHETIC_PROOF",
-  evidenceRef: signal.evidenceRef,
-  observedAt: activationTime.toISOString(),
-  expiresAt: null,
-  publicPayload: signal.publicPayload,
-  privatePayload: {},
-});
+const replayIngest = await ingestWatchtowerSignal(signalInput);
+assert(replayIngest.inserted === false, "signal replay inserted duplicate");
+assert(replayIngest.idempotentReplay === true, "signal replay not recognized");
 
-const insertedSignal = await one(
-  `insert into watchtower_signals
-    (signal_key, signal_type, subject_type, subject_key, truth_state, source_kind,
-     evidence_ref, observed_at, public_payload, private_payload, payload_digest)
-   values ($1,$2,$3,$4,$5,'SYNTHETIC_PROOF',$6,$7,$8::json,'{}'::json,$9)
-   returning *`,
-  [
-    signal.signalKey,
-    signal.signalType,
-    signal.subjectType,
-    signal.subjectKey,
-    signal.truthState,
-    signal.evidenceRef,
-    activationTime,
-    JSON.stringify(signal.publicPayload),
-    signalDigest,
-  ]
-);
-
-const matches = watchMatchesAlertSignal(
-  {
-    id: watchItem.id,
-    alertTypes: watchItem.alert_types,
-    priceThresholdCents: watchItem.price_threshold_cents,
-  },
-  projected
-);
-assert(matches, "projected signal did not match watch item");
-
-const fingerprint = alertFingerprint({
-  watchItemId: watchItem.id,
-  eventType: projected.eventType,
-  signalKey: projected.signalKey,
-});
-
-await client.query(
-  `insert into watchtower_signal_projections
-    (signal_id, projector, projection_key, result)
-   values ($1, 'CUSTOMER_ALERT_R0', $2, $3::json)
-   on conflict do nothing`,
-  [insertedSignal.id, "CUSTOMER_ALERT_R0:" + signal.signalKey, JSON.stringify(projected)]
-);
-
-await client.query(
-  `insert into customer_alert_events
-    (watch_item_id, event_type, signal_key, fingerprint, evidence_ref, payload, status)
-   values ($1,$2,$3,$4,$5,$6::json,'PENDING')
-   on conflict do nothing`,
-  [
-    watchItem.id,
-    projected.eventType,
-    projected.signalKey,
-    fingerprint,
-    projected.evidenceRef,
-    JSON.stringify(projected.payload),
-  ]
-);
-
-// Idempotent replay: same signal and same projected alert remain singular.
-await client.query(
-  `insert into watchtower_signals
-    (signal_key, signal_type, subject_type, subject_key, truth_state, source_kind,
-     evidence_ref, observed_at, public_payload, private_payload, payload_digest)
-   values ($1,$2,$3,$4,$5,'SYNTHETIC_PROOF',$6,$7,$8::json,'{}'::json,$9)
-   on conflict do nothing`,
-  [
-    signal.signalKey,
-    signal.signalType,
-    signal.subjectType,
-    signal.subjectKey,
-    signal.truthState,
-    signal.evidenceRef,
-    activationTime,
-    JSON.stringify(signal.publicPayload),
-    signalDigest,
-  ]
-);
-await client.query(
-  `insert into customer_alert_events
-    (watch_item_id, event_type, signal_key, fingerprint, evidence_ref, payload, status)
-   values ($1,$2,$3,$4,$5,$6::json,'PENDING')
-   on conflict do nothing`,
-  [
-    watchItem.id,
-    projected.eventType,
-    projected.signalKey,
-    fingerprint,
-    projected.evidenceRef,
-    JSON.stringify(projected.payload),
-  ]
-);
-const alertCount = await one(
-  "select count(*)::int as count from customer_alert_events where fingerprint=$1",
-  [fingerprint]
-);
-assert(alertCount.count === 1, "idempotent replay created duplicate alert");
-
-const { rows: archiveSections } = await client.query(
-  "select * from era_sections where era_id=$1 order by position,id",
-  [era.id]
-);
-const { rows: archiveMedia } = await client.query(
-  "select * from era_media_assets where era_id=$1 order by id",
-  [era.id]
-);
-const { rows: archiveProducts } = await client.query(
-  `select ep.*, p.id as p_id, p.slug as p_slug, p.name as p_name,
-          p.description as p_description, p.price as p_price,
-          p.compare_at_price as p_compare_at_price, p.niche as p_niche,
-          p.commerce_model as p_commerce_model,
-          p.source_provider_slug as p_source_provider_slug,
-          p.brand_name as p_brand_name, p.product_condition as p_product_condition,
-          p.authorization_state as p_authorization_state,
-          p.image_rights_state as p_image_rights_state,
-          p.external_seller_name as p_external_seller_name,
-          p.external_product_id as p_external_product_id,
-          p.images as p_images, p.status as p_status
-     from era_products ep join products p on p.id=ep.product_id
-    where ep.era_id=$1 order by ep.position,ep.id`,
-  [era.id]
-);
-const { rows: archiveBindings } = await client.query(
-  "select * from era_watchtower_bindings where era_id=$1 order by importance,id",
-  [era.id]
-);
-
-const activeEra = await one("select * from eras where id=$1", [era.id]);
-const snapshot = {
-  schema: "ACRE_ERA_ARCHIVE_SNAPSHOT_R0",
-  era: {
-    id: activeEra.id,
-    slug: activeEra.slug,
-    name: activeEra.name,
-    eyebrow: activeEra.eyebrow,
-    story: activeEra.story,
-    kind: activeEra.kind,
-    lifecycleState: activeEra.lifecycle_state,
-    visibility: activeEra.visibility,
-    isPrimary: activeEra.is_primary,
-    startAt: activeEra.start_at ? new Date(activeEra.start_at).toISOString() : null,
-    endAt: activeEra.end_at ? new Date(activeEra.end_at).toISOString() : null,
-    themeTokens: activeEra.theme_tokens,
-    archivePolicy: activeEra.archive_policy,
-    createdAt: new Date(activeEra.created_at).toISOString(),
-    updatedAt: new Date(activeEra.updated_at).toISOString(),
-  },
-  sections: archiveSections.map((section) => ({
-    id: section.id,
-    sectionType: section.section_type,
-    position: section.position,
-    config: section.config,
-    status: section.status,
-  })),
-  media: archiveMedia.map((asset) => ({
-    id: asset.id,
-    assetType: asset.asset_type,
-    mediaUrl: asset.media_url,
-    posterUrl: asset.poster_url,
-    rightsState: asset.rights_state,
-    rightsEvidenceRef: asset.rights_evidence_ref,
-    sourceLabel: asset.source_label,
-    sourceUrl: asset.source_url,
-    brandName: asset.brand_name,
-    providerSlug: asset.provider_slug,
-    rightsStartsAt: asset.rights_starts_at ? new Date(asset.rights_starts_at).toISOString() : null,
-    rightsEndsAt: asset.rights_ends_at ? new Date(asset.rights_ends_at).toISOString() : null,
-    status: asset.status,
-    sha256: asset.sha256,
-    altText: asset.alt_text,
-  })),
-  products: archiveProducts.map((row) => ({
-    membership: {
-      id: row.id,
-      position: row.position,
-      role: row.role,
-      curationReason: row.curation_reason,
-      evidenceRef: row.evidence_ref,
-      status: row.status,
-      assignedAt: new Date(row.assigned_at).toISOString(),
-      removedAt: row.removed_at ? new Date(row.removed_at).toISOString() : null,
+await expectReject("same-key different-payload collision", () =>
+  ingestWatchtowerSignal({
+    ...signalInput,
+    publicPayload: {
+      ...signalInput.publicPayload,
+      currentPriceCents: 11800,
     },
-    product: {
-      id: row.p_id,
-      slug: row.p_slug,
-      name: row.p_name,
-      description: row.p_description,
-      price: row.p_price,
-      compareAtPrice: row.p_compare_at_price,
-      niche: row.p_niche,
-      commerceModel: row.p_commerce_model,
-      sourceProviderSlug: row.p_source_provider_slug,
-      brandName: row.p_brand_name,
-      productCondition: row.p_product_condition,
-      authorizationState: row.p_authorization_state,
-      imageRightsState: row.p_image_rights_state,
-      externalSellerName: row.p_external_seller_name,
-      externalProductId: row.p_external_product_id,
-      images: row.p_images,
-      status: row.p_status,
-    },
-  })),
-  watchtower: archiveBindings.map((binding) => ({
-    watchJobSlug: binding.watch_job_slug,
-    importance: binding.importance,
-    publicFacet: binding.public_facet,
-    config: binding.config,
-  })),
-};
-const snapshotDigest = digest(snapshot);
-
-const savedSnapshot = await one(
-  `insert into era_archive_snapshots
-    (era_id, snapshot_kind, snapshot_digest, snapshot, evidence_ref, actor)
-   values ($1,'CLOSURE',$2,$3::json,'synthetic:lifecycle-proof:closure','ci')
-   returning *`,
-  [era.id, snapshotDigest, JSON.stringify(snapshot)]
+  })
 );
 
-const closeTime = new Date(activationTime.getTime() + 60_000);
-await client.query(
-  `update eras
-      set lifecycle_state='CLOSED', is_primary=false, end_at=$2, updated_at=$2
-    where id=$1 and lifecycle_state='ACTIVE'`,
-  [era.id, closeTime]
+await expectReject("sensitive private signal payload", () =>
+  ingestWatchtowerSignal({
+    ...signalInput,
+    signalKey: signalInput.signalKey + ":private-reject",
+    privatePayload: { customerEmail: "never@example.invalid" },
+  })
+);
+
+const directSanitize = await evaluateAndQueueCustomerAlerts({
+  eventType: "PRICE_DROP",
+  targetType: "PRODUCT",
+  targetKey: productSlug,
+  signalKey: "synthetic:direct-alert-sanitize",
+  evidenceRef: "synthetic:lifecycle-proof:alert-sanitize",
+  payload: {
+    productSlug,
+    currentPriceCents: 11900,
+    customerEmail: "must-not-persist@example.invalid",
+    accessToken: "must-not-persist",
+  },
+});
+assert(directSanitize.matched === 1, "direct alert evaluator did not match watch");
+assert(directSanitize.queued === 1, "direct alert evaluator did not queue");
+
+const sanitizedAlert = await one(
+  "select payload from customer_alert_events where signal_key=$1",
+  ["synthetic:direct-alert-sanitize"]
+);
+assert(!("customerEmail" in sanitizedAlert.payload), "private email leaked to alert payload");
+assert(!("accessToken" in sanitizedAlert.payload), "private token leaked to alert payload");
+
+const firstAlertRows = await client.query(
+  "select * from customer_alert_events where signal_key=$1",
+  [signalInput.signalKey]
+);
+assert(firstAlertRows.rows.length === 1, "signal bus replay created duplicate alert");
+
+const builtBeforeClose = await buildEraArchiveSnapshot(era.id);
+assert(builtBeforeClose, "production archive builder did not build snapshot");
+
+const closure = await closeEra({
+  eraId: era.id,
+  closureEvidenceRef: "synthetic:lifecycle-proof:closure",
+  publicNote: "Synthetic closure proof",
+  actor: "ci",
+  now: new Date(t0.getTime() + 10_000),
+});
+assert(closure.era.lifecycleState === "CLOSED", "production closure failed");
+assert(
+  closure.snapshot.snapshotDigest === builtBeforeClose.digest,
+  "persisted closure digest differs from production builder"
 );
 
 await expectReject("immutable archive snapshot update", () =>
-  client.query("update era_archive_snapshots set actor='mutated' where id=$1", [savedSnapshot.id])
+  client.query("update era_archive_snapshots set actor='mutated' where id=$1", [
+    closure.snapshot.id,
+  ])
 );
 await expectReject("immutable archive snapshot delete", () =>
-  client.query("delete from era_archive_snapshots where id=$1", [savedSnapshot.id])
+  client.query("delete from era_archive_snapshots where id=$1", [closure.snapshot.id])
 );
 
-await client.query(
-  "update eras set lifecycle_state='ARCHIVED', updated_at=$2 where id=$1 and lifecycle_state='CLOSED'",
-  [era.id, new Date(closeTime.getTime() + 60_000)]
-);
+const archived = await archiveEra({
+  eraId: era.id,
+  archiveEvidenceRef: "synthetic:lifecycle-proof:archive",
+  actor: "ci",
+  now: new Date(t0.getTime() + 11_000),
+});
+assert(archived.era.lifecycleState === "ARCHIVED", "production archive failed");
 
 await client.query("update products set price=999.99 where id=$1", [product.id]);
-const mutatedProduct = await one("select price from products where id=$1", [product.id]);
-assert(Number(mutatedProduct.price) === 999.99, "live product mutation did not apply");
 
-const persistedSnapshot = await one(
-  "select snapshot from era_archive_snapshots where id=$1",
-  [savedSnapshot.id]
+const archivedResolvedBeforeRevocation = await resolvePublicEraBySlug(
+  slug,
+  new Date(t0.getTime() + 12_000)
+);
+assert(archivedResolvedBeforeRevocation, "archived production resolver returned null");
+assert(
+  Number(archivedResolvedBeforeRevocation.products[0]?.price) === 125,
+  "archived production resolver leaked live product mutation"
 );
 assert(
-  Number(persistedSnapshot.snapshot.products[0].product.price) === 125,
-  "archive product price changed with live product"
+  archivedResolvedBeforeRevocation.media.some((asset) => asset.id === media.id),
+  "archived media disappeared before revocation"
+);
+
+const snapshotBeforeRevocation = await one(
+  "select snapshot from era_archive_snapshots where id=$1",
+  [closure.snapshot.id]
 );
 
 await client.query(
@@ -515,48 +373,149 @@ await client.query(
           rights_evidence_ref='synthetic:lifecycle-proof:revocation',
           updated_at=$2
     where id=$1`,
-  [media.id, new Date(closeTime.getTime() + 120_000)]
-);
-const revokedMedia = await one("select * from era_media_assets where id=$1", [media.id]);
-assert(
-  !isEraMediaPublic({
-    mediaUrl: revokedMedia.media_url,
-    rightsState: revokedMedia.rights_state,
-    rightsEvidenceRef: revokedMedia.rights_evidence_ref,
-    rightsStartsAt: revokedMedia.rights_starts_at,
-    rightsEndsAt: revokedMedia.rights_ends_at,
-    status: revokedMedia.status,
-  }, new Date(closeTime.getTime() + 180_000)),
-  "revoked media remained public"
-);
-assert(
-  persistedSnapshot.snapshot.media[0].rightsState === "OWNED" &&
-    persistedSnapshot.snapshot.media[0].status === "APPROVED",
-  "immutable snapshot no longer preserves historical media state"
+  [media.id, new Date(t0.getTime() + 13_000)]
 );
 
-const finalEra = await one("select * from eras where id=$1", [era.id]);
-assert(finalEra.lifecycle_state === "ARCHIVED", "Era did not reach ARCHIVED state");
+const archivedResolvedAfterRevocation = await resolvePublicEraBySlug(
+  slug,
+  new Date(t0.getTime() + 14_000)
+);
+assert(archivedResolvedAfterRevocation, "archived resolver returned null after revocation");
+assert(
+  !archivedResolvedAfterRevocation.media.some((asset) => asset.id === media.id),
+  "revoked current media remained visible in archived resolution"
+);
+
+const snapshotAfterRevocation = await one(
+  "select snapshot from era_archive_snapshots where id=$1",
+  [closure.snapshot.id]
+);
+assert(
+  JSON.stringify(snapshotAfterRevocation.snapshot) ===
+    JSON.stringify(snapshotBeforeRevocation.snapshot),
+  "immutable historical snapshot bytes changed after media revocation"
+);
+
+const lifecycleEvents = await client.query(
+  "select event_type from era_events where era_id=$1 order by id",
+  [era.id]
+);
+assert(
+  lifecycleEvents.rows.map((row) => row.event_type).join(",") ===
+    "ERA_ACTIVATED,ERA_CLOSED,ERA_ARCHIVED",
+  "production lifecycle events missing or out of order"
+);
+
+const receipts = await client.query(
+  "select action_type from action_receipts where subject_type='era' and subject_id=$1 order by id",
+  [String(era.id)]
+);
+assert(
+  receipts.rows.map((row) => row.action_type).join(",") ===
+    "ERA_ACTIVATE,ERA_CLOSE,ERA_ARCHIVE",
+  "production lifecycle receipts missing or out of order"
+);
+
+// Reproduce the exact FC-01 false-positive class against the production resolver.
+// This row intentionally models already-active persisted state, not activation.
+const futureStart = new Date(t0.getTime() + 60 * 60 * 1000);
+const futureEra = await one(
+  `insert into eras
+    (slug, name, eyebrow, story, kind, lifecycle_state, visibility, is_primary,
+     start_at, theme_tokens, watchtower_profile, archive_policy, created_at, updated_at)
+   values
+    ('future-primary-proof', 'Future Primary Proof', 'Synthetic', 'Synthetic',
+     'CATEGORY', 'ACTIVE', 'PUBLIC', true, $1,
+     '{}'::json, '{}'::json, '{}'::json, $2, $2)
+   returning *`,
+  [futureStart, new Date(t0.getTime() + 15_000)]
+);
+
+const rawPrimary = await one(
+  `select count(*)::int as count from eras
+    where id=$1 and lifecycle_state='ACTIVE' and visibility='PUBLIC' and is_primary=true`,
+  [futureEra.id]
+);
+assert(rawPrimary.count === 1, "adversarial raw primary shape was not created");
+
+const futureResolved = await resolveCurrentPublicEra(
+  new Date(t0.getTime() + 16_000)
+);
+assert(
+  futureResolved.ok === false &&
+    futureResolved.code === "ACTIVE_PRIMARY_ERA_NOT_PUBLIC_NOW",
+  "production resolver accepted future-start ACTIVE/PUBLIC/primary Era"
+);
+
+let ambiguousPrimary = "DATABASE_GUARDED";
+try {
+  const second = await one(
+    `insert into eras
+      (slug, name, eyebrow, story, kind, lifecycle_state, visibility, is_primary,
+       start_at, theme_tokens, watchtower_profile, archive_policy, created_at, updated_at)
+     values
+      ('second-primary-proof', 'Second Primary Proof', 'Synthetic', 'Synthetic',
+       'CATEGORY', 'ACTIVE', 'PUBLIC', true, $1,
+       '{}'::json, '{}'::json, '{}'::json, $1, $1)
+     returning *`,
+    [new Date(t0.getTime() - 60_000)]
+  );
+  const ambiguous = await resolveCurrentPublicEra(new Date(t0.getTime() + 17_000));
+  assert(
+    ambiguous.ok === false && ambiguous.code === "AMBIGUOUS_ACTIVE_PRIMARY_ERA",
+    "production resolver did not reject ambiguous active primaries"
+  );
+  ambiguousPrimary = "RESOLVER_REJECTED";
+  await client.query("delete from eras where id=$1", [second.id]);
+} catch (error) {
+  // A database uniqueness guard is also valid evidence that ambiguous primary
+  // state cannot be persisted through this PostgreSQL schema.
+  const message = error instanceof Error ? error.message : String(error);
+  assert(
+    /unique|duplicate/i.test(message),
+    "unexpected failure while testing ambiguous-primary protection: " + message
+  );
+}
 
 console.log(JSON.stringify({
   status: "PASS",
-  proofClass: "ISOLATED_SYNTHETIC_FULL_LIFECYCLE_POSTGRESQL_R0",
+  proofClass: "ISOLATED_SYNTHETIC_FULL_LIFECYCLE_APPLICATION_PATH_POSTGRESQL_R1",
   eraId: era.id,
   productId: product.id,
-  readinessDigest,
-  snapshotDigest,
-  signalKey: signal.signalKey,
-  alertFingerprint: fingerprint,
-  alertCount: alertCount.count,
+  readinessDigest: currentReadiness.readinessDigest,
+  snapshotDigest: closure.snapshot.snapshotDigest,
+  signalKey: signalInput.signalKey,
   lifecycle: ["DRAFT", "ACTIVE", "CLOSED", "ARCHIVED"],
-  invariants: {
-    currentEraResolved: "PASS",
-    verifiedSignalProjected: "PASS",
-    alertReplayIdempotent: "PASS",
-    immutableClosureSnapshot: "PASS",
+  productionPaths: {
+    evaluateEraActivationReadiness: "PASS",
+    activateEraSharedProductionService: "PASS",
+    resolveCurrentPublicEra: "PASS",
+    buildEraArchiveSnapshot: "PASS",
+    closeEraSharedProductionService: "PASS",
+    archiveEraSharedProductionService: "PASS",
+    resolvePublicEraBySlugArchived: "PASS",
+    ingestWatchtowerSignal: "PASS",
+    evaluateAndQueueCustomerAlerts: "PASS",
+  },
+  adversarial: {
+    mismatchedReadinessDigestRejected: "PASS",
+    staleReadinessAfterMutationRejected: "PASS",
+    archiveWithoutClosureSnapshotRejected: "PASS",
+    signalKeyPayloadCollisionRejected: "PASS",
+    sensitivePrivateSignalPayloadRejected: "PASS",
+    alertPayloadSanitized: "PASS",
+    signalReplayIdempotent: "PASS",
     archivedProductHistorical: "PASS",
-    revokedMediaHidden: "PASS",
+    revokedCurrentMediaHiddenFromArchivedResolution: "PASS",
+    futureStartRawPrimaryRejectedByProductionResolver: "PASS",
+    ambiguousPrimary,
+  },
+  authority: {
+    notificationsSent: 0,
+    productionTouched: false,
+    delivery: "QUEUE_ONLY_NO_EXTERNAL_DELIVERY",
   },
 }, null, 2));
 
 await client.end();
+await pool.end();
