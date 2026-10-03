@@ -70,12 +70,29 @@ test("signal parser rejects unknown public keys instead of silently exposing dat
   );
 });
 
+test("public payload values must be bounded primitives", () => {
+  assert.throws(
+    () =>
+      parseWatchtowerSignal(
+        baseSignal({
+          publicPayload: {
+            publicNote: { customerEmail: "private@example.com" },
+          },
+        }),
+        new Date("2026-10-03T16:01:00Z")
+      ),
+    /WATCHTOWER_SIGNAL_PUBLIC_PAYLOAD_VALUE_INVALID/
+  );
+});
+
 test("signal parser recursively blocks secrets and customer PII from private payload", () => {
   for (const privatePayload of [
     { apiKey: "secret" },
     { nested: { accessToken: "secret" } },
     { customer: { email: "private@example.com" } },
     { billing: { address: "123 Main" } },
+    { connection: { credential: "secret" } },
+    { subject: { customerId: "cust_123" } },
   ]) {
     assert.throws(
       () =>
