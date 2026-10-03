@@ -116,15 +116,18 @@ Still no email/SMS/push is sent.
 
 ## Ingestion API
 
-Authenticated admin/internal route:
+Authenticated admin/internal routes:
 
-`POST /api/admin/watchtower/signals`
+- `POST /api/admin/watchtower/signals` — append/idempotently replay a signal
+- `GET /api/admin/watchtower/signals?limit=50` — recent evidence timeline for Watchtower/admin
 
 Authority:
 
 `OBSERVE_PROJECT_QUEUE_ONLY`
 
 It may append evidence and queue eligible pending customer-alert events.
+
+The read endpoint deliberately omits `privatePayload`; ordinary Watchtower inspection should use public-safe evidence metadata unless a future dedicated audit surface explicitly needs bounded internal payload.
 
 It may not:
 
