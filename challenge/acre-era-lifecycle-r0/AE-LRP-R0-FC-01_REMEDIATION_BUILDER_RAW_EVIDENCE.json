@@ -1,0 +1,89 @@
+{
+  "schema": "AE_LRP_R0_FC01_REMEDIATION_BUILDER_RAW_EVIDENCE_V1",
+  "date": "2026-10-03",
+  "repository": "norrijam405/norvana",
+  "pullRequest": 15,
+  "finding": "AE-LRP-R0-FC-01 — FULL_LIFECYCLE_PROOF_BYPASSES_PRODUCTION_ERA_AND_SIGNAL_APPLICATION_PATHS",
+  "failedCandidate": {
+    "commit": "4e3e411594c7b02b5918364abeeac91b6350f49c",
+    "parent": "16f4554af38805b8d9481dd1f1f3d390e07d1bfb",
+    "tree": "d4e69a2ba22611bb2c2c837c5a337b5479b63569",
+    "freshChallengerEvidenceCommit": "b0fd6c7698a05665ea8e321d206eca5a4123fef7"
+  },
+  "remediationCandidate": {
+    "commit": "7f8241e2dac3f044d03fd4627526e77884ff1c90",
+    "parent": "c123c154d98013b617167421c573249f14054c8e",
+    "tree": "a538bc0d4a67a860cd52a88f8e106d2df74d55c0"
+  },
+  "execution": {
+    "githubActionsRun": 37152908083,
+    "job": 111290271433,
+    "postgres": "17",
+    "status": "PASS",
+    "proofClass": "ISOLATED_SYNTHETIC_FULL_LIFECYCLE_APPLICATION_PATH_POSTGRESQL_R1",
+    "readinessDigest": "46ef1a7d4cbd9970e3a4ff8031b9db4e013155167bb479d3c55e874e561128d0",
+    "snapshotDigest": "f740ac805704475597e90559ccf9f5ace84d1e54dd31d17b666da0496e495e28",
+    "lifecycle": [
+      "DRAFT",
+      "ACTIVE",
+      "CLOSED",
+      "ARCHIVED"
+    ],
+    "productionPaths": {
+      "evaluateEraActivationReadiness": "PASS",
+      "activateEraSharedProductionService": "PASS",
+      "resolveCurrentPublicEra": "PASS",
+      "buildEraArchiveSnapshot": "PASS",
+      "closeEraSharedProductionService": "PASS",
+      "archiveEraSharedProductionService": "PASS",
+      "resolvePublicEraBySlugArchived": "PASS",
+      "ingestWatchtowerSignal": "PASS",
+      "evaluateAndQueueCustomerAlerts": "PASS"
+    },
+    "adversarial": {
+      "mismatchedReadinessDigestRejected": "PASS",
+      "staleReadinessAfterMutationRejected": "PASS",
+      "archiveWithoutClosureSnapshotRejected": "PASS",
+      "signalKeyPayloadCollisionRejected": "PASS",
+      "sensitivePrivateSignalPayloadRejected": "PASS",
+      "alertPayloadSanitized": "PASS",
+      "signalReplayIdempotent": "PASS",
+      "archivedProductHistorical": "PASS",
+      "revokedCurrentMediaHiddenFromArchivedResolution": "PASS",
+      "futureStartRawPrimaryRejectedByProductionResolver": "PASS",
+      "ambiguousPrimary": "DATABASE_GUARDED"
+    },
+    "regressions": {
+      "typecheck": "PASS",
+      "eraEngine": "11/11 PASS",
+      "archiveAlertActivation": "14/14 PASS",
+      "signalBus": "12/12 PASS"
+    },
+    "authority": {
+      "notificationsSent": 0,
+      "productionTouched": false,
+      "externalDelivery": "QUEUE_ONLY_NO_EXTERNAL_DELIVERY",
+      "customerDataUsed": false,
+      "realEraActivated": false,
+      "realProductPublished": false,
+      "suppliersActivated": false,
+      "ordersPlaced": false,
+      "moneySpent": false
+    }
+  },
+  "preservedPriorEvidence": {
+    "githubActionsRun": 37148461532,
+    "statement": "Previously proven PostgreSQL 17 migration-chain, archive UPDATE/DELETE immutability, typecheck, Era Engine, archive/alert/activation, and Signal Bus regression evidence remains valid and was not discarded."
+  },
+  "canonicalBlobs": {
+    "src/lib/era-engine/lifecycle-service.ts": "3b8ce35527b8eb918b733f2495932c29e6f8f1bb",
+    "src/lib/era-engine/readiness.ts": "44d15ba48be3dabe409b7409a6662741292af13b",
+    "src/lib/era-engine/archive.ts": "62063116b88bc9b2bfc7cb3388fa438ef9f524fb",
+    "src/lib/era-engine/resolver.ts": "b2e567d5a71cceb7b47f3bb165be321b1f257289",
+    "src/lib/watchtower/signal-bus.ts": "c7a6560fc381248a4bb51573461657fd7e9dd655",
+    "src/lib/customer-intent/alert-evaluator.ts": "2088dd6b828d2d91a7df4fffec8ff5064c3713f8",
+    "scripts/verify-acre-era-lifecycle-r0.mjs": "6cc468c5daeb9531efcb751b49f1c440491f60bf",
+    ".github/workflows/acre-era-lifecycle-proof-r0.yml": "fa90c67e1aee360c94e282a94e927d6bd1310de7",
+    "tests/archive-alert-activation-r0.test.ts": "9cf030709a3fbc6c4de9b6b6f9022d53540de383"
+  }
+}
