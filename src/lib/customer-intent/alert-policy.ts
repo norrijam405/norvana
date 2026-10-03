@@ -52,6 +52,7 @@ export function sanitizeAlertSignal(input: CustomerAlertSignal) {
   }
   if (!targetKey) throw new Error("ALERT_TARGET_KEY_REQUIRED");
   if (!signalKey) throw new Error("ALERT_SIGNAL_KEY_REQUIRED");
+  if (!evidenceRef) throw new Error("ALERT_EVIDENCE_REQUIRED");
 
   const payload = Object.fromEntries(
     Object.entries(input.payload || {})
