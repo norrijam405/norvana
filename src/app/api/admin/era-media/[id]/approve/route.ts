@@ -105,61 +105,68 @@ export async function POST(
     );
   }
 
-  const now = new Date();
-  const [approved] = await db
-    .update(eraMediaAssets)
-    .set({
-      rightsState,
-      rightsEvidenceRef,
-      rightsStartsAt,
-      rightsEndsAt,
-      altText,
-      status: "APPROVED",
-      updatedAt: now,
-    })
-    .where(
-      and(
-        eq(eraMediaAssets.id, assetId),
-        eq(eraMediaAssets.status, "DRAFT")
-      )
-    )
-    .returning();
+  try {
+    const approved = await db.transaction(async (tx) => {
+      const now = new Date();
+      const [updated] = await tx
+        .update(eraMediaAssets)
+        .set({
+          rightsState,
+          rightsEvidenceRef,
+          rightsStartsAt,
+          rightsEndsAt,
+          altText,
+          status: "APPROVED",
+          updatedAt: now,
+        })
+        .where(
+          and(
+            eq(eraMediaAssets.id, assetId),
+            eq(eraMediaAssets.status, "DRAFT"),
+            eq(eraMediaAssets.updatedAt, asset.updatedAt)
+          )
+        )
+        .returning();
 
-  if (!approved) {
+      if (!updated) throw new Error("MEDIA_CHANGED_BEFORE_APPROVAL");
+
+      await tx.insert(eraEvents).values({
+        eraId: updated.eraId,
+        eventType: "MEDIA_APPROVED",
+        actor: "owner",
+        payload: {
+          assetId: updated.id,
+          assetType: updated.assetType,
+          rightsState: updated.rightsState,
+          approvalEvidenceRef,
+        },
+      });
+
+      await tx.insert(actionReceipts).values({
+        actionType: "ERA_MEDIA_APPROVE",
+        authorityClass: "ACT",
+        subjectType: "era_media_asset",
+        subjectId: String(updated.id),
+        status: "PASS",
+        actor: "owner",
+        details: {
+          eraId: updated.eraId,
+          rightsState: updated.rightsState,
+          approvalEvidenceRef,
+        },
+      });
+
+      return updated;
+    });
+
+    return NextResponse.json({
+      asset: approved,
+      authority: "ADMIN_ACT_WITH_EVIDENCE",
+    });
+  } catch (error) {
     return NextResponse.json(
-      { error: "Media changed before approval. Re-read and retry." },
+      { error: error instanceof Error ? error.message : "MEDIA_APPROVAL_FAILED" },
       { status: 409 }
     );
   }
-
-  await db.insert(eraEvents).values({
-    eraId: approved.eraId,
-    eventType: "MEDIA_APPROVED",
-    actor: "owner",
-    payload: {
-      assetId: approved.id,
-      assetType: approved.assetType,
-      rightsState: approved.rightsState,
-      approvalEvidenceRef,
-    },
-  });
-
-  await db.insert(actionReceipts).values({
-    actionType: "ERA_MEDIA_APPROVE",
-    authorityClass: "ACT",
-    subjectType: "era_media_asset",
-    subjectId: String(approved.id),
-    status: "PASS",
-    actor: "owner",
-    details: {
-      eraId: approved.eraId,
-      rightsState: approved.rightsState,
-      approvalEvidenceRef,
-    },
-  });
-
-  return NextResponse.json({
-    asset: approved,
-    authority: "ADMIN_ACT_WITH_EVIDENCE",
-  });
 }
