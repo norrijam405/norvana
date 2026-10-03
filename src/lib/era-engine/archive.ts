@@ -11,54 +11,81 @@ import {
   products,
 } from "@/db/schema";
 
-export async function buildEraArchiveSnapshot(eraId: number) {
-  const [era] = await db.select().from(eras).where(eq(eras.id, eraId)).limit(1);
+type EraArchiveReadExecutor = Pick<typeof db, "select">;
+
+async function buildEraArchiveSnapshotWithExecutor(
+  executor: EraArchiveReadExecutor,
+  eraId: number
+) {
+  const [era] = await executor
+    .select()
+    .from(eras)
+    .where(eq(eras.id, eraId))
+    .limit(1);
   if (!era) return null;
 
-  const [sections, media, memberships, watchtowerBindings] = await Promise.all([
-    db
-      .select()
-      .from(eraSections)
-      .where(eq(eraSections.eraId, eraId))
-      .orderBy(asc(eraSections.position), asc(eraSections.id)),
-    db
-      .select()
-      .from(eraMediaAssets)
-      .where(eq(eraMediaAssets.eraId, eraId))
-      .orderBy(asc(eraMediaAssets.id)),
-    db
-      .select({
-        membership: eraProducts,
-        product: {
-          id: products.id,
-          slug: products.slug,
-          name: products.name,
-          description: products.description,
-          price: products.price,
-          compareAtPrice: products.compareAtPrice,
-          niche: products.niche,
-          commerceModel: products.commerceModel,
-          sourceProviderSlug: products.sourceProviderSlug,
-          brandName: products.brandName,
-          productCondition: products.productCondition,
-          authorizationState: products.authorizationState,
-          imageRightsState: products.imageRightsState,
-          externalSellerName: products.externalSellerName,
-          externalProductId: products.externalProductId,
-          images: products.images,
-          status: products.status,
-        },
-      })
-      .from(eraProducts)
-      .innerJoin(products, eq(eraProducts.productId, products.id))
-      .where(eq(eraProducts.eraId, eraId))
-      .orderBy(asc(eraProducts.position), asc(eraProducts.id)),
-    db
-      .select()
-      .from(eraWatchtowerBindings)
-      .where(eq(eraWatchtowerBindings.eraId, eraId))
-      .orderBy(asc(eraWatchtowerBindings.importance), asc(eraWatchtowerBindings.id)),
-  ]);
+  const sections = await executor
+    .select()
+    .from(eraSections)
+    .where(eq(eraSections.eraId, eraId))
+    .orderBy(asc(eraSections.position), asc(eraSections.id));
+
+  const media = await executor
+    .select()
+    .from(eraMediaAssets)
+    .where(eq(eraMediaAssets.eraId, eraId))
+    .orderBy(asc(eraMediaAssets.id));
+
+  const memberships = await executor
+    .select({
+      membership: eraProducts,
+      product: {
+        id: products.id,
+        slug: products.slug,
+        name: products.name,
+        description: products.description,
+        price: products.price,
+        compareAtPrice: products.compareAtPrice,
+        niche: products.niche,
+        commerceModel: products.commerceModel,
+        sourceProviderSlug: products.sourceProviderSlug,
+        brandName: products.brandName,
+        productCondition: products.productCondition,
+        authorizationState: products.authorizationState,
+        imageRightsState: products.imageRightsState,
+        externalSellerName: products.externalSellerName,
+        externalProductId: products.externalProductId,
+        images: products.images,
+        status: products.status,
+      },
+    })
+    .from(eraProducts)
+    .innerJoin(products, eq(eraProducts.productId, products.id))
+    .where(eq(eraProducts.eraId, eraId))
+    .orderBy(asc(eraProducts.position), asc(eraProducts.id));
+
+  const watchtowerBindings = await executor
+    .select()
+    .from(eraWatchtowerBindings)
+    .where(eq(eraWatchtowerBindings.eraId, eraId))
+    .orderBy(asc(eraWatchtowerBindings.importance), asc(eraWatchtowerBindings.id));
+
+  const [observedAfter] = await executor
+    .select({
+      updatedAt: eras.updatedAt,
+      contentRevision: eras.contentRevision,
+    })
+    .from(eras)
+    .where(eq(eras.id, eraId))
+    .limit(1);
+
+  if (
+    !observedAfter ||
+    observedAfter.updatedAt.toISOString() !== era.updatedAt.toISOString() ||
+    observedAfter.contentRevision !== era.contentRevision
+  ) {
+    throw new Error("ERA_CHANGED_DURING_SNAPSHOT");
+  }
 
   const snapshot = {
     schema: "ACRE_ERA_ARCHIVE_SNAPSHOT_R0",
@@ -76,6 +103,7 @@ export async function buildEraArchiveSnapshot(eraId: number) {
       endAt: era.endAt?.toISOString() ?? null,
       themeTokens: era.themeTokens,
       archivePolicy: era.archivePolicy,
+      contentRevision: era.contentRevision,
       createdAt: era.createdAt.toISOString(),
       updatedAt: era.updatedAt.toISOString(),
     },
@@ -128,7 +156,19 @@ export async function buildEraArchiveSnapshot(eraId: number) {
     snapshot,
     digest: snapshotDigest(snapshot),
     eraUpdatedAt: era.updatedAt.toISOString(),
+    eraContentRevision: era.contentRevision,
   };
+}
+
+export async function buildEraArchiveSnapshot(eraId: number) {
+  return buildEraArchiveSnapshotWithExecutor(db, eraId);
+}
+
+export async function buildEraArchiveSnapshotInTransaction(
+  tx: EraArchiveReadExecutor,
+  eraId: number
+) {
+  return buildEraArchiveSnapshotWithExecutor(tx, eraId);
 }
 
 export async function persistEraArchiveSnapshot(input: {

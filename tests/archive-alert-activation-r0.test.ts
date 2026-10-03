@@ -298,3 +298,38 @@ test("active customer routes have an evidence-gated suspension path", async () =
   assert.match(source, /PRODUCT_ROUTE_SUSPEND/);
   assert.match(source, /db\.transaction/);
 });
+
+
+test("closure snapshot consistency is protected by Era content revision CAS", async () => {
+  const [migration, archive, service, schema] = await Promise.all([
+    readFile(
+      new URL("../drizzle/0015_era_closure_snapshot_consistency_r0.sql", import.meta.url),
+      "utf8"
+    ),
+    readFile(new URL("../src/lib/era-engine/archive.ts", import.meta.url), "utf8"),
+    readFile(new URL("../src/lib/era-engine/lifecycle-service.ts", import.meta.url), "utf8"),
+    readFile(new URL("../src/db/schema.ts", import.meta.url), "utf8"),
+  ]);
+
+  assert.match(schema, /contentRevision: integer\("content_revision"\)/);
+  assert.match(archive, /eraContentRevision/);
+  assert.match(archive, /ERA_CHANGED_DURING_SNAPSHOT/);
+  assert.match(service, /buildEraArchiveSnapshotInTransaction/);
+  assert.match(service, /eq\(eras\.contentRevision, current\.contentRevision\)/);
+
+  for (const trigger of [
+    "era_products_bump_content_revision",
+    "era_sections_bump_content_revision",
+    "era_media_assets_bump_content_revision",
+    "era_watchtower_bindings_bump_content_revision",
+    "products_bump_era_content_revision",
+  ]) {
+    assert.match(migration, new RegExp(trigger));
+  }
+
+  assert.match(migration, /BEFORE INSERT OR UPDATE OR DELETE ON era_products/);
+  assert.match(migration, /BEFORE INSERT OR UPDATE OR DELETE ON era_sections/);
+  assert.match(migration, /BEFORE INSERT OR UPDATE OR DELETE ON era_media_assets/);
+  assert.match(migration, /BEFORE INSERT OR UPDATE OR DELETE ON era_watchtower_bindings/);
+  assert.match(migration, /BEFORE UPDATE OR DELETE ON products/);
+});

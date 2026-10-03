@@ -6,7 +6,7 @@ import {
   eraEvents,
   eras,
 } from "@/db/schema";
-import { buildEraArchiveSnapshot } from "./archive";
+import { buildEraArchiveSnapshotInTransaction } from "./archive";
 import { evaluateEraActivationReadiness } from "./readiness";
 
 export class EraLifecycleError extends Error {
@@ -156,9 +156,6 @@ export async function closeEra(input: {
   const actor = input.actor ?? "owner";
   const now = input.now ?? new Date();
 
-  const built = await buildEraArchiveSnapshot(input.eraId);
-  if (!built) throw new EraLifecycleError("ERA_NOT_FOUND", 404);
-
   try {
     return await db.transaction(async (tx) => {
       const [current] = await tx
@@ -169,7 +166,14 @@ export async function closeEra(input: {
 
       if (!current) throw new Error("ERA_NOT_FOUND");
       if (current.lifecycleState !== "ACTIVE") throw new Error("ERA_NOT_ACTIVE");
-      if (current.updatedAt.toISOString() !== built.eraUpdatedAt) {
+
+      const built = await buildEraArchiveSnapshotInTransaction(tx, input.eraId);
+      if (!built) throw new Error("ERA_NOT_FOUND");
+
+      if (
+        current.updatedAt.toISOString() !== built.eraUpdatedAt ||
+        current.contentRevision !== built.eraContentRevision
+      ) {
         throw new Error("ERA_CHANGED_DURING_SNAPSHOT");
       }
 
@@ -210,7 +214,8 @@ export async function closeEra(input: {
           and(
             eq(eras.id, input.eraId),
             eq(eras.lifecycleState, "ACTIVE"),
-            eq(eras.updatedAt, current.updatedAt)
+            eq(eras.updatedAt, current.updatedAt),
+            eq(eras.contentRevision, current.contentRevision)
           )
         )
         .returning();
@@ -226,6 +231,7 @@ export async function closeEra(input: {
           publicNote,
           snapshotId: snapshot.id,
           snapshotDigest: snapshot.snapshotDigest,
+          contentRevision: built.eraContentRevision,
         },
       });
 
@@ -240,6 +246,7 @@ export async function closeEra(input: {
           closureEvidenceRef,
           snapshotId: snapshot.id,
           snapshotDigest: snapshot.snapshotDigest,
+          contentRevision: built.eraContentRevision,
         },
       });
 

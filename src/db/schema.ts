@@ -108,6 +108,7 @@ export const eras = pgTable(
     archivePolicy: json("archive_policy").$type<Record<string, unknown>>().notNull().default({}),
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at").defaultNow().notNull(),
+    contentRevision: integer("content_revision").notNull().default(0),
   },
   (table) => [uniqueIndex("eras_slug_idx").on(table.slug)]
 );
