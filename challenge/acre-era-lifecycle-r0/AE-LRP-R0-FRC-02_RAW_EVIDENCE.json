@@ -1,0 +1,98 @@
+{
+  "schema": "AE_LRP_R0_FRC02_RAW_EVIDENCE_V1",
+  "date": "2026-10-03",
+  "repository": "norrijam405/norvana",
+  "pullRequest": 15,
+  "role": "Fresh Re-Challenger",
+  "result": "FAIL",
+  "finding": {
+    "id": "AE-LRP-R0-FRC-02",
+    "title": "CLOSURE_SNAPSHOT_ERA_ROW_MUTATION_NOT_COVERED_BY_REVISION_OR_UPDATED_AT_GUARD"
+  },
+  "challengedCandidate": {
+    "commit": "571d24a00ff1fb1aa319b125bf793584c7f059a0",
+    "parent": "718e73d23a0c3d691b7bd994cf6462ce32686255",
+    "tree": "63209916cd87c3f88cbace8fc7d152d59cc2f016"
+  },
+  "verifiedFrozenApplicationBlobs": {
+    "lifecycleService": "fbdea16a48e6637b400c049167764338f52dbe13",
+    "archiveBuilder": "6fea9dc121c0c9a0ba706bb9f9673d99873d3f8b",
+    "schema": "a5aeab4ea17371d9f45bee71c8c31e6b5364b340",
+    "migration0015": "e27abc3d37dc2297db9243f9356831deee89fb9c"
+  },
+  "freshExecution": {
+    "workflow": "Acre Era Lifecycle Proof R0",
+    "workflowRun": 37163093230,
+    "workflowRunNumber": 36,
+    "job": 111320422171,
+    "checkoutMergeCommit": "8cf71b8cc911a05dd4bb7b6f06dadabf0c4ee882",
+    "evidenceHead": "415414e79a1602f9739b2e9c4f5bf22092d93f7e",
+    "postgresImage": "postgres:17",
+    "postgresVersion": "17.11 (Debian 17.11-1.pgdg13+2)",
+    "nodeVersion": "22.23.3",
+    "dataClass": "SYNTHETIC_ONLY",
+    "databaseClass": "DISPOSABLE_POSTGRESQL_17"
+  },
+  "reproducer": {
+    "path": "challenge/acre-era-lifecycle-r0/AE-LRP-R0-FRC-02_REPRO.mjs",
+    "mechanism": [
+      "Hold era_archive_snapshots with ACCESS EXCLUSIVE so closeEra completes snapshot reads and blocks before snapshot persistence and before final Era CAS.",
+      "Commit direct SQL UPDATE against snapshot-contributing eras.story while closeEra is blocked.",
+      "The UPDATE does not change eras.updated_at and does not change eras.content_revision.",
+      "Release the archive-table gate and allow closeEra to finish.",
+      "Observe CLOSED Era with persisted snapshot retaining the pre-mutation story while the live Era contains the mutation committed before close completion."
+    ]
+  },
+  "runtimeObservation": {
+    "observedBlockedSnapshotInsert": true,
+    "mutationCommittedBeforeCloseCompleted": true,
+    "beforeUpdatedAt": "2026-10-03T23:50:00.000Z",
+    "mutationUpdatedAt": "2026-10-03T23:50:00.000Z",
+    "beforeContentRevision": 0,
+    "mutationContentRevision": 0,
+    "guardChangedByMutation": false,
+    "closedLifecycleState": "CLOSED",
+    "persistedClosureSnapshotStory": "before-snapshot",
+    "liveEraStoryAtCloseCompletion": "after-snapshot-before-close",
+    "closureSnapshotDigest": "c72016592b2503af19e41d1250f89b8ba0cfef3b06ede29ca34fd2b5388db421",
+    "status": "REPRODUCED"
+  },
+  "rootCause": [
+    "The CLOSURE snapshot contains mutable fields from the eras row, including story and other Era metadata.",
+    "Migration 0015 advances content_revision for child tables and referenced product mutations, but it does not provide a database guard for ordinary direct mutations of snapshot-contributing eras fields.",
+    "eras.updated_at has a default but is not database-maintained on every UPDATE.",
+    "closeEra does not hold a row lock on the Era before snapshot construction.",
+    "Therefore a direct Era-row mutation can commit after snapshot construction while both final CAS guards remain unchanged."
+  ],
+  "consequence": "The frozen remediation candidate can accept a CLOSURE snapshot that is stale relative to an Era-row mutation committed before closure completes.",
+  "preservedRegressionEvidenceFromSameRun": {
+    "frc01ChildRevisionCasConcurrency": "PASS",
+    "fullSharedApplicationPathLifecycle": "PASS",
+    "typecheck": "PASS",
+    "eraEngineRegression": "PASS",
+    "archiveAlertActivation": {
+      "status": "PASS",
+      "tests": 15,
+      "failures": 0
+    },
+    "signalBus": {
+      "status": "PASS",
+      "tests": 12,
+      "failures": 0
+    }
+  },
+  "safety": {
+    "productionDatabaseTouched": false,
+    "productionMigrationRun": false,
+    "productionDeployment": false,
+    "vercelProductionRoutingChanged": false,
+    "realEraActivated": false,
+    "realProductPublished": false,
+    "customerDataUsed": false,
+    "notificationsSent": 0,
+    "suppliersOrFulfillmentActivated": false,
+    "ordersPlaced": 0,
+    "moneySpent": false
+  },
+  "disposition": "FRESH_RECHALLENGER_FAIL_STOP_REMEDIATE_IN_SEPARATE_LANE"
+}
