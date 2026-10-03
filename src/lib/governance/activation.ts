@@ -5,6 +5,8 @@ import {
 import {
   commercialEligibility,
   isRouteFresh,
+  REQUIRED_AUTHORIZATION_BY_ROUTE,
+  ROUTE_PROVENANCE_STATES,
   safePartnerCheckoutUrl,
 } from "@/lib/commerce/route-engine";
 import { evaluateAffiliateDestination } from "@/lib/commerce/affiliate-policy";
@@ -106,11 +108,27 @@ export function evaluateRouteActivationReadiness(
   if (!route.evidenceRef?.trim()) blockers.push("ROUTE_EVIDENCE_MISSING");
   if (!isRouteFresh(route, now)) blockers.push("ROUTE_VERIFICATION_STALE");
 
-  if (route.authorizationState === "UNVERIFIED") {
-    blockers.push("ROUTE_AUTHORIZATION_UNVERIFIED");
+  const requiredAuthorization = REQUIRED_AUTHORIZATION_BY_ROUTE[route.routeType];
+  if (!requiredAuthorization) {
+    blockers.push("ROUTE_TYPE_NOT_ACTIVATABLE");
+  } else if (route.authorizationState !== requiredAuthorization) {
+    blockers.push("ROUTE_AUTHORIZATION_MISMATCH");
   }
-  if (route.provenanceState === "UNVERIFIED") {
+
+  if (
+    route.provenanceState === "UNVERIFIED" ||
+    !ROUTE_PROVENANCE_STATES.includes(
+      route.provenanceState as (typeof ROUTE_PROVENANCE_STATES)[number]
+    )
+  ) {
     blockers.push("ROUTE_PROVENANCE_UNVERIFIED");
+  }
+
+  if (
+    route.routeType === "AUTHENTICATED_RESALE" &&
+    route.provenanceState !== "AUTHENTICATED"
+  ) {
+    blockers.push("ROUTE_AUTHENTICATED_RESALE_PROOF_MISSING");
   }
 
   if (route.checkoutOwner === "PARTNER" && !safePartnerCheckoutUrl(route.checkoutUrl)) {
