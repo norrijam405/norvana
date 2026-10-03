@@ -1,3 +1,4 @@
+// Fresh Re-Challenger evidence harness only. No production access.
 import pg from "pg";
 import { pool } from "../../src/db/index.ts";
 import { closeEra } from "../../src/lib/era-engine/lifecycle-service.ts";
