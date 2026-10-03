@@ -1,6 +1,7 @@
-import { and, asc, eq } from "drizzle-orm";
+import { and, asc, desc, eq } from "drizzle-orm";
 import { db } from "@/db";
 import {
+  eraArchiveSnapshots,
   eraMediaAssets,
   eraProducts,
   eras,
@@ -23,6 +24,169 @@ function publicProductImages(product: typeof products.$inferSelect) {
     : [];
 }
 
+function objectValue(value: unknown): Record<string, unknown> | null {
+  return value && typeof value === "object" && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : null;
+}
+
+function arrayValue(value: unknown) {
+  return Array.isArray(value) ? value : [];
+}
+
+function stringValue(value: unknown) {
+  return typeof value === "string" ? value : "";
+}
+
+function numberValue(value: unknown) {
+  return typeof value === "number" && Number.isFinite(value) ? value : 0;
+}
+
+function nullableNumber(value: unknown) {
+  return typeof value === "number" && Number.isFinite(value) ? value : null;
+}
+
+async function resolveArchivedPublicEra(
+  era: typeof eras.$inferSelect,
+  now: Date
+): Promise<PublicEra | null> {
+  const [row] = await db
+    .select()
+    .from(eraArchiveSnapshots)
+    .where(eq(eraArchiveSnapshots.eraId, era.id))
+    .orderBy(
+      desc(eraArchiveSnapshots.createdAt),
+      desc(eraArchiveSnapshots.id)
+    )
+    .limit(1);
+
+  if (!row) return null;
+
+  const snapshot = objectValue(row.snapshot);
+  if (!snapshot || snapshot.schema !== "ACRE_ERA_ARCHIVE_SNAPSHOT_R0") return null;
+
+  const eraSnapshot = objectValue(snapshot.era);
+  if (!eraSnapshot) return null;
+
+  const rawSections = arrayValue(snapshot.sections);
+  const sectionRows = rawSections
+    .map(objectValue)
+    .filter((value): value is Record<string, unknown> => Boolean(value))
+    .filter((section) => stringValue(section.status) === "ENABLED")
+    .map((section) => ({
+      sectionType: stringValue(section.sectionType),
+      position: numberValue(section.position),
+      config: objectValue(section.config) ?? {},
+    }))
+    .sort((a, b) => a.position - b.position);
+
+  const sectionDecision = validateEraSections(sectionRows);
+  if (!sectionDecision.ok) return null;
+
+  const media = arrayValue(snapshot.media)
+    .map(objectValue)
+    .filter((value): value is Record<string, unknown> => Boolean(value))
+    .filter((asset) =>
+      isEraMediaPublic(
+        {
+          rightsState: stringValue(asset.rightsState),
+          rightsEvidenceRef: stringValue(asset.rightsEvidenceRef) || null,
+          mediaUrl: stringValue(asset.mediaUrl),
+          rightsStartsAt: stringValue(asset.rightsStartsAt) || null,
+          rightsEndsAt: stringValue(asset.rightsEndsAt) || null,
+          status: stringValue(asset.status),
+        },
+        now
+      )
+    )
+    .map((asset) => ({
+      id: numberValue(asset.id),
+      assetType: stringValue(asset.assetType),
+      mediaUrl: stringValue(asset.mediaUrl),
+      posterUrl: stringValue(asset.posterUrl) || null,
+      altText: stringValue(asset.altText),
+      brandName: stringValue(asset.brandName) || null,
+      providerSlug: stringValue(asset.providerSlug) || null,
+    }));
+
+  const archivedProducts = arrayValue(snapshot.products)
+    .map(objectValue)
+    .filter((value): value is Record<string, unknown> => Boolean(value))
+    .map((entry) => ({
+      membership: objectValue(entry.membership),
+      product: objectValue(entry.product),
+    }))
+    .filter(
+      (entry): entry is {
+        membership: Record<string, unknown>;
+        product: Record<string, unknown>;
+      } => Boolean(entry.membership && entry.product)
+    )
+    .filter(
+      ({ membership, product }) =>
+        stringValue(membership.status) === "ACTIVE" &&
+        stringValue(product.status) === "active"
+    )
+    .sort(
+      (a, b) =>
+        numberValue(a.membership.position) - numberValue(b.membership.position)
+    )
+    .map(({ membership, product }) => {
+      // Archived third-party imagery is hidden by default because an old snapshot
+      // cannot prove that a later affiliate/brand media license still permits display.
+      const imageRightsState = stringValue(product.imageRightsState);
+      const images =
+        imageRightsState === "OWNED"
+          ? arrayValue(product.images).filter(
+              (value): value is string => typeof value === "string"
+            )
+          : [];
+
+      return {
+        id: numberValue(product.id),
+        slug: stringValue(product.slug),
+        name: stringValue(product.name),
+        description: stringValue(product.description),
+        price: numberValue(product.price),
+        compareAtPrice: nullableNumber(product.compareAtPrice),
+        niche: stringValue(product.niche),
+        images,
+        brandName: stringValue(product.brandName) || null,
+        commerceModel: stringValue(product.commerceModel),
+        sourceProviderSlug: stringValue(product.sourceProviderSlug) || null,
+        authorizationState: stringValue(product.authorizationState),
+        imageRightsState,
+        externalSellerName: stringValue(product.externalSellerName) || null,
+        role: stringValue(membership.role),
+        position: numberValue(membership.position),
+        curationReason: stringValue(membership.curationReason),
+      };
+    });
+
+  const publicWatchtowerFacets = arrayValue(snapshot.watchtower)
+    .map(objectValue)
+    .filter((value): value is Record<string, unknown> => Boolean(value))
+    .map((binding) => stringValue(binding.publicFacet))
+    .filter(Boolean);
+
+  return {
+    slug: stringValue(eraSnapshot.slug) || era.slug,
+    name: stringValue(eraSnapshot.name) || era.name,
+    eyebrow: stringValue(eraSnapshot.eyebrow),
+    story: stringValue(eraSnapshot.story),
+    kind: stringValue(eraSnapshot.kind) || era.kind,
+    lifecycleState: era.lifecycleState,
+    isPrimary: false,
+    startAt: era.startAt?.toISOString() ?? stringValue(eraSnapshot.startAt) || null,
+    endAt: era.endAt?.toISOString() ?? stringValue(eraSnapshot.endAt) || null,
+    theme: normalizeThemeTokens(eraSnapshot.themeTokens),
+    media,
+    sections: sectionRows,
+    products: archivedProducts,
+    publicWatchtowerFacets,
+  };
+}
+
 export async function resolvePublicEraBySlug(
   slug: string,
   now = new Date()
@@ -34,6 +198,10 @@ export async function resolvePublicEraBySlug(
     .limit(1);
 
   if (!era || !isPublicEra(era, now)) return null;
+
+  if (["CLOSED", "ARCHIVED"].includes(era.lifecycleState)) {
+    return resolveArchivedPublicEra(era, now);
+  }
 
   const [mediaRows, sectionRows, productRows, bindings] = await Promise.all([
     db
