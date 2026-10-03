@@ -25,11 +25,32 @@ export const products = pgTable("products", {
   status: varchar("status", { length: 50 }).notNull().default("active"),
   supplierId: integer("supplier_id"),
   supplierSku: varchar("supplier_sku", { length: 100 }), // SKU at supplier
+  commerceModel: varchar("commerce_model", { length: 50 }).notNull().default("QUALIFIED_SUPPLIER"),
+  sourceProviderSlug: varchar("source_provider_slug", { length: 120 }),
+  brandName: varchar("brand_name", { length: 255 }),
+  productCondition: varchar("product_condition", { length: 40 }).notNull().default("NEW"),
+  authorizationState: varchar("authorization_state", { length: 60 }).notNull().default("UNVERIFIED"),
+  imageRightsState: varchar("image_rights_state", { length: 60 }).notNull().default("LEGACY_UNVERIFIED"),
+  externalCheckoutUrl: varchar("external_checkout_url", { length: 1500 }),
+  externalSellerName: varchar("external_seller_name", { length: 255 }),
+  affiliateNetwork: varchar("affiliate_network", { length: 120 }),
+  affiliateProgram: varchar("affiliate_program", { length: 255 }),
+  externalProductId: varchar("external_product_id", { length: 255 }),
+  productEvidence: json("product_evidence").$type<Record<string, unknown>>().notNull().default({}),
   images: json("images").$type<string[]>().notNull().default([]),
   rating: real("rating").notNull().default(0),
   reviewCount: integer("review_count").notNull().default(0),
   inventory: integer("inventory").notNull().default(100),
   tags: json("tags").$type<string[]>().notNull().default([]),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const outboundReferralClicks = pgTable("outbound_referral_clicks", {
+  id: serial("id").primaryKey(),
+  productId: integer("product_id").notNull(),
+  providerSlug: varchar("provider_slug", { length: 120 }).notNull(),
+  destinationHost: varchar("destination_host", { length: 255 }).notNull(),
+  commerceModel: varchar("commerce_model", { length: 50 }).notNull().default("AFFILIATE_REFERRAL"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
@@ -380,6 +401,25 @@ export const watchCandidates = pgTable("watch_candidates", {
   status: varchar("status", { length: 30 }).notNull().default("NEW"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const watchCandidateSnapshots = pgTable("watch_candidate_snapshots", {
+  id: serial("id").primaryKey(),
+  candidateId: integer("candidate_id").notNull(),
+  providerSlug: varchar("provider_slug", { length: 120 }),
+  sourceKind: varchar("source_kind", { length: 80 }).notNull().default("WEB"),
+  identity: json("identity").$type<Record<string, unknown>>().notNull().default({}),
+  pricing: json("pricing").$type<Record<string, unknown>>().notNull().default({}),
+  supply: json("supply").$type<Record<string, unknown>>().notNull().default({}),
+  trust: json("trust").$type<Record<string, unknown>>().notNull().default({}),
+  demand: json("demand").$type<Record<string, unknown>>().notNull().default({}),
+  economics: json("economics").$type<Record<string, unknown>>().notNull().default({}),
+  scorecard: json("scorecard").$type<Record<string, unknown>>().notNull().default({}),
+  riskFlags: json("risk_flags").$type<string[]>().notNull().default([]),
+  evidenceRefs: json("evidence_refs").$type<Record<string, unknown>[]>().notNull().default([]),
+  sourceDigest: varchar("source_digest", { length: 128 }),
+  observedAt: timestamp("observed_at").defaultNow().notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
 export const actionReceipts = pgTable("action_receipts", {
