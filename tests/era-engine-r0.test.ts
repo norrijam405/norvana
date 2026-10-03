@@ -210,3 +210,26 @@ test("admin Era creation is draft-only and cannot self-activate", async () => {
   assert.doesNotMatch(source, /lifecycleState:\s*"ACTIVE"/);
   assert.doesNotMatch(source, /visibility:\s*"PUBLIC"/);
 });
+
+
+test("Era composition endpoints cannot activate publish or grant Watchtower ACT authority", async () => {
+  const [media, sections, productsRoute, watchtower] = await Promise.all([
+    readFile(new URL("../src/app/api/admin/eras/[id]/media/route.ts", import.meta.url), "utf8"),
+    readFile(new URL("../src/app/api/admin/eras/[id]/sections/route.ts", import.meta.url), "utf8"),
+    readFile(new URL("../src/app/api/admin/eras/[id]/products/route.ts", import.meta.url), "utf8"),
+    readFile(new URL("../src/app/api/admin/eras/[id]/watchtower/route.ts", import.meta.url), "utf8"),
+  ]);
+
+  assert.match(media, /status: "DRAFT"/);
+  assert.match(media, /MEDIA_METADATA_DRAFT_ONLY/);
+  assert.match(sections, /COMPOSE_ONLY_NO_ACTIVATION/);
+  assert.match(productsRoute, /CURATION_ONLY/);
+  assert.match(productsRoute, /does not publish the product/i);
+  assert.match(watchtower, /READ_RECOMMEND_BINDING_ONLY/);
+  assert.match(watchtower, /never enables or grants ACT authority/i);
+
+  for (const source of [media, sections, productsRoute, watchtower]) {
+    assert.doesNotMatch(source, /lifecycleState:\s*"ACTIVE"/);
+    assert.doesNotMatch(source, /visibility:\s*"PUBLIC"/);
+  }
+});
