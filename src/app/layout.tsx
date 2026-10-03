@@ -6,8 +6,9 @@ import { Navbar } from "@/components/navbar";
 import { CartDrawer } from "@/components/cart-drawer";
 
 export const metadata: Metadata = {
-  title: "NORVANA — Curated Objects for Intentional Living",
-  description: "Discover handpicked artisan goods across rotating niche collections. Quality meets curation.",
+  title: "Acre Era — Common needs. Curious finds. Clear reasons.",
+  description:
+    "A curated marketplace for groceries, local producers, useful goods, and rotating discoveries with visible product context.",
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {
