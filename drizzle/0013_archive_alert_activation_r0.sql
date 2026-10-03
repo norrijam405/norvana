@@ -41,7 +41,7 @@ SET
   signal_key = COALESCE(signal_key, 'legacy-' || id::text),
   fingerprint = COALESCE(
     fingerprint,
-    encode(digest('legacy-alert-' || id::text, 'sha256'), 'hex')
+    md5('legacy-alert-' || id::text)
   )
 WHERE signal_key IS NULL OR fingerprint IS NULL;
 
