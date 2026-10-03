@@ -11,6 +11,7 @@ import {
   isEraMediaPublic,
   validateEraSections,
 } from "./policy";
+import { snapshotDigest } from "./archive-canonical";
 
 export type EraReadiness = {
   ready: boolean;
@@ -21,6 +22,8 @@ export type EraReadiness = {
     publicMedia: number;
     products: number;
   };
+  eraUpdatedAt: string;
+  readinessDigest: string;
 };
 
 export async function evaluateEraActivationReadiness(
@@ -95,10 +98,63 @@ export async function evaluateEraActivationReadiness(
     }
   }
 
+  if (era.startAt && now < era.startAt) {
+    blockers.push("ERA_START_TIME_IN_FUTURE");
+  }
+  if (era.endAt && now >= era.endAt) {
+    blockers.push("ERA_END_TIME_ELAPSED");
+  }
+
   if (!era.story.trim()) warnings.push("ERA_STORY_EMPTY");
   if (!era.eyebrow.trim()) warnings.push("ERA_EYEBROW_EMPTY");
   if (!era.startAt) warnings.push("ERA_START_TIME_UNSET");
   if (!era.endAt) warnings.push("ERA_END_TIME_UNSET");
+
+  const readinessDigest = snapshotDigest({
+    era: {
+      id: era.id,
+      kind: era.kind,
+      lifecycleState: era.lifecycleState,
+      visibility: era.visibility,
+      isPrimary: era.isPrimary,
+      startAt: era.startAt?.toISOString() ?? null,
+      endAt: era.endAt?.toISOString() ?? null,
+      updatedAt: era.updatedAt.toISOString(),
+    },
+    sections: [...sections]
+      .sort((a, b) => a.position - b.position || a.id - b.id)
+      .map((section) => ({
+        id: section.id,
+        sectionType: section.sectionType,
+        position: section.position,
+        status: section.status,
+        config: section.config,
+      })),
+    media: [...media]
+      .sort((a, b) => a.id - b.id)
+      .map((asset) => ({
+        id: asset.id,
+        assetType: asset.assetType,
+        status: asset.status,
+        rightsState: asset.rightsState,
+        rightsEvidenceRef: asset.rightsEvidenceRef,
+        mediaUrl: asset.mediaUrl,
+        posterUrl: asset.posterUrl,
+        rightsStartsAt: asset.rightsStartsAt?.toISOString() ?? null,
+        rightsEndsAt: asset.rightsEndsAt?.toISOString() ?? null,
+        altText: asset.altText,
+      })),
+    products: [...assignments]
+      .sort((a, b) => a.assignmentId - b.assignmentId)
+      .map((assignment) => ({
+        assignmentId: assignment.assignmentId,
+        productId: assignment.productId,
+        productStatus: assignment.productStatus,
+        commerceModel: assignment.commerceModel,
+        authorizationState: assignment.authorizationState,
+        externalCheckoutUrl: assignment.externalCheckoutUrl,
+      })),
+  });
 
   return {
     ready: blockers.length === 0,
@@ -109,5 +165,7 @@ export async function evaluateEraActivationReadiness(
       publicMedia: publicMedia.length,
       products: liveAssignments.length,
     },
+    eraUpdatedAt: era.updatedAt.toISOString(),
+    readinessDigest,
   };
 }

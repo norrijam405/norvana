@@ -193,6 +193,23 @@ export const eraEvents = pgTable("era_events", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
+export const eraArchiveSnapshots = pgTable(
+  "era_archive_snapshots",
+  {
+    id: serial("id").primaryKey(),
+    eraId: integer("era_id").notNull(),
+    snapshotKind: varchar("snapshot_kind", { length: 40 }).notNull().default("CLOSURE"),
+    snapshotDigest: varchar("snapshot_digest", { length: 64 }).notNull(),
+    snapshot: json("snapshot").$type<Record<string, unknown>>().notNull(),
+    evidenceRef: varchar("evidence_ref", { length: 1500 }).notNull(),
+    actor: varchar("actor", { length: 120 }).notNull().default("owner"),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (table) => [
+    uniqueIndex("era_archive_snapshots_digest_idx").on(table.snapshotDigest),
+  ]
+);
+
 export const reviews = pgTable(
   "reviews",
   {
@@ -335,15 +352,24 @@ export const customerWatchItems = pgTable(
   ]
 );
 
-export const customerAlertEvents = pgTable("customer_alert_events", {
-  id: serial("id").primaryKey(),
-  watchItemId: integer("watch_item_id").notNull(),
-  eventType: varchar("event_type", { length: 60 }).notNull(),
-  payload: json("payload").$type<Record<string, unknown>>().notNull().default({}),
-  status: varchar("status", { length: 30 }).notNull().default("PENDING"),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-  deliveredAt: timestamp("delivered_at"),
-});
+export const customerAlertEvents = pgTable(
+  "customer_alert_events",
+  {
+    id: serial("id").primaryKey(),
+    watchItemId: integer("watch_item_id").notNull(),
+    eventType: varchar("event_type", { length: 60 }).notNull(),
+    signalKey: varchar("signal_key", { length: 255 }).notNull(),
+    fingerprint: varchar("fingerprint", { length: 64 }).notNull(),
+    evidenceRef: varchar("evidence_ref", { length: 1500 }),
+    payload: json("payload").$type<Record<string, unknown>>().notNull().default({}),
+    status: varchar("status", { length: 30 }).notNull().default("PENDING"),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    deliveredAt: timestamp("delivered_at"),
+  },
+  (table) => [
+    uniqueIndex("customer_alert_events_fingerprint_idx").on(table.fingerprint),
+  ]
+);
 
 export const productRoutes = pgTable("product_routes", {
   id: serial("id").primaryKey(),
