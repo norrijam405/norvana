@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import { and, asc, eq } from "drizzle-orm";
+import { asc, eq } from "drizzle-orm";
 import { db } from "@/db";
 import {
   eraArchiveSnapshots,
@@ -12,6 +12,7 @@ import {
 } from "@/db/schema";
 
 function stable(value: unknown): unknown {
+  if (value instanceof Date) return value.toISOString();
   if (Array.isArray(value)) return value.map(stable);
   if (value && typeof value === "object") {
     return Object.fromEntries(
@@ -20,7 +21,6 @@ function stable(value: unknown): unknown {
         .map(([key, nested]) => [key, stable(nested)])
     );
   }
-  if (value instanceof Date) return value.toISOString();
   return value;
 }
 
