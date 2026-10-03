@@ -42,6 +42,8 @@ Database UPDATE and DELETE operations on `era_archive_snapshots` are rejected by
 
 A later archive UI may render only assets whose rights remain valid; immutable history does not grant perpetual public media rights.
 
+The public Era resolver already fails closed to the latest immutable closure snapshot for CLOSED/ARCHIVED Eras. It does not rebuild historical Eras from today's mutable product catalog. Archived third-party product imagery is hidden by default unless the archived product image is Acre Era-owned; Era-level media is re-checked against its rights window at read time.
+
 ## Alert evaluator
 
 Watchtower/admin signals may be evaluated against pseudonymous watchlists.
@@ -90,6 +92,8 @@ If these are absent or invalid, route activation fails closed.
 ### Era
 
 An Era may become ACTIVE only after the existing Era readiness evaluator passes and an activation evidence reference is supplied.
+
+The readiness result includes a SHA-256 `readinessDigest` across the relevant Era revision, sections, media-rights state, product memberships, and product authorization/checkout state. Activation must present that exact digest. If the readiness state changed, activation fails and the operator must re-read readiness.
 
 Making an Era the primary home Era additionally relies on the database single-active-primary invariant.
 
