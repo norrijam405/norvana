@@ -87,6 +87,7 @@ test("price-drop alert honors customer threshold", () => {
     targetType: "PRODUCT",
     targetKey: "laptop",
     signalKey: "price-1",
+    evidenceRef: "watchtower:price:1",
     payload: { currentPriceCents: 89900 },
   });
 
