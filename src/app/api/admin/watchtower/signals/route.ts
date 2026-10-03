@@ -1,6 +1,55 @@
+import { desc } from "drizzle-orm";
 import { NextRequest, NextResponse } from "next/server";
-import { requireCurrentRecoveryAdmin } from "@/lib/admin-guard";
+import { db } from "@/db";
+import { watchtowerSignals } from "@/db/schema";
+import {
+  requireCurrentRecoveryAdmin,
+  requireCurrentRecoveryAdminRead,
+} from "@/lib/admin-guard";
+import { signalIsFresh } from "@/lib/watchtower/signal-policy";
 import { ingestWatchtowerSignal } from "@/lib/watchtower/signal-bus";
+
+export async function GET(req: NextRequest) {
+  const gate = await requireCurrentRecoveryAdminRead(req);
+  if (gate) return gate;
+
+  const requestedLimit = Number(req.nextUrl.searchParams.get("limit") || 50);
+  const limit =
+    Number.isInteger(requestedLimit) && requestedLimit > 0
+      ? Math.min(requestedLimit, 100)
+      : 50;
+
+  const rows = await db
+    .select({
+      id: watchtowerSignals.id,
+      signalKey: watchtowerSignals.signalKey,
+      signalType: watchtowerSignals.signalType,
+      subjectType: watchtowerSignals.subjectType,
+      subjectKey: watchtowerSignals.subjectKey,
+      truthState: watchtowerSignals.truthState,
+      sourceKind: watchtowerSignals.sourceKind,
+      evidenceRef: watchtowerSignals.evidenceRef,
+      observedAt: watchtowerSignals.observedAt,
+      expiresAt: watchtowerSignals.expiresAt,
+      publicPayload: watchtowerSignals.publicPayload,
+      payloadDigest: watchtowerSignals.payloadDigest,
+      createdAt: watchtowerSignals.createdAt,
+    })
+    .from(watchtowerSignals)
+    .orderBy(desc(watchtowerSignals.observedAt), desc(watchtowerSignals.id))
+    .limit(limit);
+
+  return NextResponse.json(
+    {
+      signals: rows.map((row) => ({
+        ...row,
+        fresh: signalIsFresh(row),
+      })),
+      privatePayloadIncluded: false,
+    },
+    { headers: { "cache-control": "no-store" } }
+  );
+}
 
 export async function POST(req: NextRequest) {
   const gate = await requireCurrentRecoveryAdmin(req);
