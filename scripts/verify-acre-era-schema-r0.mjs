@@ -125,6 +125,7 @@ for (const name of [
   "customer_alert_events_fingerprint_idx",
   "watchtower_signals_signal_key_idx",
   "watchtower_signal_projections_signal_projector_idx",
+  "watchtower_signal_projections_key_idx",
 ]) {
   assert(await indexExists(name), "missing index: " + name);
 }
