@@ -79,6 +79,24 @@ const PUBLIC_KEYS = new Set([
   "availabilityState",
 ]);
 
+const NUMERIC_PUBLIC_KEYS = new Set([
+  "routeId",
+  "requestId",
+  "currentPriceCents",
+  "previousPriceCents",
+  "deliveryMinDays",
+  "deliveryMaxDays",
+  "demandCount",
+  "rating",
+  "reviewCount",
+]);
+
+const LONG_STRING_PUBLIC_KEYS = new Set([
+  "publicNote",
+  "warrantySummary",
+  "returnSummary",
+]);
+
 const PRIVATE_DENY_FRAGMENTS = [
   "password",
   "secret",
@@ -99,6 +117,23 @@ const PRIVATE_DENY_FRAGMENTS = [
   "payment_intent",
   "actorkeyhash",
   "actor_key_hash",
+  "credential",
+  "bearer",
+  "authorizationheader",
+  "authorization_header",
+  "customerid",
+  "customer_id",
+  "userid",
+  "user_id",
+  "ipaddress",
+  "ip_address",
+  "ssn",
+  "socialsecurity",
+  "social_security",
+  "taxid",
+  "tax_id",
+  "dateofbirth",
+  "date_of_birth",
 ];
 
 function clean(value: unknown, max: number) {
@@ -130,6 +165,34 @@ function containsDeniedPrivateKey(value: unknown): boolean {
     if (containsDeniedPrivateKey(nested)) return true;
   }
   return false;
+}
+
+function normalizePublicValue(key: string, value: unknown) {
+  if (NUMERIC_PUBLIC_KEYS.has(key)) {
+    if (typeof value !== "number" || !Number.isFinite(value) || value < 0) {
+      throw new Error("WATCHTOWER_SIGNAL_PUBLIC_PAYLOAD_VALUE_INVALID");
+    }
+    if (
+      key !== "rating" &&
+      !Number.isInteger(value)
+    ) {
+      throw new Error("WATCHTOWER_SIGNAL_PUBLIC_PAYLOAD_VALUE_INVALID");
+    }
+    if (key === "rating" && value > 5) {
+      throw new Error("WATCHTOWER_SIGNAL_PUBLIC_PAYLOAD_VALUE_INVALID");
+    }
+    return value;
+  }
+
+  if (typeof value !== "string") {
+    throw new Error("WATCHTOWER_SIGNAL_PUBLIC_PAYLOAD_VALUE_INVALID");
+  }
+
+  const max = LONG_STRING_PUBLIC_KEYS.has(key) ? 3000 : 500;
+  if (value.length > max) {
+    throw new Error("WATCHTOWER_SIGNAL_PUBLIC_PAYLOAD_VALUE_TOO_LARGE");
+  }
+  return value;
 }
 
 export type WatchtowerSignalInput = {
@@ -212,13 +275,17 @@ export function parseWatchtowerSignal(
     "WATCHTOWER_SIGNAL_PUBLIC_PAYLOAD_INVALID",
     12_000
   );
-  const publicPayload = Object.fromEntries(
-    Object.entries(rawPublic).filter(([key]) => PUBLIC_KEYS.has(key))
-  );
-
-  if (Object.keys(rawPublic).length !== Object.keys(publicPayload).length) {
+  const publicEntries = Object.entries(rawPublic);
+  if (publicEntries.some(([key]) => !PUBLIC_KEYS.has(key))) {
     throw new Error("WATCHTOWER_SIGNAL_PUBLIC_PAYLOAD_KEY_NOT_ALLOWED");
   }
+
+  const publicPayload = Object.fromEntries(
+    publicEntries.map(([key, value]) => [
+      key,
+      normalizePublicValue(key, value),
+    ])
+  );
 
   const privatePayload = jsonObject(
     input.privatePayload,
