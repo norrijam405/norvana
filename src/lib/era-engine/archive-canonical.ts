@@ -1,7 +1,7 @@
 import {
   canonicalJson,
   sha256CanonicalDigest,
-} from "@/lib/evidence/canonical-json";
+} from "../evidence/canonical-json.ts";
 
 export function canonicalSnapshotJson(value: unknown) {
   return canonicalJson(value);
