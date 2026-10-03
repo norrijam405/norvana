@@ -4,6 +4,8 @@
 **Status:** implementation contract  
 **Goal:** allow Acre Era to create many distinct customer worlds without cloning storefront code
 
+**Build doctrine:** skeleton first, skin second. The backend contract must exist before page-specific visual work.
+
 ## 1. Core entity: Era
 
 An Era is a versioned, bounded curation context.
