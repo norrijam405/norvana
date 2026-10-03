@@ -677,6 +677,46 @@ export const watchCandidateSnapshots = pgTable("watch_candidate_snapshots", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
+export const watchtowerSignals = pgTable(
+  "watchtower_signals",
+  {
+    id: serial("id").primaryKey(),
+    signalKey: varchar("signal_key", { length: 255 }).notNull(),
+    signalType: varchar("signal_type", { length: 80 }).notNull(),
+    subjectType: varchar("subject_type", { length: 40 }).notNull(),
+    subjectKey: varchar("subject_key", { length: 255 }).notNull(),
+    truthState: varchar("truth_state", { length: 30 }).notNull().default("OBSERVED"),
+    sourceKind: varchar("source_kind", { length: 60 }).notNull(),
+    evidenceRef: varchar("evidence_ref", { length: 1500 }).notNull(),
+    observedAt: timestamp("observed_at").notNull(),
+    expiresAt: timestamp("expires_at"),
+    publicPayload: json("public_payload").$type<Record<string, unknown>>().notNull().default({}),
+    privatePayload: json("private_payload").$type<Record<string, unknown>>().notNull().default({}),
+    payloadDigest: varchar("payload_digest", { length: 64 }).notNull(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (table) => [uniqueIndex("watchtower_signals_signal_key_idx").on(table.signalKey)]
+);
+
+export const watchtowerSignalProjections = pgTable(
+  "watchtower_signal_projections",
+  {
+    id: serial("id").primaryKey(),
+    signalId: integer("signal_id").notNull(),
+    projector: varchar("projector", { length: 100 }).notNull(),
+    projectionKey: varchar("projection_key", { length: 255 }).notNull(),
+    result: json("result").$type<Record<string, unknown>>().notNull().default({}),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (table) => [
+    uniqueIndex("watchtower_signal_projections_signal_projector_idx").on(
+      table.signalId,
+      table.projector
+    ),
+    uniqueIndex("watchtower_signal_projections_key_idx").on(table.projectionKey),
+  ]
+);
+
 export const actionReceipts = pgTable("action_receipts", {
   id: serial("id").primaryKey(),
   actionType: varchar("action_type", { length: 100 }).notNull(),
