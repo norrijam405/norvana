@@ -43,7 +43,7 @@ jobs:
         run: npm run typecheck
 
       - name: Lint Era Engine surface
-        run: npx eslint src/lib/era-engine src/app/api/eras tests/era-engine-r0.test.ts
+        run: npx eslint src/lib/era-engine src/app/api/eras src/app/api/admin/eras tests/era-engine-r0.test.ts
 
       - name: Production build
         env:
