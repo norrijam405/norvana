@@ -10,6 +10,7 @@ const links = [
   { href: "/", label: "Home" },
   { href: "/market", label: "Market" },
   { href: "/shop", label: "Goods" },
+  { href: "/partners", label: "Partner Finds" },
   { href: "/#era-drop", label: "Era Drops" },
   { href: "/archive", label: "Archive" },
 ];

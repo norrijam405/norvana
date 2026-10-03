@@ -28,6 +28,13 @@ export const ACRE_ERA_WORLDS = [
     href: "/market#local",
   },
   {
+    slug: "partners",
+    label: "Partner Finds",
+    eyebrow: "Brands + referrals",
+    description: "Curated products from approved partners, with transparent handoff when checkout lives elsewhere.",
+    href: "/partners",
+  },
+  {
     slug: "finds",
     label: "Finds",
     eyebrow: "Curious + changing",

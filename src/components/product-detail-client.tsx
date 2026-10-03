@@ -20,6 +20,12 @@ type Product = {
   reviewCount: number;
   inventory: number;
   supplierId?: number | null;
+  commerceModel?: string;
+  sourceProviderSlug?: string | null;
+  brandName?: string | null;
+  authorizationState?: string;
+  imageRightsState?: string;
+  externalSellerName?: string | null;
   tags: string[];
 };
 
@@ -83,6 +89,14 @@ export function ProductDetailClient({
   const [submitMessage, setSubmitMessage] = useState("");
   const [reviewError, setReviewError] = useState("");
   const { addItem } = useCart();
+  const isAffiliate = product.commerceModel === "AFFILIATE_REFERRAL";
+  const imageRightsOk = [
+    "OWNED",
+    "BRAND_AUTHORIZED",
+    "SUPPLIER_AUTHORIZED",
+    "AFFILIATE_FEED_AUTHORIZED",
+  ].includes(product.imageRightsState || "");
+  const displayImage = imageRightsOk ? product.images?.[0] : null;
 
   useEffect(() => {
     let cancelled = false;
@@ -216,9 +230,20 @@ export function ProductDetailClient({
             <motion.div
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
-              className="aspect-square bg-surface rounded-2xl border border-border flex items-center justify-center text-8xl"
+              className="aspect-square overflow-hidden bg-surface rounded-2xl border border-border flex items-center justify-center text-8xl"
             >
-              {PRODUCT_EMOJIS[product.niche] || "🎁"}
+              {displayImage ? (
+                // Feed/supplier imagery is rendered only when rights are explicitly recorded.
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={displayImage}
+                  alt={product.name}
+                  className="h-full w-full object-contain bg-white"
+                  referrerPolicy="no-referrer"
+                />
+              ) : (
+                PRODUCT_EMOJIS[product.niche] || "🎁"
+              )}
             </motion.div>
 
             <motion.div
@@ -268,43 +293,68 @@ export function ProductDetailClient({
                 ))}
               </div>
 
-              <div className="mt-8 flex items-center gap-4">
-                <div className="flex items-center border border-border rounded-lg">
-                  <button
-                    onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                    className="px-4 py-3 hover:bg-surface-hover transition-colors text-lg"
+              {isAffiliate ? (
+                <div className="mt-8 rounded-2xl border border-wheat/50 bg-wheat/15 p-5">
+                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-leaf">
+                    Partner checkout
+                  </p>
+                  <p className="mt-2 text-sm leading-6 text-muted">
+                    This item is showcased by Acre Era, but checkout happens with{" "}
+                    <strong className="text-soil">{product.externalSellerName || "the partner retailer"}</strong>.
+                    Acre Era may earn a commission if you buy through the link.
+                  </p>
+                  <a
+                    href={"/api/outbound/" + product.slug}
+                    className="btn-primary mt-5 w-full py-4 text-base"
+                    rel="sponsored nofollow"
                   >
-                    −
-                  </button>
-                  <span className="px-4 py-3 font-medium min-w-[3rem] text-center">{quantity}</span>
-                  <button
-                    onClick={() => setQuantity(quantity + 1)}
-                    className="px-4 py-3 hover:bg-surface-hover transition-colors text-lg"
-                  >
-                    +
-                  </button>
+                    View at {product.externalSellerName || "partner"} →
+                  </a>
+                  <p className="mt-3 text-xs leading-5 text-muted">
+                    Price, stock, shipping, returns, warranty, and final checkout terms are controlled by the partner and should be confirmed there.
+                  </p>
                 </div>
-                <span className="text-sm text-muted">{product.inventory} in stock</span>
-              </div>
+              ) : (
+                <>
+                  <div className="mt-8 flex items-center gap-4">
+                    <div className="flex items-center border border-border rounded-lg">
+                      <button
+                        onClick={() => setQuantity(Math.max(1, quantity - 1))}
+                        className="px-4 py-3 hover:bg-surface-hover transition-colors text-lg"
+                      >
+                        −
+                      </button>
+                      <span className="px-4 py-3 font-medium min-w-[3rem] text-center">{quantity}</span>
+                      <button
+                        onClick={() => setQuantity(quantity + 1)}
+                        className="px-4 py-3 hover:bg-surface-hover transition-colors text-lg"
+                      >
+                        +
+                      </button>
+                    </div>
+                    <span className="text-sm text-muted">{product.inventory} in stock</span>
+                  </div>
 
-              <button onClick={handleAddToCart} className="btn-primary w-full mt-6 py-4 text-base">
-                Add to Cart — {"$"}{(product.price * quantity).toFixed(2)}
-              </button>
+                  <button onClick={handleAddToCart} className="btn-primary w-full mt-6 py-4 text-base">
+                    Add to Cart — {"$"}{(product.price * quantity).toFixed(2)}
+                  </button>
 
-              <div className="mt-6 grid grid-cols-3 gap-4 text-center text-xs text-muted">
-                <div className="p-3 bg-surface-hover rounded-lg">
-                  <p className="text-lg mb-1">🚚</p>
-                  <p>Free Shipping $75+</p>
-                </div>
-                <div className="p-3 bg-surface-hover rounded-lg">
-                  <p className="text-lg mb-1">↩️</p>
-                  <p>30-Day Returns</p>
-                </div>
-                <div className="p-3 bg-surface-hover rounded-lg">
-                  <p className="text-lg mb-1">✨</p>
-                  <p>Quality Guarantee</p>
-                </div>
-              </div>
+                  <div className="mt-6 grid grid-cols-3 gap-4 text-center text-xs text-muted">
+                    <div className="p-3 bg-surface-hover rounded-lg">
+                      <p className="text-lg mb-1">🚚</p>
+                      <p>Shipping shown before checkout</p>
+                    </div>
+                    <div className="p-3 bg-surface-hover rounded-lg">
+                      <p className="text-lg mb-1">↩️</p>
+                      <p>Return terms by source</p>
+                    </div>
+                    <div className="p-3 bg-surface-hover rounded-lg">
+                      <p className="text-lg mb-1">✨</p>
+                      <p>Source disclosed</p>
+                    </div>
+                  </div>
+                </>
+              )}
             </motion.div>
           </div>
 

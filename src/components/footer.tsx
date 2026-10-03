@@ -62,6 +62,8 @@ export function Footer() {
             <ul className="space-y-2 text-sm">
               <li><Link href="/market" className="hover:text-cream">Market</Link></li>
               <li><Link href="/shop" className="hover:text-cream">Goods</Link></li>
+              <li><Link href="/partners" className="hover:text-cream">Partner Finds</Link></li>
+              <li><Link href="/partners/archive" className="hover:text-cream">Partner Archive</Link></li>
               <li><Link href="/#era-drop" className="hover:text-cream">Era Drops</Link></li>
               <li><Link href="/archive" className="hover:text-cream">Archive</Link></li>
             </ul>

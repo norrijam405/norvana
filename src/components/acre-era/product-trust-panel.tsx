@@ -11,6 +11,12 @@ type ProductLike = {
   name: string;
   reviewCount: number;
   supplierId?: number | null;
+  commerceModel?: string | null;
+  sourceProviderSlug?: string | null;
+  brandName?: string | null;
+  authorizationState?: string | null;
+  imageRightsState?: string | null;
+  externalSellerName?: string | null;
   tags?: string[];
 };
 
@@ -44,6 +50,19 @@ export function ProductTrustPanel({
     ["NORVANA_PURCHASE", "EXTERNAL_PURCHASE"].includes(review.verificationState || "")
   ).length;
 
+  const sourceLabel =
+    product.commerceModel === "AFFILIATE_REFERRAL"
+      ? `Referral · ${product.externalSellerName || product.sourceProviderSlug || "partner"}`
+      : product.commerceModel === "AUTHORIZED_DISTRIBUTOR"
+        ? "Authorized distribution"
+        : product.commerceModel === "BRAND_DIRECT"
+          ? "Brand direct"
+          : product.commerceModel === "LUXURY_DROPSHIP"
+            ? "Luxury supplier"
+            : product.supplierId
+              ? "Qualified supplier"
+              : "Acre Era catalog";
+
   const stage =
     reviews.length >= 10
       ? "Established customer signal"
@@ -64,8 +83,10 @@ export function ProductTrustPanel({
         <span className="badge bg-wheat/35 text-soil">{stage}</span>
       </div>
 
-      <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <Signal label="Source" value={product.supplierId ? "Supplier-linked catalog" : "Acre Era catalog"} />
+      <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        <Signal label="Source" value={sourceLabel} />
+        <Signal label="Authorization" value={(product.authorizationState || "UNVERIFIED").replaceAll("_", " ")} />
+        <Signal label="Image rights" value={(product.imageRightsState || "UNVERIFIED").replaceAll("_", " ")} />
         <Signal label="Purchase evidence" value={verifiedCount ? `${verifiedCount} verified review${verifiedCount === 1 ? "" : "s"}` : "No verified review yet"} />
         <Signal label="Product" value={productRating ? `${productRating.toFixed(1)} / 5` : "Not enough evidence"} />
         <Signal
