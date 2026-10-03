@@ -75,7 +75,7 @@ export function alertFingerprint(input: {
     .digest("hex");
 }
 
-function watchMatchesSignal(
+export function watchMatchesAlertSignal(
   watch: typeof customerWatchItems.$inferSelect,
   signal: ReturnType<typeof sanitizeAlertSignal>
 ) {
@@ -113,7 +113,7 @@ export async function evaluateAndQueueCustomerAlerts(
   let queued = 0;
 
   for (const watch of watches) {
-    if (!watchMatchesSignal(watch, signal)) continue;
+    if (!watchMatchesAlertSignal(watch, signal)) continue;
     matched += 1;
 
     const fingerprint = alertFingerprint({
