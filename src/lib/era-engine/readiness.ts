@@ -21,6 +21,7 @@ export type EraReadiness = {
     publicMedia: number;
     products: number;
   };
+  eraUpdatedAt: string;
 };
 
 export async function evaluateEraActivationReadiness(
@@ -109,5 +110,6 @@ export async function evaluateEraActivationReadiness(
       publicMedia: publicMedia.length,
       products: liveAssignments.length,
     },
+    eraUpdatedAt: era.updatedAt.toISOString(),
   };
 }
