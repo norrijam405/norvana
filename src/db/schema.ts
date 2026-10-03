@@ -54,6 +54,41 @@ export const outboundReferralClicks = pgTable("outbound_referral_clicks", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
+export const partnerCollections = pgTable(
+  "partner_collections",
+  {
+    id: serial("id").primaryKey(),
+    slug: varchar("slug", { length: 160 }).notNull(),
+    title: varchar("title", { length: 255 }).notNull(),
+    eyebrow: varchar("eyebrow", { length: 120 }).notNull().default("Partner Finds"),
+    description: text("description").notNull().default(""),
+    theme: varchar("theme", { length: 120 }).notNull().default("curated"),
+    heroImage: varchar("hero_image", { length: 1000 }),
+    startDate: varchar("start_date", { length: 50 }).notNull().default(""),
+    endDate: varchar("end_date", { length: 50 }).notNull().default(""),
+    isActive: boolean("is_active").notNull().default(false),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (table) => [uniqueIndex("partner_collections_slug_idx").on(table.slug)]
+);
+
+export const partnerCollectionProducts = pgTable(
+  "partner_collection_products",
+  {
+    id: serial("id").primaryKey(),
+    collectionId: integer("collection_id").notNull(),
+    productId: integer("product_id").notNull(),
+    position: integer("position").notNull().default(0),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (table) => [
+    uniqueIndex("partner_collection_products_unique_idx").on(
+      table.collectionId,
+      table.productId
+    ),
+  ]
+);
+
 export const reviews = pgTable(
   "reviews",
   {
