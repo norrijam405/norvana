@@ -233,3 +233,20 @@ test("Era composition endpoints cannot activate publish or grant Watchtower ACT 
     assert.doesNotMatch(source, /visibility:\s*"PUBLIC"/);
   }
 });
+
+
+test("Era readiness gate checks hero, public media, products, and affiliate authorization without activating", async () => {
+  const [readiness, route] = await Promise.all([
+    readFile(new URL("../src/lib/era-engine/readiness.ts", import.meta.url), "utf8"),
+    readFile(new URL("../src/app/api/admin/eras/[id]/readiness/route.ts", import.meta.url), "utf8"),
+  ]);
+
+  assert.match(readiness, /ERA_HERO_SECTION_MISSING/);
+  assert.match(readiness, /ERA_PUBLIC_HERO_MEDIA_MISSING/);
+  assert.match(readiness, /ERA_ACTIVE_PRODUCT_MISSING/);
+  assert.match(readiness, /ERA_AFFILIATE_AUTHORIZATION_MISSING/);
+  assert.match(readiness, /ERA_AFFILIATE_DESTINATION_MISSING/);
+  assert.match(route, /READINESS_ONLY_NO_ACTIVATION/);
+  assert.doesNotMatch(route, /\.update\(/);
+  assert.doesNotMatch(route, /\.insert\(/);
+});
