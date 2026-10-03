@@ -4,6 +4,9 @@ on:
   push:
     branches:
       - "evidence/2026-10-03-acre-era-lifecycle-fresh-rechallenge-frc02"
+  pull_request:
+    branches:
+      - "feature/2026-10-03-acre-era-lifecycle-proof-r0"
 
 permissions:
   contents: read
