@@ -195,3 +195,18 @@ test("north-star docs are durable and root README points successors to them", as
   assert.match(blueprint, /create Era data -> assign approved assets/i);
   assert.match(contract, /skeleton first/i);
 });
+
+
+test("admin Era creation is draft-only and cannot self-activate", async () => {
+  const source = await readFile(
+    new URL("../src/app/api/admin/eras/route.ts", import.meta.url),
+    "utf8"
+  );
+
+  assert.match(source, /lifecycleState: "DRAFT"/);
+  assert.match(source, /visibility: "PRIVATE"/);
+  assert.match(source, /isPrimary: false/);
+  assert.match(source, /authority: "DRAFT_ONLY"/);
+  assert.doesNotMatch(source, /lifecycleState:\s*"ACTIVE"/);
+  assert.doesNotMatch(source, /visibility:\s*"PUBLIC"/);
+});
