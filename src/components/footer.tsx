@@ -46,7 +46,7 @@ export function Footer() {
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="Email for new Eras + local drops"
-                    className="min-w-0 flex-1 rounded-full border border-cream/15 bg-cream/8 px-4 py-2.5 text-sm text-cream placeholder:text-cream/35 focus:outline-none focus:ring-2 focus:ring-wheat"
+                    className="min-w-0 flex-1 rounded-full border border-cream/15 bg-cream/[0.08] px-4 py-2.5 text-sm text-cream placeholder:text-cream/35 focus:outline-none focus:ring-2 focus:ring-wheat"
                     required
                   />
                   <button type="submit" className="rounded-full bg-wheat px-5 py-2.5 text-sm font-semibold text-soil transition hover:bg-cream">
