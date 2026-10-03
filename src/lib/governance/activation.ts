@@ -57,7 +57,7 @@ export function routeActivationThresholdsFromEnv() {
   const contribution = process.env.NORVANA_ROUTE_MIN_CONTRIBUTION_CENTS;
   const margin = process.env.NORVANA_ROUTE_MIN_MARGIN_BPS;
 
-  if (contribution === undefined || margin === undefined) {
+  if (!contribution?.trim() || !margin?.trim()) {
     return {
       ok: false as const,
       code: "ROUTE_ACTIVATION_POLICY_NOT_CONFIGURED",
@@ -69,7 +69,9 @@ export function routeActivationThresholdsFromEnv() {
 
   if (
     !Number.isInteger(minContributionCents) ||
-    !Number.isInteger(minContributionMarginBps)
+    !Number.isInteger(minContributionMarginBps) ||
+    minContributionCents < 0 ||
+    minContributionMarginBps < 0
   ) {
     return {
       ok: false as const,
@@ -136,6 +138,12 @@ export function evaluateRouteActivationReadiness(
   }
   if (route.checkoutOwner === "ACRE_ERA" && route.checkoutUrl) {
     blockers.push("ROUTE_INTERNAL_CHECKOUT_HAS_EXTERNAL_URL");
+  }
+  if (route.routeType === "AFFILIATE_REFERRAL" && route.checkoutOwner !== "PARTNER") {
+    blockers.push("ROUTE_AFFILIATE_CHECKOUT_OWNER_INVALID");
+  }
+  if (route.routeType === "ACRE_ERA_DIRECT" && route.checkoutOwner !== "ACRE_ERA") {
+    blockers.push("ROUTE_DIRECT_CHECKOUT_OWNER_INVALID");
   }
 
   if (route.routeType === "AFFILIATE_REFERRAL") {
