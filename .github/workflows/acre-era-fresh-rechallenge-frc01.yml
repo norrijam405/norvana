@@ -1,0 +1,48 @@
+name: Acre Era Fresh Rechallenge FRC-01
+
+on:
+  push:
+    branches:
+      - "evidence/2026-10-03-acre-era-lifecycle-fresh-rechallenge-fc02"
+
+permissions:
+  contents: read
+
+jobs:
+  fresh-rechallenge:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: acre_era_fresh_rechallenge
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d acre_era_fresh_rechallenge"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 12
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/acre_era_fresh_rechallenge
+      PGPASSWORD: postgres
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: 22
+      - name: Install dependencies
+        run: npm install --ignore-scripts --no-audit --no-fund
+      - name: Create explicit pre-0007 legacy baseline
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f tests/fixtures/norvana-pre-0007-baseline.sql
+      - name: Apply proven migration chain
+        run: |
+          set -euo pipefail
+          for file in $(find drizzle -maxdepth 1 -type f -name '*.sql' | sort); do
+            psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f "$file"
+          done
+      - name: Execute Fresh Re-Challenger FRC-01 reproducer
+        run: node --experimental-strip-types --experimental-loader ./scripts/node-ts-alias-loader.mjs challenge/acre-era-lifecycle-r0/AE-LRP-R0-FRC-01_REPRO.mjs
