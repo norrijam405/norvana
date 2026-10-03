@@ -96,6 +96,13 @@ export async function evaluateEraActivationReadiness(
     }
   }
 
+  if (era.startAt && now < era.startAt) {
+    blockers.push("ERA_START_TIME_IN_FUTURE");
+  }
+  if (era.endAt && now >= era.endAt) {
+    blockers.push("ERA_END_TIME_ELAPSED");
+  }
+
   if (!era.story.trim()) warnings.push("ERA_STORY_EMPTY");
   if (!era.eyebrow.trim()) warnings.push("ERA_EYEBROW_EMPTY");
   if (!era.startAt) warnings.push("ERA_START_TIME_UNSET");
