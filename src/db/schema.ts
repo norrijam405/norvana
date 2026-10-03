@@ -89,6 +89,110 @@ export const partnerCollectionProducts = pgTable(
   ]
 );
 
+export const eras = pgTable(
+  "eras",
+  {
+    id: serial("id").primaryKey(),
+    slug: varchar("slug", { length: 180 }).notNull(),
+    name: varchar("name", { length: 255 }).notNull(),
+    eyebrow: varchar("eyebrow", { length: 160 }).notNull().default(""),
+    story: text("story").notNull().default(""),
+    kind: varchar("kind", { length: 40 }).notNull().default("CATEGORY"),
+    lifecycleState: varchar("lifecycle_state", { length: 40 }).notNull().default("DRAFT"),
+    visibility: varchar("visibility", { length: 30 }).notNull().default("PRIVATE"),
+    isPrimary: boolean("is_primary").notNull().default(false),
+    startAt: timestamp("start_at"),
+    endAt: timestamp("end_at"),
+    themeTokens: json("theme_tokens").$type<Record<string, unknown>>().notNull().default({}),
+    watchtowerProfile: json("watchtower_profile").$type<Record<string, unknown>>().notNull().default({}),
+    archivePolicy: json("archive_policy").$type<Record<string, unknown>>().notNull().default({}),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  },
+  (table) => [uniqueIndex("eras_slug_idx").on(table.slug)]
+);
+
+export const eraMediaAssets = pgTable("era_media_assets", {
+  id: serial("id").primaryKey(),
+  eraId: integer("era_id").notNull(),
+  assetType: varchar("asset_type", { length: 50 }).notNull(),
+  mediaUrl: varchar("media_url", { length: 1500 }).notNull(),
+  posterUrl: varchar("poster_url", { length: 1500 }),
+  rightsState: varchar("rights_state", { length: 60 }).notNull().default("PENDING_VERIFICATION"),
+  rightsEvidenceRef: varchar("rights_evidence_ref", { length: 1500 }),
+  sourceLabel: varchar("source_label", { length: 255 }),
+  sourceUrl: varchar("source_url", { length: 1500 }),
+  brandName: varchar("brand_name", { length: 255 }),
+  providerSlug: varchar("provider_slug", { length: 120 }),
+  rightsStartsAt: timestamp("rights_starts_at"),
+  rightsEndsAt: timestamp("rights_ends_at"),
+  status: varchar("status", { length: 30 }).notNull().default("DRAFT"),
+  sha256: varchar("sha256", { length: 64 }),
+  altText: varchar("alt_text", { length: 500 }).notNull().default(""),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const eraSections = pgTable(
+  "era_sections",
+  {
+    id: serial("id").primaryKey(),
+    eraId: integer("era_id").notNull(),
+    sectionType: varchar("section_type", { length: 60 }).notNull(),
+    position: integer("position").notNull().default(0),
+    config: json("config").$type<Record<string, unknown>>().notNull().default({}),
+    status: varchar("status", { length: 30 }).notNull().default("ENABLED"),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  },
+  (table) => [uniqueIndex("era_sections_position_idx").on(table.eraId, table.position)]
+);
+
+export const eraProducts = pgTable(
+  "era_products",
+  {
+    id: serial("id").primaryKey(),
+    eraId: integer("era_id").notNull(),
+    productId: integer("product_id").notNull(),
+    position: integer("position").notNull().default(0),
+    role: varchar("role", { length: 30 }).notNull().default("STANDARD"),
+    curationReason: text("curation_reason").notNull().default(""),
+    evidenceRef: varchar("evidence_ref", { length: 1500 }),
+    status: varchar("status", { length: 30 }).notNull().default("ACTIVE"),
+    assignedAt: timestamp("assigned_at").defaultNow().notNull(),
+    removedAt: timestamp("removed_at"),
+  },
+  (table) => [uniqueIndex("era_products_unique_idx").on(table.eraId, table.productId)]
+);
+
+export const eraWatchtowerBindings = pgTable(
+  "era_watchtower_bindings",
+  {
+    id: serial("id").primaryKey(),
+    eraId: integer("era_id").notNull(),
+    watchJobSlug: varchar("watch_job_slug", { length: 160 }).notNull(),
+    importance: integer("importance").notNull().default(50),
+    publicFacet: varchar("public_facet", { length: 80 }),
+    config: json("config").$type<Record<string, unknown>>().notNull().default({}),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (table) => [
+    uniqueIndex("era_watchtower_bindings_unique_idx").on(
+      table.eraId,
+      table.watchJobSlug
+    ),
+  ]
+);
+
+export const eraEvents = pgTable("era_events", {
+  id: serial("id").primaryKey(),
+  eraId: integer("era_id").notNull(),
+  eventType: varchar("event_type", { length: 80 }).notNull(),
+  actor: varchar("actor", { length: 120 }).notNull().default("system"),
+  payload: json("payload").$type<Record<string, unknown>>().notNull().default({}),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
 export const reviews = pgTable(
   "reviews",
   {
