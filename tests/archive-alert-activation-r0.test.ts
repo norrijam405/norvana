@@ -242,4 +242,33 @@ test("closed and archived public Eras resolve from immutable snapshots, not live
   assert.match(source, /resolveArchivedPublicEra/);
   assert.match(source, /ACRE_ERA_ARCHIVE_SNAPSHOT_R0/);
   assert.match(source, /Archived third-party imagery is hidden by default/);
+  assert.match(source, /currentMediaById/);
+  assert.match(source, /current\.mediaUrl !== historicalUrl/);
+});
+
+
+test("approved media can be revoked without mutating archive history", async () => {
+  const source = await readFile(
+    new URL("../src/app/api/admin/era-media/[id]/revoke/route.ts", import.meta.url),
+    "utf8"
+  );
+
+  assert.match(source, /revocationEvidenceRef/);
+  assert.match(source, /rightsState: "REVOKED"/);
+  assert.match(source, /status: "REVOKED"/);
+  assert.match(source, /ERA_MEDIA_REVOKE/);
+  assert.match(source, /db\.transaction/);
+});
+
+test("active customer routes have an evidence-gated suspension path", async () => {
+  const source = await readFile(
+    new URL("../src/app/api/admin/routes/[id]/suspend/route.ts", import.meta.url),
+    "utf8"
+  );
+
+  assert.match(source, /suspensionEvidenceRef/);
+  assert.match(source, /eq\(productRoutes\.status, "ACTIVE"\)/);
+  assert.match(source, /status: "SUSPENDED"/);
+  assert.match(source, /PRODUCT_ROUTE_SUSPEND/);
+  assert.match(source, /db\.transaction/);
 });
