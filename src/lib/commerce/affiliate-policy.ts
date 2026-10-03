@@ -1,4 +1,4 @@
-import { providerBySlug } from "./provider-registry";
+import { providerBySlug } from "./provider-registry.ts";
 
 export const DISPLAYABLE_IMAGE_RIGHTS = [
   "OWNED",
