@@ -9,6 +9,9 @@ CREATE TABLE IF NOT EXISTS era_archive_snapshots (
   created_at timestamp NOT NULL DEFAULT now()
 );
 
+CREATE UNIQUE INDEX IF NOT EXISTS era_archive_snapshots_digest_idx
+  ON era_archive_snapshots (snapshot_digest);
+
 CREATE INDEX IF NOT EXISTS era_archive_snapshots_era_created_idx
   ON era_archive_snapshots (era_id, created_at);
 

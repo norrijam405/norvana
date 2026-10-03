@@ -15,6 +15,9 @@ CREATE TABLE IF NOT EXISTS watchtower_signals (
   created_at timestamp NOT NULL DEFAULT now()
 );
 
+CREATE UNIQUE INDEX IF NOT EXISTS watchtower_signals_signal_key_idx
+  ON watchtower_signals (signal_key);
+
 CREATE INDEX IF NOT EXISTS watchtower_signals_subject_observed_idx
   ON watchtower_signals (subject_type, subject_key, observed_at);
 
@@ -31,6 +34,12 @@ CREATE TABLE IF NOT EXISTS watchtower_signal_projections (
   CONSTRAINT watchtower_signal_projections_signal_projector_unique
     UNIQUE (signal_id, projector)
 );
+
+CREATE UNIQUE INDEX IF NOT EXISTS watchtower_signal_projections_signal_projector_idx
+  ON watchtower_signal_projections (signal_id, projector);
+
+CREATE UNIQUE INDEX IF NOT EXISTS watchtower_signal_projections_key_idx
+  ON watchtower_signal_projections (projection_key);
 
 CREATE OR REPLACE FUNCTION reject_watchtower_signal_mutation()
 RETURNS trigger AS $$
