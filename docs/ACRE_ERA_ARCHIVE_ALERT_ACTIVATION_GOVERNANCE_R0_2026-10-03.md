@@ -71,6 +71,10 @@ Draft media may become APPROVED only if:
 - rights window is currently valid;
 - customer-facing visual/video assets include accessibility text.
 
+### Media revocation
+
+Previously approved media may be revoked with an evidence reference. Revocation changes the current rights record to REVOKED, which immediately makes both live and archived public resolvers stop rendering the asset. The immutable historical snapshot still records that the asset had been approved at the time.
+
 ### Product route
 
 QUALIFYING routes may become ACTIVE only if:
@@ -88,6 +92,8 @@ Production policy variables:
 - `NORVANA_ROUTE_MIN_MARGIN_BPS`
 
 If these are absent or invalid, route activation fails closed.
+
+An ACTIVE route may be changed to SUSPENDED only through an evidence-backed admin transition. Public route discovery already filters to ACTIVE routes, so suspension removes it from customer route comparison without deleting its history.
 
 ### Era
 
