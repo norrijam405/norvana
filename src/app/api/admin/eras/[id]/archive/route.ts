@@ -1,4 +1,4 @@
-import { and, eq } from "drizzle-orm";
+import { and, desc, eq } from "drizzle-orm";
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db";
 import {
@@ -44,7 +44,13 @@ export async function POST(
   const [snapshot] = await db
     .select({ id: eraArchiveSnapshots.id, digest: eraArchiveSnapshots.snapshotDigest })
     .from(eraArchiveSnapshots)
-    .where(eq(eraArchiveSnapshots.eraId, eraId))
+    .where(
+      and(
+        eq(eraArchiveSnapshots.eraId, eraId),
+        eq(eraArchiveSnapshots.snapshotKind, "CLOSURE")
+      )
+    )
+    .orderBy(desc(eraArchiveSnapshots.createdAt), desc(eraArchiveSnapshots.id))
     .limit(1);
 
   if (!snapshot) {
