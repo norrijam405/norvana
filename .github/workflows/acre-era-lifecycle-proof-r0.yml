@@ -7,6 +7,7 @@ on:
   pull_request:
     branches:
       - "feature/2026-10-03-acre-era-postgres-schema-proof-r0"
+      - "feature/2026-10-03-acre-era-lifecycle-proof-r0"
 
 permissions:
   contents: read
@@ -55,6 +56,15 @@ jobs:
             echo "Applying $file"
             psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f "$file"
           done
+
+      - name: Run Fresh Re-Challenger FRC-02 evidence when present
+        run: |
+          set -euo pipefail
+          if [ -f challenge/acre-era-lifecycle-r0/AE-LRP-R0-FRC-02_REPRO.mjs ]; then
+            node --experimental-strip-types --experimental-loader ./scripts/node-ts-alias-loader.mjs challenge/acre-era-lifecycle-r0/AE-LRP-R0-FRC-02_REPRO.mjs
+          else
+            echo "FRC-02 evidence harness not present; skipping."
+          fi
 
       - name: Run FRC-01 closure concurrency remediation proof
         run: node --experimental-strip-types --experimental-loader ./scripts/node-ts-alias-loader.mjs challenge/acre-era-lifecycle-r0/AE-LRP-R0-FRC-01_REMEDIATION_BUILDER_PROOF.mjs
