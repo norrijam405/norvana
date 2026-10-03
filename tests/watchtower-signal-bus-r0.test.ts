@@ -278,3 +278,15 @@ test("Signal Bus API is observe/project/queue only", async () => {
   assert.doesNotMatch(source, /sendEmail|sendSms|sendPush|twilio|sendgrid|mailgun/i);
   assert.doesNotMatch(source, /PRODUCT_ROUTE_ACTIVATE|ERA_ACTIVATE|supplier.*activate/i);
 });
+
+
+test("admin signal reads omit private payload by construction", async () => {
+  const source = await readFile(
+    new URL("../src/app/api/admin/watchtower/signals/route.ts", import.meta.url),
+    "utf8"
+  );
+
+  assert.match(source, /requireCurrentRecoveryAdminRead/);
+  assert.match(source, /privatePayloadIncluded: false/);
+  assert.doesNotMatch(source, /privatePayload:\s*watchtowerSignals\.privatePayload/);
+});
