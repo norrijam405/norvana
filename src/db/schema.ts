@@ -292,12 +292,102 @@ export const marketRequests = pgTable(
     note: text("note").notNull().default(""),
     requestCount: integer("request_count").notNull().default(1),
     status: varchar("status", { length: 30 }).notNull().default("REQUESTED"),
+    statusEvidenceRef: varchar("status_evidence_ref", { length: 1500 }),
+    watchtowerCandidateId: integer("watchtower_candidate_id"),
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at").defaultNow().notNull(),
   },
   (table) => [uniqueIndex("market_requests_request_key_idx").on(table.requestKey)]
 );
 
+
+export const marketRequestEvents = pgTable("market_request_events", {
+  id: serial("id").primaryKey(),
+  marketRequestId: integer("market_request_id").notNull(),
+  eventType: varchar("event_type", { length: 60 }).notNull(),
+  fromStatus: varchar("from_status", { length: 30 }),
+  toStatus: varchar("to_status", { length: 30 }),
+  evidenceRef: varchar("evidence_ref", { length: 1500 }),
+  publicNote: text("public_note").notNull().default(""),
+  actor: varchar("actor", { length: 120 }).notNull().default("system"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const customerWatchItems = pgTable(
+  "customer_watch_items",
+  {
+    id: serial("id").primaryKey(),
+    actorKeyHash: varchar("actor_key_hash", { length: 64 }).notNull(),
+    targetType: varchar("target_type", { length: 30 }).notNull(),
+    targetKey: varchar("target_key", { length: 255 }).notNull(),
+    alertTypes: json("alert_types").$type<string[]>().notNull().default([]),
+    priceThresholdCents: integer("price_threshold_cents"),
+    status: varchar("status", { length: 30 }).notNull().default("ACTIVE"),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  },
+  (table) => [
+    uniqueIndex("customer_watch_items_actor_target_idx").on(
+      table.actorKeyHash,
+      table.targetType,
+      table.targetKey
+    ),
+  ]
+);
+
+export const customerAlertEvents = pgTable("customer_alert_events", {
+  id: serial("id").primaryKey(),
+  watchItemId: integer("watch_item_id").notNull(),
+  eventType: varchar("event_type", { length: 60 }).notNull(),
+  payload: json("payload").$type<Record<string, unknown>>().notNull().default({}),
+  status: varchar("status", { length: 30 }).notNull().default("PENDING"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  deliveredAt: timestamp("delivered_at"),
+});
+
+export const productRoutes = pgTable("product_routes", {
+  id: serial("id").primaryKey(),
+  productId: integer("product_id").notNull(),
+  routeType: varchar("route_type", { length: 50 }).notNull(),
+  providerSlug: varchar("provider_slug", { length: 120 }),
+  sellerName: varchar("seller_name", { length: 255 }).notNull(),
+  checkoutOwner: varchar("checkout_owner", { length: 30 }).notNull(),
+  checkoutUrl: varchar("checkout_url", { length: 1500 }),
+  currency: varchar("currency", { length: 10 }).notNull().default("USD"),
+  productCondition: varchar("product_condition", { length: 40 }).notNull().default("NEW"),
+  itemPriceCents: integer("item_price_cents").notNull(),
+  shippingCents: integer("shipping_cents").notNull().default(0),
+  estimatedTaxCents: integer("estimated_tax_cents"),
+  totalCustomerPriceCents: integer("total_customer_price_cents").notNull(),
+  deliveryMinDays: integer("delivery_min_days"),
+  deliveryMaxDays: integer("delivery_max_days"),
+  warrantySummary: text("warranty_summary").notNull().default(""),
+  returnSummary: text("return_summary").notNull().default(""),
+  authorizationState: varchar("authorization_state", { length: 60 }).notNull().default("UNVERIFIED"),
+  provenanceState: varchar("provenance_state", { length: 60 }).notNull().default("UNVERIFIED"),
+  status: varchar("status", { length: 30 }).notNull().default("QUALIFYING"),
+  evidenceRef: varchar("evidence_ref", { length: 1500 }),
+  lastVerifiedAt: timestamp("last_verified_at"),
+  internalContributionCents: integer("internal_contribution_cents"),
+  internalContributionMarginBps: integer("internal_contribution_margin_bps"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const productRouteObservations = pgTable("product_route_observations", {
+  id: serial("id").primaryKey(),
+  routeId: integer("route_id").notNull(),
+  itemPriceCents: integer("item_price_cents").notNull(),
+  shippingCents: integer("shipping_cents").notNull().default(0),
+  estimatedTaxCents: integer("estimated_tax_cents"),
+  totalCustomerPriceCents: integer("total_customer_price_cents").notNull(),
+  stockState: varchar("stock_state", { length: 40 }).notNull().default("UNKNOWN"),
+  deliveryMinDays: integer("delivery_min_days"),
+  deliveryMaxDays: integer("delivery_max_days"),
+  sourceDigest: varchar("source_digest", { length: 128 }),
+  evidenceRef: varchar("evidence_ref", { length: 1500 }),
+  observedAt: timestamp("observed_at").defaultNow().notNull(),
+});
 
 export const orders = pgTable("orders", {
   id: serial("id").primaryKey(),
