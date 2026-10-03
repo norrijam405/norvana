@@ -10,7 +10,7 @@ import {
   adminSessionConfigured,
   verifyCurrentAdminSessionToken,
 } from "@/lib/admin-session";
-import { WATCHTOWER_JOB_TEMPLATES } from "@/lib/watchtower/default-jobs";
+import { WATCHTOWER_ALL_JOB_TEMPLATES } from "@/lib/watchtower/default-jobs";
 import { JobToggle, WatchtowerControls } from "@/components/admin/watchtower-controls";
 import { WatchtowerSelfTest } from "@/components/admin/watchtower-self-test";
 import { WatchtowerWorkerSelfTest } from "@/components/admin/watchtower-worker-self-test";
@@ -275,7 +275,7 @@ export default async function AdminPage() {
               <p className="text-xs font-medium uppercase tracking-[0.2em] text-indigo-accent">Automation</p>
               <h2 className="mt-2 font-display text-2xl font-bold">Watchers</h2>
               <p className="mt-2 max-w-2xl text-[15px] leading-6 text-muted">
-                These lanes watch Norvana&apos;s market and operating surface. They begin paused and stay bounded by the authority ceiling.
+                These lanes watch Acre Era&apos;s market and operating surface. They begin paused and stay bounded by the authority ceiling.
               </p>
             </div>
             <span className={executorEnabled
@@ -287,7 +287,7 @@ export default async function AdminPage() {
           </div>
 
           <div className="mt-6 grid gap-4 lg:grid-cols-2">
-            {(initialized ? jobs : WATCHTOWER_JOB_TEMPLATES).map((job) => {
+            {(initialized ? jobs : WATCHTOWER_ALL_JOB_TEMPLATES).map((job) => {
               const id = "id" in job ? job.id : null;
               const status = "status" in job ? job.status : "PLANNED";
 
