@@ -4,12 +4,13 @@ import type { NextRequest } from "next/server";
 import { db } from "@/db";
 import { customerVoiceThrottle } from "@/db/schema";
 
-type VoiceAction = "REVIEW_SUBMIT" | "REVIEW_REACT" | "MARKET_REQUEST";
+type VoiceAction = "REVIEW_SUBMIT" | "REVIEW_REACT" | "MARKET_REQUEST" | "WATCH_ITEM_MUTATE";
 
 const LIMITS: Record<VoiceAction, { windowMs: number; maxRequests: number }> = {
   REVIEW_SUBMIT: { windowMs: 60 * 60 * 1000, maxRequests: 5 },
   REVIEW_REACT: { windowMs: 60 * 60 * 1000, maxRequests: 120 },
   MARKET_REQUEST: { windowMs: 60 * 60 * 1000, maxRequests: 12 },
+  WATCH_ITEM_MUTATE: { windowMs: 60 * 60 * 1000, maxRequests: 60 },
 };
 
 function requestIp(req: NextRequest) {
