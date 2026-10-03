@@ -1,18 +1,27 @@
 @import "tailwindcss";
 
 @theme {
-  --color-bone: #F9F9F7;
-  --color-obsidian: #111111;
-  --color-indigo-accent: #6366F1;
-  --color-indigo-light: #818CF8;
-  --color-indigo-dark: #4F46E5;
-  --color-surface: #FFFFFF;
-  --color-surface-hover: #F3F3F0;
-  --color-border: #E5E5E0;
-  --color-muted: #71717A;
-  --color-success: #22C55E;
-  --color-warning: #F59E0B;
-  --color-error: #EF4444;
+  --color-cream: #F6F1E7;
+  --color-soil: #2F3026;
+  --color-leaf: #526642;
+  --color-moss: #7B8A62;
+  --color-clay: #A45E45;
+  --color-ember: #C7783E;
+  --color-wheat: #E8C68A;
+  --color-sage-wash: #E8E9D9;
+
+  --color-bone: #F6F1E7;
+  --color-obsidian: #2F3026;
+  --color-indigo-accent: #526642;
+  --color-indigo-light: #A9B88E;
+  --color-indigo-dark: #405134;
+  --color-surface: #FFFCF6;
+  --color-surface-hover: #ECE9DE;
+  --color-border: #D7D2C5;
+  --color-muted: #6F7068;
+  --color-success: #4F7A4B;
+  --color-warning: #C7783E;
+  --color-error: #B94C3D;
 
   --font-display: "Schibsted Grotesk", sans-serif;
   --font-body: "Inter", sans-serif;
@@ -20,49 +29,60 @@
 }
 
 @layer base {
-  html {
-    scroll-behavior: smooth;
-  }
-
+  html { scroll-behavior: smooth; }
   body {
     font-family: var(--font-body);
-    background-color: var(--color-bone);
-    color: var(--color-obsidian);
+    background:
+      radial-gradient(circle at 85% 8%, rgba(232,198,138,.13), transparent 30rem),
+      var(--color-bone);
+    color: var(--color-soil);
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
-
-  h1, h2, h3, h4 {
-    font-family: var(--font-display);
-  }
-
-  ::selection {
-    background-color: var(--color-indigo-accent);
-    color: white;
-  }
+  h1, h2, h3, h4 { font-family: var(--font-display); }
+  ::selection { background-color: var(--color-leaf); color: var(--color-cream); }
 }
 
 @layer components {
   .btn-primary {
-    @apply inline-flex items-center justify-center px-6 py-3 bg-indigo-accent text-white font-medium rounded-lg
-           hover:bg-indigo-dark transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-indigo-accent focus:ring-offset-2;
+    @apply inline-flex items-center justify-center rounded-full bg-leaf px-6 py-3 font-medium text-cream
+           transition duration-200 hover:-translate-y-0.5 hover:bg-soil focus:outline-none focus:ring-2 focus:ring-leaf focus:ring-offset-2;
   }
-
   .btn-secondary {
-    @apply inline-flex items-center justify-center px-6 py-3 border border-border text-obsidian font-medium rounded-lg
-           hover:bg-surface-hover transition-colors duration-200;
+    @apply inline-flex items-center justify-center rounded-full border border-soil/15 bg-cream px-6 py-3 font-medium text-soil
+           transition duration-200 hover:border-soil/30 hover:bg-sage-wash;
   }
-
-  .card {
-    @apply bg-surface rounded-2xl border border-border p-6 shadow-sm;
+  .btn-ghost-light {
+    @apply inline-flex items-center justify-center rounded-full border border-cream/20 px-6 py-3 font-medium text-cream
+           transition duration-200 hover:bg-cream/10;
   }
-
+  .card { @apply rounded-2xl border border-soil/10 bg-surface p-6 shadow-sm; }
   .input {
-    @apply w-full px-4 py-3 bg-surface border border-border rounded-lg text-obsidian placeholder:text-muted
-           focus:outline-none focus:ring-2 focus:ring-indigo-accent focus:border-transparent transition-all;
+    @apply w-full rounded-xl border border-soil/15 bg-surface px-4 py-3 text-soil placeholder:text-muted
+           transition-all focus:border-transparent focus:outline-none focus:ring-2 focus:ring-leaf;
   }
+  .badge { @apply inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium; }
+  .acre-world {
+    @apply rounded-[1.6rem] border border-soil/10 bg-cream p-6 shadow-[0_18px_45px_rgba(48,46,35,.05)]
+           transition duration-300 hover:-translate-y-1 hover:border-leaf/35 hover:bg-sage-wash;
+  }
+  .acre-tile {
+    @apply rounded-2xl border border-soil/10 bg-cream p-5 transition hover:-translate-y-0.5 hover:border-leaf/30;
+  }
+}
 
-  .badge {
-    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium;
+.acre-contours {
+  background-image:
+    repeating-radial-gradient(ellipse at 20% 40%, transparent 0 24px, rgba(232,198,138,.12) 25px 26px, transparent 27px 42px),
+    repeating-radial-gradient(ellipse at 76% 64%, transparent 0 31px, rgba(123,138,98,.10) 32px 33px, transparent 34px 53px);
+  background-size: 520px 360px, 620px 440px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
   }
 }
