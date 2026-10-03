@@ -18,6 +18,9 @@ type Product = {
   images: string[];
   rating: number;
   reviewCount: number;
+  commerceModel?: string;
+  imageRightsState?: string;
+  externalSellerName?: string | null;
   tags: string[];
 };
 
@@ -165,7 +168,11 @@ export function ShopClient({ products }: { products: Product[] }) {
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-              {filtered.map((product, i) => (
+              {filtered.map((product, i) => {
+                const isAffiliate = product.commerceModel === "AFFILIATE_REFERRAL";
+                const imageRightsOk = ["OWNED", "BRAND_AUTHORIZED", "SUPPLIER_AUTHORIZED", "AFFILIATE_FEED_AUTHORIZED"].includes(product.imageRightsState || "");
+                const displayImage = imageRightsOk ? product.images?.[0] : null;
+                return (
                 <motion.div
                   key={product.id}
                   initial={{ opacity: 0, y: 20 }}
@@ -174,8 +181,13 @@ export function ShopClient({ products }: { products: Product[] }) {
                   className="card group hover:shadow-md transition-all"
                 >
                   <Link href={`/shop/${product.slug}`}>
-                    <div className="aspect-square bg-surface-hover rounded-xl flex items-center justify-center text-5xl group-hover:scale-105 transition-transform duration-300">
-                      {PRODUCT_EMOJIS[product.niche] || "🎁"}
+                    <div className="aspect-square overflow-hidden bg-surface-hover rounded-xl flex items-center justify-center text-5xl group-hover:scale-105 transition-transform duration-300">
+                      {displayImage ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={displayImage} alt={product.name} className="h-full w-full object-contain bg-white" referrerPolicy="no-referrer" />
+                      ) : (
+                        PRODUCT_EMOJIS[product.niche] || "🎁"
+                      )}
                     </div>
                     <div className="mt-4">
                       <div className="flex items-center gap-2">
@@ -198,14 +210,21 @@ export function ShopClient({ products }: { products: Product[] }) {
                       </div>
                     </div>
                   </Link>
-                  <button
-                    onClick={() => addItem({ id: product.id, name: product.name, price: product.price, slug: product.slug })}
-                    className="btn-primary w-full mt-4 text-sm py-2.5"
-                  >
-                    Add to Cart
-                  </button>
+                  {isAffiliate ? (
+                    <Link href={`/shop/${product.slug}`} className="btn-primary w-full mt-4 text-sm py-2.5">
+                      View at {product.externalSellerName || "partner"} →
+                    </Link>
+                  ) : (
+                    <button
+                      onClick={() => addItem({ id: product.id, name: product.name, price: product.price, slug: product.slug })}
+                      className="btn-primary w-full mt-4 text-sm py-2.5"
+                    >
+                      Add to Cart
+                    </button>
+                  )}
                 </motion.div>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>
