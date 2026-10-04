@@ -1,0 +1,156 @@
+{
+  "schema": "AE_LRP_R0_FRC03_FRESH_RECHALLENGER_RAW_EVIDENCE_V2",
+  "date": "2026-10-04",
+  "repository": "norrijam405/norvana",
+  "pullRequest": 15,
+  "role": "Fresh Re-Challenger",
+  "result": "PASS",
+  "finding": {
+    "id": "AE-LRP-R0-FRC-03",
+    "title": "CONTENT_REVISION_DIRECT_RESET_NEUTRALIZES_CLOSURE_CAS",
+    "status": "CLOSED_BY_FRESH_RECHALLENGE"
+  },
+  "challengedCandidate": {
+    "commit": "bcd245f48b125a4f6f875edda15077dc699f80e0",
+    "parent": "d3a044e96be8d0397825a8ec3e781b20b3bf6814",
+    "tree": "05509a76a76975d57275a34c6554a9c948876c83"
+  },
+  "verifiedFrozenBlobs": {
+    "migration0017": "2e5f0b4a64ade1b33feecf27a474d796e9635382",
+    "builderProof": "c664b2d425298ca03bfa249f2349be40b59020a0",
+    "workflow": "e0fbb0526e437d02ad3d6da71b590cb9b0b2f1f1",
+    "frc02Proof": "3ec3c65ea2b2f481b89f42a9bdd5b7818c910311"
+  },
+  "execution": {
+    "evidenceHead": "b9f552cd50ba253edaa5418aade13f1cc7c5afbe",
+    "temporaryPullRequest": 19,
+    "workflowRun": 37186503225,
+    "job": 111389429374,
+    "conclusion": "success",
+    "postgresVersion": "PostgreSQL 17.11 (Debian 17.11-1.pgdg13+2)",
+    "databaseClass": "DISPOSABLE_POSTGRESQL_17",
+    "dataClass": "SYNTHETIC_ONLY",
+    "candidateCodeMutationDuringChallenge": false,
+    "evidenceHarnessOnly": true
+  },
+  "independentAdversarialCases": [
+    {
+      "case": "direct-zero",
+      "result": "REJECTED",
+      "sqlstate": "23514"
+    },
+    {
+      "case": "older-positive",
+      "result": "REJECTED",
+      "sqlstate": "23514"
+    },
+    {
+      "case": "negative-update",
+      "result": "REJECTED",
+      "sqlstate": "23514"
+    },
+    {
+      "case": "CASE-expression",
+      "result": "REJECTED",
+      "sqlstate": "23514"
+    },
+    {
+      "case": "no-op",
+      "result": "ACCEPTED_UNCHANGED",
+      "revision": 7
+    },
+    {
+      "case": "negative-insert",
+      "result": "REJECTED",
+      "sqlstate": "23514"
+    },
+    {
+      "case": "snapshot-field-plus-explicit-old-revision",
+      "before": 0,
+      "after": 1,
+      "result": "NOT_NEUTRALIZED"
+    },
+    {
+      "case": "CTE_UPDATE_FROM_same_statement",
+      "before": 0,
+      "after": 1,
+      "result": "NOT_NEUTRALIZED"
+    },
+    {
+      "case": "MERGE_same_statement",
+      "before": 0,
+      "after": 1,
+      "result": "NOT_NEUTRALIZED"
+    },
+    {
+      "case": "savepoint-reset",
+      "result": "REJECTED",
+      "sqlstate": "23514",
+      "committedRevision": 1
+    },
+    {
+      "case": "rollback",
+      "result": "ROW_AND_REVISION_RESTORED"
+    },
+    {
+      "case": "child-section-neutralization",
+      "before": 0,
+      "afterInsert": 1,
+      "afterUpdate": 2,
+      "resetRejected": true
+    },
+    {
+      "case": "bulk-multirow_snapshot_plus_revision",
+      "result": "NOT_NEUTRALIZED",
+      "storedRevisions": [
+        1,
+        1
+      ]
+    },
+    {
+      "case": "exact-original-story-race",
+      "resetRejected": true,
+      "firstClose": "ERA_CHANGED_BEFORE_CLOSURE",
+      "failedCloseClosureSnapshots": 0,
+      "retryCapturedCommittedMutation": true
+    }
+  ],
+  "requiredRegressionExecution": {
+    "frc03BuilderMatrix": "PASS",
+    "frc02Genuine21Case": "PASS",
+    "frc01ChildConcurrency": "PASS",
+    "sharedApplicationLifecycle": "PASS",
+    "lifecycle": [
+      "DRAFT",
+      "ACTIVE",
+      "CLOSED",
+      "ARCHIVED"
+    ],
+    "typecheck": "PASS",
+    "eraEngine": "11/11 PASS",
+    "archiveAlertActivation": "15/15 PASS",
+    "signalBus": "12/12 PASS",
+    "archiveInvariants": "PASS via shared lifecycle and archive/alert/activation regression",
+    "twoConcurrentCloseCalls": "PASS via genuine FRC-02 regression",
+    "childNeutralizationMatrix": "PASS via FRC-03 matrix in same fresh disposable job"
+  },
+  "guaranteeDisposition": {
+    "frc03": "CLOSED",
+    "frc02": "PRESERVED",
+    "frc01": "PRESERVED",
+    "fc01": "PRESERVED"
+  },
+  "safety": {
+    "productionTouched": false,
+    "customerDataUsed": false,
+    "realEraActivated": false,
+    "realProductPublished": false,
+    "notificationsSent": 0,
+    "suppliersOrFulfillmentActivated": false,
+    "ordersPlaced": 0,
+    "moneySpent": false,
+    "paidInfrastructureEnabled": false,
+    "pr15Merged": false
+  },
+  "disposition": "FRESH_RECHALLENGER_PASS_ADVANCE_TO_SEPARATE_INDEPENDENT_ASSURANCE"
+}
