@@ -1,0 +1,226 @@
+{
+  "schema": "AE_LRP_R0_FRC03_FRESH_RECHALLENGER_RAW_EVIDENCE_V1",
+  "date": "2026-10-03",
+  "repository": "norrijam405/norvana",
+  "pullRequest": 15,
+  "role": "Fresh Re-Challenger",
+  "result": "FAIL",
+  "finding": {
+    "id": "AE-LRP-R0-FRC-03",
+    "title": "CONTENT_REVISION_DIRECT_RESET_NEUTRALIZES_CLOSURE_CAS"
+  },
+  "challengedCandidate": {
+    "commit": "29163ee7cdd31e732c3437b55bc63ed71fa8f294",
+    "parent": "dd888f81e90e93a6dc5c116e6a558e38e4156591",
+    "tree": "a4ad399e49bd1a37b8f834d47a6835632f8b2a87"
+  },
+  "verifiedFrozenBlobs": {
+    "migration0015": "e27abc3d37dc2297db9243f9356831deee89fb9c",
+    "migration0016": "174ce815b4c06f032cb4595d1ae190a2bf5aa0ff",
+    "schema": "a5aeab4ea17371d9f45bee71c8c31e6b5364b340",
+    "archiveBuilder": "6fea9dc121c0c9a0ba706bb9f9673d99873d3f8b",
+    "lifecycleService": "fbdea16a48e6637b400c049167764338f52dbe13"
+  },
+  "freshExecution": {
+    "evidenceHead": "abc4ac957de8c3617f26609f9eb7eb6b3d29656c",
+    "evidenceOnlyExecutionPullRequest": 17,
+    "evidenceOnlyExecutionPullRequestDisposition": "CLOSED_UNMERGED",
+    "workflow": "Acre Era Lifecycle Proof R0",
+    "workflowRun": 37171279225,
+    "workflowRunNumber": 61,
+    "job": 111344552365,
+    "jobConclusion": "success",
+    "postgresImage": "postgres:17",
+    "postgresVersion": "17.11 (Debian 17.11-1.pgdg13+2)",
+    "nodeVersion": "22.23.3",
+    "dataClass": "SYNTHETIC_ONLY",
+    "databaseClass": "DISPOSABLE_POSTGRESQL_17",
+    "candidateCodeMutationDuringChallenge": false,
+    "evidenceHarnessOnlyChanges": true
+  },
+  "control": {
+    "case": "control-no-revision-reset",
+    "closeResult": "REJECTED",
+    "closeError": "ERA_CHANGED_BEFORE_CLOSURE",
+    "closureSnapshots": 0
+  },
+  "mechanism": "A snapshot-contributing mutation first advances eras.content_revision through migration 0016. A second direct SQL UPDATE touching only content_revision can restore the pre-snapshot value because content_revision is excluded from the trigger UPDATE OF list. updated_at remains unchanged, so closeEra can observe its original CAS operands and accept a stale CLOSURE snapshot.",
+  "eraRowCases": [
+    {
+      "case": "story-two-statement-reset",
+      "sqlForm": "UPDATE ONLY + content_revision-only reset",
+      "blockedAtSnapshotPersistence": true,
+      "revisionBefore": 0,
+      "revisionAfterSnapshotMutation": 1,
+      "revisionAfterDirectReset": 0,
+      "updatedAtPreserved": true,
+      "mutationCommittedBeforeCloseCompleted": true,
+      "closeResult": "CLOSED",
+      "closureSnapshots": 1,
+      "snapshotValue": "before-story",
+      "liveValue": "after-story",
+      "staleAccepted": true
+    },
+    {
+      "case": "name-cte-update-reset",
+      "sqlForm": "WITH VALUES ... UPDATE FROM + reset",
+      "blockedAtSnapshotPersistence": true,
+      "revisionBefore": 0,
+      "revisionAfterSnapshotMutation": 1,
+      "revisionAfterDirectReset": 0,
+      "updatedAtPreserved": true,
+      "mutationCommittedBeforeCloseCompleted": true,
+      "closeResult": "CLOSED",
+      "closureSnapshots": 1,
+      "snapshotValue": "FRC03 name-cte-update-reset 2",
+      "liveValue": "after-name",
+      "staleAccepted": true
+    },
+    {
+      "case": "theme-json-merge-reset",
+      "sqlForm": "MERGE WHEN MATCHED UPDATE + reset",
+      "blockedAtSnapshotPersistence": true,
+      "revisionBefore": 0,
+      "revisionAfterSnapshotMutation": 1,
+      "revisionAfterDirectReset": 0,
+      "updatedAtPreserved": true,
+      "mutationCommittedBeforeCloseCompleted": true,
+      "closeResult": "CLOSED",
+      "closureSnapshots": 1,
+      "snapshotValue": "{\"accent\":\"before\"}",
+      "liveValue": "{\"accent\":\"after\",\"mode\":\"night\"}",
+      "staleAccepted": true
+    },
+    {
+      "case": "archive-policy-multifield-reset",
+      "sqlForm": "multi-field UPDATE + interval expression + reset",
+      "blockedAtSnapshotPersistence": true,
+      "revisionBefore": 0,
+      "revisionAfterSnapshotMutation": 1,
+      "revisionAfterDirectReset": 0,
+      "updatedAtPreserved": true,
+      "mutationCommittedBeforeCloseCompleted": true,
+      "closeResult": "CLOSED",
+      "closureSnapshots": 1,
+      "snapshotValue": "pre-mutation archive_policy/eyebrow/kind/start_at",
+      "liveValue": "committed post-mutation archive_policy/eyebrow/kind/start_at",
+      "staleAccepted": true
+    }
+  ],
+  "childRevisionCase": {
+    "case": "child-section-cte-update-plus-revision-reset",
+    "revisionBefore": 1,
+    "revisionAfterChildMutation": 2,
+    "revisionAfterDirectReset": 1,
+    "updatedAtPreserved": true,
+    "closeResult": "CLOSED",
+    "snapshotHeadline": "before",
+    "liveHeadline": "after",
+    "closureSnapshots": 1,
+    "staleAccepted": true
+  },
+  "requiredRegressionExecution": {
+    "originalFrc02NoResetControl": "PASS_FAILS_CLOSED",
+    "dedicatedOriginalFrc02ReproducerRun": {
+      "workflowRun": 37171279219,
+      "job": 111344552518,
+      "observedResult": "ERA_CHANGED_BEFORE_CLOSURE",
+      "interpretation": "ORIGINAL_FRC02_MECHANISM_CLOSED_BY_0016"
+    },
+    "frc01OrdinaryChildRevisionCas": {
+      "status": "PASS",
+      "proofClass": "DISPOSABLE_POSTGRESQL_CHILD_REVISION_CAS_CONCURRENCY",
+      "cases": [
+        "product-price-update",
+        "membership-insert",
+        "section-update",
+        "media-update",
+        "watchtower-binding-update"
+      ],
+      "staleAcceptedClosureSnapshots": 0,
+      "failedCloseSnapshotsPersisted": 0
+    },
+    "fullSharedApplicationPathLifecycle": {
+      "status": "PASS",
+      "proofClass": "ISOLATED_SYNTHETIC_FULL_LIFECYCLE_APPLICATION_PATH_POSTGRESQL_R1",
+      "readinessDigest": "02a6ce9d5bcafcec61e5f4c3440542e1cdd03375ea4f3677800b852718c1ff76",
+      "snapshotDigest": "68389fc85b58b0af00c45fcb3c56de5738835e9e06dcc189d70d43c64962c62c",
+      "lifecycle": [
+        "DRAFT",
+        "ACTIVE",
+        "CLOSED",
+        "ARCHIVED"
+      ],
+      "productionPaths": {
+        "evaluateEraActivationReadiness": "PASS",
+        "activateEraSharedProductionService": "PASS",
+        "resolveCurrentPublicEra": "PASS",
+        "buildEraArchiveSnapshot": "PASS",
+        "closeEraSharedProductionService": "PASS",
+        "archiveEraSharedProductionService": "PASS",
+        "resolvePublicEraBySlugArchived": "PASS",
+        "ingestWatchtowerSignal": "PASS",
+        "evaluateAndQueueCustomerAlerts": "PASS"
+      },
+      "adversarial": {
+        "mismatchedReadinessDigestRejected": "PASS",
+        "staleReadinessAfterMutationRejected": "PASS",
+        "archiveWithoutClosureSnapshotRejected": "PASS",
+        "signalKeyPayloadCollisionRejected": "PASS",
+        "sensitivePrivateSignalPayloadRejected": "PASS",
+        "alertPayloadSanitized": "PASS",
+        "signalReplayIdempotent": "PASS",
+        "archivedProductHistorical": "PASS",
+        "revokedCurrentMediaHiddenFromArchivedResolution": "PASS",
+        "futureStartRawPrimaryRejectedByProductionResolver": "PASS",
+        "ambiguousPrimary": "DATABASE_GUARDED"
+      }
+    },
+    "typecheck": "PASS",
+    "eraEngine": {
+      "status": "PASS",
+      "tests": 11,
+      "failures": 0
+    },
+    "archiveAlertActivation": {
+      "status": "PASS",
+      "tests": 15,
+      "failures": 0
+    },
+    "signalBus": {
+      "status": "PASS",
+      "tests": 12,
+      "failures": 0
+    }
+  },
+  "guaranteeDisposition": {
+    "frc02OriginalStoryRace": "PRESERVED_WHEN_REVISION_IS_NOT_MANIPULATED",
+    "frc01OrdinaryChildRevisionCas": "PRESERVED_FOR_ORDINARY_CHILD_WRITES",
+    "frc01AgainstDirectRevisionNeutralization": "NOT_PRESERVED_FRC03_DEMONSTRATES_BYPASS",
+    "fc01SharedProductionPath": "PRESERVED",
+    "closureSnapshotImmutability": "PRESERVED",
+    "archiveRequiresClosure": "PRESERVED",
+    "archivedHistoricalResolution": "PRESERVED",
+    "currentMediaRightsRevocation": "PRESERVED",
+    "futureStartAtRejection": "PRESERVED",
+    "readinessDigestCas": "PRESERVED",
+    "watchtowerSignalReplayCollisionPrivacy": "PRESERVED"
+  },
+  "consequence": "A committed snapshot-relevant Era-row or child-row mutation can be hidden from the final closure CAS by resetting content_revision to its pre-snapshot value, allowing Era=CLOSED with a persisted stale CLOSURE snapshot.",
+  "safety": {
+    "productionDatabaseTouched": false,
+    "productionMigrationRun": false,
+    "productionDeployment": false,
+    "vercelProductionRoutingChanged": false,
+    "realEraActivated": false,
+    "realProductPublished": false,
+    "customerDataUsed": false,
+    "notificationsSent": 0,
+    "suppliersOrFulfillmentActivated": false,
+    "ordersPlaced": 0,
+    "moneySpent": false,
+    "paidInfrastructureEnabled": false,
+    "pr15Merged": false
+  },
+  "disposition": "FRESH_RECHALLENGER_FAIL_STOP_BEFORE_REMEDIATION_OR_INDEPENDENT_ASSURANCE"
+}
