@@ -1,0 +1,139 @@
+{
+  "schema": "AE_LRP_R0_FRC03_REMEDIATION_BUILDER_RAW_EVIDENCE_V1",
+  "date": "2026-10-04",
+  "repository": "norrijam405/norvana",
+  "pullRequest": 15,
+  "role": "Remediation Builder",
+  "result": "PASS",
+  "finding": {
+    "id": "AE-LRP-R0-FRC-03",
+    "title": "CONTENT_REVISION_DIRECT_RESET_NEUTRALIZES_CLOSURE_CAS"
+  },
+  "frozenCandidate": {
+    "commit": "bcd245f48b125a4f6f875edda15077dc699f80e0",
+    "parent": "d3a044e96be8d0397825a8ec3e781b20b3bf6814",
+    "tree": "05509a76a76975d57275a34c6554a9c948876c83"
+  },
+  "governingExecution": {
+    "workflow": "Acre Era Lifecycle Proof R0",
+    "run": 37180224365,
+    "job": 111371124874,
+    "runNumber": 63,
+    "conclusion": "success",
+    "postgres": "17.11 (Debian 17.11-1.pgdg13+2)",
+    "node": "22.23.3",
+    "dataClass": "SYNTHETIC_ONLY",
+    "databaseClass": "DISPOSABLE_POSTGRESQL_17"
+  },
+  "remediation": {
+    "migration": "drizzle/0017_era_content_revision_monotonicity_r0.sql",
+    "mechanism": [
+      "CHECK constraint rejects negative content_revision values.",
+      "BEFORE UPDATE OF content_revision trigger rejects any NEW.content_revision < OLD.content_revision with SQLSTATE 23514.",
+      "Existing 0015/0016 triggers continue to advance content_revision transactionally for child and Era-row snapshot mutations.",
+      "closeEra continues to CAS updated_at + content_revision and rollback stale snapshot insertion on CAS failure."
+    ]
+  },
+  "frc03Cases": [
+    "older-positive",
+    "restore-earlier",
+    "below-zero-update",
+    "negative-insert",
+    "no-op-revision-update",
+    "story-same-transaction-reset",
+    "story-later-transaction-reset",
+    "cte-update-from-reset",
+    "merge-reset",
+    "multifield-reset",
+    "sequential-reset",
+    "visibility-primary-lifecycle-reset",
+    "rollback-and-savepoint",
+    "child-membership-insert",
+    "child-membership-update",
+    "child-membership-delete",
+    "child-section-insert",
+    "child-section-update",
+    "child-section-delete",
+    "child-media-insert",
+    "child-media-update",
+    "child-media-delete",
+    "child-watchtower-insert",
+    "child-watchtower-update",
+    "child-watchtower-delete",
+    "child-referenced-product-one-era",
+    "referenced-product-multiple-eras"
+  ],
+  "frc03Guarantees": {
+    "directRevisionLoweringRejected": true,
+    "exactPriorRevisionRestoreRejected": true,
+    "olderPositiveRejected": true,
+    "belowZeroRejected": true,
+    "sameTransactionResetRejected": true,
+    "laterCommittedResetRejected": true,
+    "ordinaryUpdateResetClosed": true,
+    "updateOnlyResetClosed": true,
+    "cteUpdateFromResetClosed": true,
+    "mergeResetClosed": true,
+    "multiFieldResetClosed": true,
+    "sequentialMutationResetClosed": true,
+    "lifecycleVisibilityPrimaryResetClosed": true,
+    "childResetMatrixCovered": true,
+    "rollbackCovered": true,
+    "savepointsCovered": true,
+    "failedCloseSnapshotsPersisted": 0,
+    "retryCapturesCommittedMutation": true
+  },
+  "preservedRegressions": {
+    "frc02": {
+      "status": "PASS",
+      "proofClass": "DISPOSABLE_POSTGRESQL_ERA_ROW_REVISION_CAS_CONCURRENCY",
+      "failedCloseSnapshotsPersisted": 0
+    },
+    "frc01": {
+      "status": "PASS",
+      "proofClass": "DISPOSABLE_POSTGRESQL_CHILD_REVISION_CAS_CONCURRENCY",
+      "failedCloseSnapshotsPersisted": 0
+    },
+    "fc01SharedLifecycle": {
+      "status": "PASS",
+      "proofClass": "ISOLATED_SYNTHETIC_FULL_LIFECYCLE_APPLICATION_PATH_POSTGRESQL_R1"
+    },
+    "typecheck": "PASS",
+    "eraEngine": {
+      "tests": 11,
+      "pass": 11,
+      "fail": 0
+    },
+    "archiveAlertActivation": {
+      "tests": 15,
+      "pass": 15,
+      "fail": 0
+    },
+    "signalBus": {
+      "tests": 12,
+      "pass": 12,
+      "fail": 0
+    }
+  },
+  "nonGoverningSetup": {
+    "run": 37180199846,
+    "job": 111371052328,
+    "result": "FAIL",
+    "reason": "Evidence branch had replaced the preserved FRC-02 Builder proof with a Fresh-Re-Challenger shim that intentionally re-ran AE-LRP-R0-FRC-03_REPRO.mjs. The exact preserved FRC-02 Builder proof blob 3ec3c65ea2b2f481b89f42a9bdd5b7818c910311 was restored before the governing rerun."
+  },
+  "safety": {
+    "productionDatabase": false,
+    "productionMigration": false,
+    "productionDeploy": false,
+    "productionRouting": false,
+    "realEraActivation": false,
+    "realProductPublication": false,
+    "customerData": false,
+    "customerCommunication": false,
+    "supplierFulfillment": false,
+    "orders": false,
+    "moneySpend": false,
+    "paidInfrastructure": false,
+    "pr15Merged": false
+  }
+}
