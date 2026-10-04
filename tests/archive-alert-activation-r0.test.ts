@@ -137,33 +137,52 @@ test("Era archive snapshot deliberately omits private product and route economic
   assert.doesNotMatch(source, /customerEmail/);
 });
 
-test("closing an Era is atomic with immutable snapshot and receipt", async () => {
-  const source = await readFile(
-    new URL("../src/app/api/admin/eras/[id]/close/route.ts", import.meta.url),
-    "utf8"
-  );
+test("closing an Era delegates to the canonical atomic lifecycle service", async () => {
+  const [route, service] = await Promise.all([
+    readFile(
+      new URL("../src/app/api/admin/eras/[id]/close/route.ts", import.meta.url),
+      "utf8"
+    ),
+    readFile(
+      new URL("../src/lib/era-engine/lifecycle-service.ts", import.meta.url),
+      "utf8"
+    ),
+  ]);
 
-  assert.match(source, /db\.transaction/);
-  assert.match(source, /eraArchiveSnapshots/);
-  assert.match(source, /snapshotDigest/);
-  assert.match(source, /lifecycleState: "CLOSED"/);
-  assert.match(source, /ERA_CLOSE/);
-  assert.match(source, /ADMIN_ACT_WITH_IMMUTABLE_SNAPSHOT/);
+  assert.match(route, /closeEra/);
+  assert.match(route, /closureEvidenceRef/);
+  assert.match(service, /buildEraArchiveSnapshot/);
+  assert.match(service, /db\.transaction/);
+  assert.match(service, /eraArchiveSnapshots/);
+  assert.match(service, /snapshotDigest/);
+  assert.match(service, /lifecycleState: "CLOSED"/);
+  assert.match(service, /ERA_CLOSE/);
+  assert.match(service, /ADMIN_ACT_WITH_IMMUTABLE_SNAPSHOT/);
 });
 
-test("archiving requires a previously persisted closure snapshot", async () => {
-  const source = await readFile(
-    new URL("../src/app/api/admin/eras/[id]/archive/route.ts", import.meta.url),
-    "utf8"
-  );
+test("archiving delegates to the canonical service and requires a closure snapshot", async () => {
+  const [route, service] = await Promise.all([
+    readFile(
+      new URL("../src/app/api/admin/eras/[id]/archive/route.ts", import.meta.url),
+      "utf8"
+    ),
+    readFile(
+      new URL("../src/lib/era-engine/lifecycle-service.ts", import.meta.url),
+      "utf8"
+    ),
+  ]);
 
-  assert.match(source, /cannot be archived without an immutable closure snapshot/i);
-  assert.match(source, /lifecycleState: "ARCHIVED"/);
-  assert.match(source, /eq\(eras\.lifecycleState, "CLOSED"\)/);
+  assert.match(route, /archiveEra/);
+  assert.match(route, /archiveEvidenceRef/);
+  assert.match(service, /ERA_ARCHIVE_CLOSURE_SNAPSHOT_REQUIRED/);
+  assert.match(service, /snapshotKind, "CLOSURE"/);
+  assert.match(service, /lifecycleState: "ARCHIVED"/);
+  assert.match(service, /eq\(eras\.lifecycleState, "CLOSED"\)/);
+  assert.match(service, /ERA_ARCHIVE/);
 });
 
-test("media route and Era activation are evidence-gated and transactional", async () => {
-  const [media, route, era] = await Promise.all([
+test("media, route, and Era activation remain evidence-gated and transactional", async () => {
+  const [media, route, era, lifecycleService] = await Promise.all([
     readFile(
       new URL("../src/app/api/admin/era-media/[id]/approve/route.ts", import.meta.url),
       "utf8"
@@ -174,6 +193,10 @@ test("media route and Era activation are evidence-gated and transactional", asyn
     ),
     readFile(
       new URL("../src/app/api/admin/eras/[id]/activate/route.ts", import.meta.url),
+      "utf8"
+    ),
+    readFile(
+      new URL("../src/lib/era-engine/lifecycle-service.ts", import.meta.url),
       "utf8"
     ),
   ]);
@@ -191,10 +214,13 @@ test("media route and Era activation are evidence-gated and transactional", asyn
 
   assert.match(era, /activationEvidenceRef/);
   assert.match(era, /expectedReadinessDigest/);
-  assert.match(era, /currentReadinessDigest/);
-  assert.match(era, /evaluateEraActivationReadiness/);
-  assert.match(era, /db\.transaction/);
-  assert.match(era, /ERA_ACTIVATE/);
+  assert.match(era, /activateEra/);
+  assert.match(lifecycleService, /currentReadinessDigest/);
+  assert.match(lifecycleService, /evaluateEraActivationReadiness/);
+  assert.match(lifecycleService, /db\.transaction/);
+  assert.match(lifecycleService, /ERA_ACTIVATE/);
+  assert.match(lifecycleService, /ERA_CHANGED_AFTER_READINESS/);
+  assert.match(lifecycleService, /ERA_CHANGED_BEFORE_ACTIVATION/);
 });
 
 test("alert evaluator queues only and does not contain delivery integrations", async () => {
@@ -271,4 +297,67 @@ test("active customer routes have an evidence-gated suspension path", async () =
   assert.match(source, /status: "SUSPENDED"/);
   assert.match(source, /PRODUCT_ROUTE_SUSPEND/);
   assert.match(source, /db\.transaction/);
+});
+
+
+test("closure snapshot consistency is protected by Era content revision CAS", async () => {
+  const [childMigration, eraRowMigration, archive, service, schema] = await Promise.all([
+    readFile(
+      new URL("../drizzle/0015_era_closure_snapshot_consistency_r0.sql", import.meta.url),
+      "utf8"
+    ),
+    readFile(
+      new URL("../drizzle/0016_era_row_closure_snapshot_consistency_r0.sql", import.meta.url),
+      "utf8"
+    ),
+    readFile(new URL("../src/lib/era-engine/archive.ts", import.meta.url), "utf8"),
+    readFile(new URL("../src/lib/era-engine/lifecycle-service.ts", import.meta.url), "utf8"),
+    readFile(new URL("../src/db/schema.ts", import.meta.url), "utf8"),
+  ]);
+
+  assert.match(schema, /contentRevision: integer\("content_revision"\)/);
+  assert.match(archive, /eraContentRevision/);
+  assert.match(archive, /ERA_CHANGED_DURING_SNAPSHOT/);
+  assert.match(service, /buildEraArchiveSnapshotInTransaction/);
+  assert.match(service, /eq\(eras\.contentRevision, current\.contentRevision\)/);
+
+  for (const trigger of [
+    "era_products_bump_content_revision",
+    "era_sections_bump_content_revision",
+    "era_media_assets_bump_content_revision",
+    "era_watchtower_bindings_bump_content_revision",
+    "products_bump_era_content_revision",
+  ]) {
+    assert.match(childMigration, new RegExp(trigger));
+  }
+
+  assert.match(childMigration, /BEFORE INSERT OR UPDATE OR DELETE ON era_products/);
+  assert.match(childMigration, /BEFORE INSERT OR UPDATE OR DELETE ON era_sections/);
+  assert.match(childMigration, /BEFORE INSERT OR UPDATE OR DELETE ON era_media_assets/);
+  assert.match(childMigration, /BEFORE INSERT OR UPDATE OR DELETE ON era_watchtower_bindings/);
+  assert.match(childMigration, /BEFORE UPDATE OR DELETE ON products/);
+
+  assert.match(eraRowMigration, /eras_bump_content_revision_on_snapshot_fields/);
+  assert.match(eraRowMigration, /bump_era_content_revision_from_snapshot_fields/);
+  for (const column of [
+    "id",
+    "slug",
+    "name",
+    "eyebrow",
+    "story",
+    "kind",
+    "lifecycle_state",
+    "visibility",
+    "is_primary",
+    "start_at",
+    "end_at",
+    "theme_tokens",
+    "archive_policy",
+    "created_at",
+    "updated_at",
+  ]) {
+    assert.match(eraRowMigration, new RegExp(`\\b${column}\\b`));
+  }
+  assert.match(eraRowMigration, /GREATEST\(NEW\.content_revision, OLD\.content_revision \+ 1\)/);
+  assert.match(eraRowMigration, /watchtower_profile is intentionally excluded/);
 });

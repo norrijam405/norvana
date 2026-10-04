@@ -1,0 +1,210 @@
+{
+  "schema": "AE_LRP_R0_FRC01_REMEDIATION_BUILDER_RAW_EVIDENCE_V1",
+  "date": "2026-10-03",
+  "repository": "norrijam405/norvana",
+  "pullRequest": 15,
+  "role": "Remediation Builder",
+  "finding": {
+    "id": "AE-LRP-R0-FRC-01",
+    "title": "CLOSURE_SNAPSHOT_TOCTOU_CHILD_MUTATION_NOT_COVERED_BY_ERA_CAS"
+  },
+  "failedCandidate": {
+    "commit": "7f8241e2dac3f044d03fd4627526e77884ff1c90",
+    "parent": "c123c154d98013b617167421c573249f14054c8e",
+    "tree": "a538bc0d4a67a860cd52a88f8e106d2df74d55c0"
+  },
+  "frozenRemediationCandidate": {
+    "commit": "571d24a00ff1fb1aa319b125bf793584c7f059a0",
+    "parent": "718e73d23a0c3d691b7bd994cf6462ce32686255",
+    "tree": "63209916cd87c3f88cbace8fc7d152d59cc2f016"
+  },
+  "candidateBlobs": {
+    "lifecycleService": "fbdea16a48e6637b400c049167764338f52dbe13",
+    "archiveBuilder": "6fea9dc121c0c9a0ba706bb9f9673d99873d3f8b",
+    "schema": "a5aeab4ea17371d9f45bee71c8c31e6b5364b340",
+    "migration0015": "e27abc3d37dc2297db9243f9356831deee89fb9c",
+    "concurrencyProofHarness": "3ebbc4446be8684d98036b0aae070fc678140bcd",
+    "readinessPreserved": "44d15ba48be3dabe409b7409a6662741292af13b",
+    "resolverPreserved": "b2e567d5a71cceb7b47f3bb165be321b1f257289",
+    "signalBusPreserved": "c7a6560fc381248a4bb51573461657fd7e9dd655",
+    "alertEvaluatorPreserved": "2088dd6b828d2d91a7df4fffec8ff5064c3713f8"
+  },
+  "remediationDesign": {
+    "mechanism": "DB-enforced monotonic Era content_revision plus transactional snapshot construction and closure CAS",
+    "migration": "drizzle/0015_era_closure_snapshot_consistency_r0.sql",
+    "protectedSnapshotContributors": [
+      "products referenced by Era product memberships",
+      "era_products memberships",
+      "era_sections",
+      "era_media_assets",
+      "era_watchtower_bindings"
+    ],
+    "behavior": [
+      "Every normal INSERT/UPDATE/DELETE of Era child snapshot state advances the owning eras.content_revision through PostgreSQL triggers.",
+      "Product UPDATE/DELETE advances content_revision for every Era membership referencing the product.",
+      "closeEra constructs the closure snapshot inside the close transaction.",
+      "Snapshot construction re-reads eras.updated_at and eras.content_revision after child reads and fails closed if either changed.",
+      "The final CLOSED transition CASes lifecycle_state, updated_at, and content_revision.",
+      "If a child mutation commits before closure, the revision changes and closure rolls back, including any tentative archive snapshot.",
+      "If closure wins the Era-row CAS first, a concurrent child trigger cannot commit until closure completes, so that mutation occurs after closure rather than before it."
+    ]
+  },
+  "postgresExecution": {
+    "workflow": "Acre Era Lifecycle Proof R0",
+    "workflowRun": 37162032199,
+    "workflowRunNumber": 29,
+    "job": 111317279690,
+    "postgres": "17",
+    "status": "PASS",
+    "proofClass": "DISPOSABLE_POSTGRESQL_CHILD_REVISION_CAS_CONCURRENCY",
+    "cases": [
+      {
+        "case": "product-price-update",
+        "observedBlockedCas": true,
+        "firstClose": "FAIL_CLOSED",
+        "firstCloseError": "ERA_CHANGED_BEFORE_CLOSURE",
+        "revisionBefore": 4,
+        "revisionAfterMutation": 5,
+        "retry": "CLOSED_WITH_MUTATION_CAPTURED",
+        "snapshotDigest": "d07d2d2413f29a9a4e5b69b692f8f7df4f2fdd0e043e183c0e5df2b59ed3c745"
+      },
+      {
+        "case": "membership-insert",
+        "observedBlockedCas": true,
+        "firstClose": "FAIL_CLOSED",
+        "firstCloseError": "ERA_CHANGED_BEFORE_CLOSURE",
+        "revisionBefore": 4,
+        "revisionAfterMutation": 5,
+        "retry": "CLOSED_WITH_MUTATION_CAPTURED",
+        "snapshotDigest": "005c28921ce2209a721c7dad5ee255bb164845abdbf53f581c4f754768cc26bd"
+      },
+      {
+        "case": "section-update",
+        "observedBlockedCas": true,
+        "firstClose": "FAIL_CLOSED",
+        "firstCloseError": "ERA_CHANGED_BEFORE_CLOSURE",
+        "revisionBefore": 4,
+        "revisionAfterMutation": 5,
+        "retry": "CLOSED_WITH_MUTATION_CAPTURED",
+        "snapshotDigest": "a1f10eaa2e5f8bc4105f89a642c774a2ff1ff8de9a56fd8739287fbd80ebf4a5"
+      },
+      {
+        "case": "media-update",
+        "observedBlockedCas": true,
+        "firstClose": "FAIL_CLOSED",
+        "firstCloseError": "ERA_CHANGED_BEFORE_CLOSURE",
+        "revisionBefore": 4,
+        "revisionAfterMutation": 5,
+        "retry": "CLOSED_WITH_MUTATION_CAPTURED",
+        "snapshotDigest": "768fa9a27af1e08669f81c40629bdcc9cbee7e90c39f0db14ceeddf5a1c6dba5"
+      },
+      {
+        "case": "watchtower-binding-update",
+        "observedBlockedCas": true,
+        "firstClose": "FAIL_CLOSED",
+        "firstCloseError": "ERA_CHANGED_BEFORE_CLOSURE",
+        "revisionBefore": 4,
+        "revisionAfterMutation": 5,
+        "retry": "CLOSED_WITH_MUTATION_CAPTURED",
+        "snapshotDigest": "a0ea3c4eb56b0aaa76b176140d350d5fbc90e349fd27d12a9b1356cdaafe5243"
+      }
+    ],
+    "guarantees": {
+      "staleAcceptedClosureSnapshots": 0,
+      "failedCloseSnapshotsPersisted": 0,
+      "productDataCovered": true,
+      "membershipPhantomCovered": true,
+      "sectionsCovered": true,
+      "mediaCovered": true,
+      "watchtowerBindingsCovered": true,
+      "committedMutationCapturedOnRetry": true
+    }
+  },
+  "fullApplicationPathProof": {
+    "status": "PASS",
+    "proofClass": "ISOLATED_SYNTHETIC_FULL_LIFECYCLE_APPLICATION_PATH_POSTGRESQL_R1",
+    "readinessDigest": "4219f66fa38e50fa9a06c734a0d33c1949730aaa325466393eb939419c1b7715",
+    "closureSnapshotDigest": "adc54f367dfe0677cce3cd751b91ec00fe0b9de863867b12329bd9235579d44f",
+    "lifecycle": [
+      "DRAFT",
+      "ACTIVE",
+      "CLOSED",
+      "ARCHIVED"
+    ],
+    "productionPaths": {
+      "evaluateEraActivationReadiness": "PASS",
+      "activateEraSharedProductionService": "PASS",
+      "resolveCurrentPublicEra": "PASS",
+      "buildEraArchiveSnapshot": "PASS",
+      "closeEraSharedProductionService": "PASS",
+      "archiveEraSharedProductionService": "PASS",
+      "resolvePublicEraBySlugArchived": "PASS",
+      "ingestWatchtowerSignal": "PASS",
+      "evaluateAndQueueCustomerAlerts": "PASS"
+    },
+    "adversarial": {
+      "mismatchedReadinessDigestRejected": "PASS",
+      "staleReadinessAfterMutationRejected": "PASS",
+      "archiveWithoutClosureSnapshotRejected": "PASS",
+      "signalKeyPayloadCollisionRejected": "PASS",
+      "sensitivePrivateSignalPayloadRejected": "PASS",
+      "alertPayloadSanitized": "PASS",
+      "signalReplayIdempotent": "PASS",
+      "archivedProductHistorical": "PASS",
+      "revokedCurrentMediaHiddenFromArchivedResolution": "PASS",
+      "futureStartRawPrimaryRejectedByProductionResolver": "PASS",
+      "ambiguousPrimary": "DATABASE_GUARDED"
+    }
+  },
+  "regressionSteps": {
+    "typecheck": "PASS",
+    "eraEngine": "PASS",
+    "archiveAlertActivation": {
+      "status": "PASS",
+      "tests": 15,
+      "failures": 0
+    },
+    "signalBus": {
+      "status": "PASS",
+      "tests": 12,
+      "failures": 0
+    }
+  },
+  "preservedPriorEvidence": {
+    "originalFc01Finding": "AE-LRP-R0-FC-01 — FULL_LIFECYCLE_PROOF_BYPASSES_PRODUCTION_ERA_AND_SIGNAL_APPLICATION_PATHS",
+    "builderRun": 37152908083,
+    "previousPostgresqlEvidenceRun": 37148461532,
+    "frc01FailureRun": 37154988141,
+    "frc01FailureJob": 111296439748,
+    "remainsValid": [
+      "shared production lifecycle/readiness/resolver/archive/Signal Bus/alert paths are imported and exercised",
+      "future-start ACTIVE/PUBLIC/primary is rejected",
+      "readiness digest mismatch and stale Era-row readiness are rejected",
+      "archive refuses to proceed without a valid persisted CLOSURE snapshot",
+      "PostgreSQL archive UPDATE/DELETE immutability remains enforced",
+      "archived historical product resolution remains snapshot-backed",
+      "current media-rights revocation hides the current asset without rewriting historical snapshot bytes",
+      "Signal Bus same-key/different-payload collision rejection remains passing",
+      "Signal Bus sensitive/private payload rejection remains passing",
+      "verified projection and replay/idempotence remain passing",
+      "alert sanitization, fingerprint deduplication, and queue-only authority remain passing"
+    ],
+    "frc01ScopedGapClosed": "transactional closure-snapshot consistency against concurrent mutation of snapshot-contributing child state"
+  },
+  "safety": {
+    "productionDatabaseTouched": false,
+    "productionMigrationRun": false,
+    "productionDeployment": false,
+    "vercelProductionRoutingChanged": false,
+    "realEraActivated": false,
+    "realProductPublished": false,
+    "customerDataUsed": false,
+    "notificationsSent": 0,
+    "suppliersOrFulfillmentActivated": false,
+    "ordersPlaced": 0,
+    "moneySpent": false,
+    "dataClass": "SYNTHETIC_ONLY",
+    "databaseClass": "DISPOSABLE_POSTGRESQL_17"
+  },
+  "disposition": "REMEDIATION_BUILDER_PASS_READY_FOR_SEPARATE_FRESH_RECHALLENGER"
+}
