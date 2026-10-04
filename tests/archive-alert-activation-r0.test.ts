@@ -301,9 +301,13 @@ test("active customer routes have an evidence-gated suspension path", async () =
 
 
 test("closure snapshot consistency is protected by Era content revision CAS", async () => {
-  const [migration, archive, service, schema] = await Promise.all([
+  const [childMigration, eraRowMigration, archive, service, schema] = await Promise.all([
     readFile(
       new URL("../drizzle/0015_era_closure_snapshot_consistency_r0.sql", import.meta.url),
+      "utf8"
+    ),
+    readFile(
+      new URL("../drizzle/0016_era_row_closure_snapshot_consistency_r0.sql", import.meta.url),
       "utf8"
     ),
     readFile(new URL("../src/lib/era-engine/archive.ts", import.meta.url), "utf8"),
@@ -324,12 +328,36 @@ test("closure snapshot consistency is protected by Era content revision CAS", as
     "era_watchtower_bindings_bump_content_revision",
     "products_bump_era_content_revision",
   ]) {
-    assert.match(migration, new RegExp(trigger));
+    assert.match(childMigration, new RegExp(trigger));
   }
 
-  assert.match(migration, /BEFORE INSERT OR UPDATE OR DELETE ON era_products/);
-  assert.match(migration, /BEFORE INSERT OR UPDATE OR DELETE ON era_sections/);
-  assert.match(migration, /BEFORE INSERT OR UPDATE OR DELETE ON era_media_assets/);
-  assert.match(migration, /BEFORE INSERT OR UPDATE OR DELETE ON era_watchtower_bindings/);
-  assert.match(migration, /BEFORE UPDATE OR DELETE ON products/);
+  assert.match(childMigration, /BEFORE INSERT OR UPDATE OR DELETE ON era_products/);
+  assert.match(childMigration, /BEFORE INSERT OR UPDATE OR DELETE ON era_sections/);
+  assert.match(childMigration, /BEFORE INSERT OR UPDATE OR DELETE ON era_media_assets/);
+  assert.match(childMigration, /BEFORE INSERT OR UPDATE OR DELETE ON era_watchtower_bindings/);
+  assert.match(childMigration, /BEFORE UPDATE OR DELETE ON products/);
+
+  assert.match(eraRowMigration, /eras_bump_content_revision_on_snapshot_fields/);
+  assert.match(eraRowMigration, /bump_era_content_revision_from_snapshot_fields/);
+  for (const column of [
+    "id",
+    "slug",
+    "name",
+    "eyebrow",
+    "story",
+    "kind",
+    "lifecycle_state",
+    "visibility",
+    "is_primary",
+    "start_at",
+    "end_at",
+    "theme_tokens",
+    "archive_policy",
+    "created_at",
+    "updated_at",
+  ]) {
+    assert.match(eraRowMigration, new RegExp(`\\b${column}\\b`));
+  }
+  assert.match(eraRowMigration, /GREATEST\(NEW\.content_revision, OLD\.content_revision \+ 1\)/);
+  assert.match(eraRowMigration, /watchtower_profile is intentionally excluded/);
 });
