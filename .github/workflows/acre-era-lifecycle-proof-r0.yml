@@ -39,6 +39,12 @@ jobs:
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
 
+      - name: Freeze exact candidate metadata
+        run: |
+          echo "CANDIDATE_COMMIT=$(git rev-parse HEAD)"
+          echo "CANDIDATE_PARENT=$(git rev-parse HEAD^)"
+          echo "CANDIDATE_TREE=$(git rev-parse HEAD^{tree})"
+
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
         with:
           node-version: 22
