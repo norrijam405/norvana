@@ -65,6 +65,9 @@ jobs:
             psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f "$file"
           done
 
+      - name: Run FRC-03 monotonic revision remediation proof
+        run: node --experimental-strip-types --experimental-loader ./scripts/node-ts-alias-loader.mjs challenge/acre-era-lifecycle-r0/AE-LRP-R0-FRC-03_REMEDIATION_BUILDER_PROOF.mjs
+
       - name: Run FRC-02 Era-row closure concurrency remediation proof
         run: node --experimental-strip-types --experimental-loader ./scripts/node-ts-alias-loader.mjs challenge/acre-era-lifecycle-r0/AE-LRP-R0-FRC-02_REMEDIATION_BUILDER_PROOF.mjs
 
