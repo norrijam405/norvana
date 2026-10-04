@@ -301,3 +301,101 @@
     transform: none;
   }
 }
+
+
+/* Hero fallback system: polished first-party motion when no approved media exists. */
+.acre-era-hero-fallback[data-era-motion="organic"] {
+  background:
+    radial-gradient(circle at 78% 20%, rgba(232,198,138,.28), transparent 22rem),
+    radial-gradient(circle at 24% 72%, rgba(123,138,98,.34), transparent 28rem),
+    linear-gradient(145deg, #2f3026 0%, #405134 45%, #59694a 100%);
+}
+
+.acre-era-hero-fallback[data-era-motion="kinetic"] {
+  background:
+    radial-gradient(circle at 76% 26%, rgba(232,198,138,.24), transparent 19rem),
+    linear-gradient(130deg, #2f3026 0%, #663923 48%, #c7783e 100%);
+}
+
+.acre-era-hero-fallback[data-era-motion="cinematic"] {
+  background:
+    radial-gradient(circle at 68% 24%, rgba(232,198,138,.18), transparent 18rem),
+    linear-gradient(125deg, #11120f 0%, #25271f 56%, #405134 100%);
+}
+
+.acre-era-hero-fallback[data-era-motion="precision"] {
+  background:
+    radial-gradient(circle at 74% 28%, rgba(169,184,142,.22), transparent 20rem),
+    linear-gradient(135deg, #1f251f 0%, #354238 52%, #526642 100%);
+}
+
+.era-fallback-orb {
+  position: absolute;
+  border-radius: 999px;
+  filter: blur(2px);
+  opacity: .45;
+  pointer-events: none;
+}
+
+.era-fallback-orb-a {
+  width: 34rem;
+  height: 34rem;
+  right: -8rem;
+  top: -9rem;
+  background: radial-gradient(circle, rgba(246,241,231,.22), transparent 64%);
+  animation: era-orb-float-a 14s ease-in-out infinite alternate;
+}
+
+.era-fallback-orb-b {
+  width: 28rem;
+  height: 28rem;
+  left: -10rem;
+  bottom: -12rem;
+  background: radial-gradient(circle, rgba(232,198,138,.18), transparent 62%);
+  animation: era-orb-float-b 18s ease-in-out infinite alternate;
+}
+
+.era-fallback-linework[data-era-motion="organic"] {
+  background-image:
+    repeating-radial-gradient(ellipse at 24% 56%, transparent 0 25px, rgba(246,241,231,.07) 26px 27px, transparent 28px 46px);
+  background-size: 560px 400px;
+}
+
+.era-fallback-linework[data-era-motion="kinetic"] {
+  background-image:
+    linear-gradient(118deg, transparent 0 42%, rgba(246,241,231,.10) 42% 44%, transparent 44% 100%),
+    linear-gradient(118deg, transparent 0 66%, rgba(232,198,138,.11) 66% 68%, transparent 68% 100%);
+  background-size: 220px 220px, 340px 340px;
+  animation: era-kinetic-drift 14s linear infinite;
+}
+
+.era-fallback-linework[data-era-motion="cinematic"] {
+  background:
+    repeating-linear-gradient(90deg, transparent 0 92px, rgba(246,241,231,.03) 93px 94px),
+    linear-gradient(to bottom, transparent 0 70%, rgba(0,0,0,.18) 100%);
+}
+
+.era-fallback-linework[data-era-motion="precision"] {
+  background-image:
+    linear-gradient(rgba(246,241,231,.06) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(246,241,231,.06) 1px, transparent 1px);
+  background-size: 52px 52px;
+}
+
+@keyframes era-orb-float-a {
+  from { transform: translate3d(0, 0, 0) scale(1); }
+  to { transform: translate3d(-24px, 18px, 0) scale(1.04); }
+}
+
+@keyframes era-orb-float-b {
+  from { transform: translate3d(0, 0, 0) scale(1); }
+  to { transform: translate3d(28px, -18px, 0) scale(1.06); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .era-fallback-orb-a,
+  .era-fallback-orb-b,
+  .era-fallback-linework[data-era-motion="kinetic"] {
+    animation: none !important;
+  }
+}
