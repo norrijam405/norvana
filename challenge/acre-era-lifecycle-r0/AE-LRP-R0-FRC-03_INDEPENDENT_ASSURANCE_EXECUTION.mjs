@@ -32,11 +32,11 @@ try{
    s=await seed(c,table); b=await rev(c,s.era.id); let id;
    if(table==="era_sections") id=(await one(c,"insert into era_sections(era_id,section_type,position,config,status) values($1,'HERO',0,'{}','ENABLED') returning id",[s.era.id])).id;
    if(table==="era_media_assets") id=(await one(c,"insert into era_media_assets(era_id,asset_type,media_url,rights_state,status) values($1,'IMAGE','https://example.invalid/a','VERIFIED','ACTIVE') returning id",[s.era.id])).id;
-   if(table==="era_watchtower_bindings") id=(await one(c,"insert into era_watchtower_bindings(era_id,watch_job_slug,importance,public_facet,config) values($1,'ia-watch','HIGH','ia','{}') returning id",[s.era.id])).id;
+   if(table==="era_watchtower_bindings") id=(await one(c,"insert into era_watchtower_bindings(era_id,watch_job_slug,importance,public_facet,config) values($1,'ia-watch',70,'ia','{}') returning id",[s.era.id])).id;
    let a=await rev(c,s.era.id);A(a>b,table+" insert no bump");
    if(table==="era_sections") await c.query("update era_sections set position=position+1 where id=$1",[id]);
    if(table==="era_media_assets") await c.query("update era_media_assets set alt_text='changed' where id=$1",[id]);
-   if(table==="era_watchtower_bindings") await c.query("update era_watchtower_bindings set importance='LOW' where id=$1",[id]);
+   if(table==="era_watchtower_bindings") await c.query("update era_watchtower_bindings set importance=30 where id=$1",[id]);
    let u=await rev(c,s.era.id);A(u>a,table+" update no bump");await c.query("delete from "+table+" where id=$1",[id]);let d=await rev(c,s.era.id);A(d>u,table+" delete no bump");await reject(c,"update eras set content_revision=$2 where id=$1",[s.era.id,b],table+" reset");cases.push({case:table,before:b,insert:a,update:u,delete:d});
  }
  // Membership + referenced product mutation across two Eras.
