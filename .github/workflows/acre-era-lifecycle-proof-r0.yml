@@ -65,6 +65,9 @@ jobs:
             psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f "$file"
           done
 
+      - name: Run FRC-03 Independent Assurance
+        run: node --experimental-strip-types --experimental-loader ./scripts/node-ts-alias-loader.mjs challenge/acre-era-lifecycle-r0/AE-LRP-R0-FRC-03_INDEPENDENT_ASSURANCE_EXECUTION.mjs
+
       - name: Run independent FRC-03 Fresh Re-Challenge
         run: node --experimental-strip-types --experimental-loader ./scripts/node-ts-alias-loader.mjs challenge/acre-era-lifecycle-r0/AE-LRP-R0-FRC-03_FRESH_RECHALLENGE_EXECUTION.mjs
 
