@@ -113,3 +113,191 @@
   background-size: 64px 64px;
   mask-image: linear-gradient(to bottom, rgba(0,0,0,.7), transparent 88%);
 }
+
+
+/* Approved Era theme profiles: organic / kinetic / cinematic / precision. */
+.era-adaptive-shell {
+  --era-accent: #526642;
+  --era-accent-soft: #e8e9d9;
+  --era-surface: #fffcf6;
+  --era-surface-strong: #f6f1e7;
+  --era-text: #2f3026;
+  --era-muted: #6f7068;
+  --era-radius: 1.75rem;
+  background: var(--era-surface-strong);
+  color: var(--era-text);
+}
+
+.era-adaptive-shell[data-era-motion="organic"] {
+  --era-accent: #526642;
+  --era-accent-soft: #e8e9d9;
+  --era-surface: #fffcf6;
+  --era-surface-strong: #f6f1e7;
+  --era-radius: 1.75rem;
+}
+
+.era-adaptive-shell[data-era-motion="kinetic"] {
+  --era-accent: #c7783e;
+  --era-accent-soft: #e8c68a;
+  --era-surface: #fff9f1;
+  --era-surface-strong: #f6f1e7;
+  --era-radius: 1rem;
+}
+
+.era-adaptive-shell[data-era-motion="cinematic"] {
+  --era-accent: #e8c68a;
+  --era-accent-soft: #405134;
+  --era-surface: #25271f;
+  --era-surface-strong: #181a15;
+  --era-text: #f6f1e7;
+  --era-muted: #c4c1b7;
+  --era-radius: 0.7rem;
+  background: var(--era-surface-strong);
+  color: var(--era-text);
+}
+
+.era-adaptive-shell[data-era-motion="precision"] {
+  --era-accent: #526642;
+  --era-accent-soft: #eef0e7;
+  --era-surface: #fffdfa;
+  --era-surface-strong: #f4f5ef;
+  --era-radius: 0.8rem;
+}
+
+.era-adaptive-hero {
+  background: #2f3026;
+}
+
+.era-adaptive-overlay {
+  background: linear-gradient(90deg, rgba(47,48,38,.96) 0%, rgba(47,48,38,.72) 52%, rgba(47,48,38,.18) 100%);
+}
+
+.era-adaptive-pattern {
+  opacity: .28;
+  pointer-events: none;
+}
+
+.era-adaptive-hero[data-era-motion="organic"] .era-adaptive-pattern {
+  background-image:
+    repeating-radial-gradient(ellipse at 24% 58%, transparent 0 28px, rgba(232,198,138,.11) 29px 30px, transparent 31px 49px),
+    repeating-radial-gradient(ellipse at 76% 34%, transparent 0 36px, rgba(123,138,98,.15) 37px 38px, transparent 39px 60px);
+  background-size: 520px 380px, 680px 480px;
+}
+
+.era-adaptive-hero[data-era-motion="kinetic"] .era-adaptive-overlay {
+  background:
+    linear-gradient(110deg, rgba(47,48,38,.95) 0%, rgba(75,42,26,.78) 50%, rgba(47,48,38,.26) 100%);
+}
+
+.era-adaptive-hero[data-era-motion="kinetic"] .era-adaptive-pattern {
+  background-image:
+    linear-gradient(115deg, transparent 0 44%, rgba(232,198,138,.14) 44% 46%, transparent 46% 100%),
+    linear-gradient(115deg, transparent 0 64%, rgba(199,120,62,.22) 64% 66%, transparent 66% 100%);
+  background-size: 180px 180px, 280px 280px;
+  animation: era-kinetic-drift 14s linear infinite;
+}
+
+.era-adaptive-hero[data-era-motion="cinematic"] .era-adaptive-overlay {
+  background:
+    radial-gradient(circle at 74% 28%, rgba(232,198,138,.11), transparent 24rem),
+    linear-gradient(90deg, rgba(18,19,15,.98), rgba(18,19,15,.74) 55%, rgba(18,19,15,.24));
+}
+
+.era-adaptive-hero[data-era-motion="cinematic"] .era-adaptive-pattern {
+  background:
+    linear-gradient(to bottom, transparent 0 72%, rgba(0,0,0,.22) 100%),
+    repeating-linear-gradient(90deg, transparent 0 84px, rgba(246,241,231,.035) 85px 86px);
+}
+
+.era-adaptive-hero[data-era-motion="precision"] .era-adaptive-overlay {
+  background:
+    linear-gradient(90deg, rgba(28,32,27,.96), rgba(35,47,38,.68) 54%, rgba(35,47,38,.16));
+}
+
+.era-adaptive-hero[data-era-motion="precision"] .era-adaptive-pattern {
+  background-image:
+    linear-gradient(rgba(246,241,231,.07) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(246,241,231,.07) 1px, transparent 1px),
+    radial-gradient(circle at 70% 38%, rgba(169,184,142,.18), transparent 20rem);
+  background-size: 54px 54px, 54px 54px, auto;
+}
+
+.era-adaptive-story,
+.era-adaptive-trust {
+  color: var(--era-text);
+}
+
+.era-adaptive-products {
+  background: color-mix(in srgb, var(--era-surface) 92%, transparent);
+  color: var(--era-text);
+}
+
+.era-adaptive-shell[data-era-motion="cinematic"] .era-adaptive-products,
+.era-adaptive-shell[data-era-motion="cinematic"] .era-adaptive-trust {
+  border-color: rgba(246,241,231,.1);
+}
+
+.era-adaptive-shell[data-era-motion="cinematic"] .text-muted {
+  color: var(--era-muted);
+}
+
+.era-adaptive-shell[data-era-motion="cinematic"] .text-soil {
+  color: var(--era-text);
+}
+
+.era-adaptive-shell[data-era-motion="cinematic"] .text-leaf {
+  color: var(--era-accent);
+}
+
+.era-adaptive-shell[data-era-motion="cinematic"] .bg-surface,
+.era-adaptive-shell[data-era-motion="cinematic"] .acre-world {
+  background: #25271f;
+  color: #f6f1e7;
+  border-color: rgba(246,241,231,.11);
+}
+
+.era-product-card {
+  border-color: color-mix(in srgb, var(--era-text) 11%, transparent);
+  border-radius: var(--era-radius);
+  background: var(--era-surface);
+  color: var(--era-text);
+  transition: transform .28s ease, border-color .28s ease, box-shadow .28s ease;
+}
+
+.era-product-card:hover {
+  transform: translateY(-4px);
+  border-color: color-mix(in srgb, var(--era-accent) 48%, transparent);
+  box-shadow: 0 18px 45px rgba(22,24,19,.11);
+}
+
+.era-product-card[data-era-motion="kinetic"]:hover {
+  transform: translateY(-5px) rotate(-.35deg);
+}
+
+.era-product-card[data-era-motion="cinematic"] {
+  background: #23251e;
+  border-color: rgba(246,241,231,.12);
+}
+
+.era-product-card[data-era-motion="precision"] {
+  box-shadow: none;
+}
+
+.era-product-card[data-era-motion="precision"]:hover {
+  box-shadow: 0 12px 28px rgba(47,48,38,.08);
+}
+
+@keyframes era-kinetic-drift {
+  from { background-position: 0 0, 0 0; }
+  to { background-position: 180px 0, -280px 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .era-adaptive-hero[data-era-motion="kinetic"] .era-adaptive-pattern {
+    animation: none !important;
+  }
+  .era-product-card:hover,
+  .era-product-card[data-era-motion="kinetic"]:hover {
+    transform: none;
+  }
+}
