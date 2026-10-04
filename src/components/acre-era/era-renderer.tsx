@@ -16,6 +16,19 @@ function humanize(value: string) {
     .replace(/(^|\s)\S/g, (letter) => letter.toUpperCase());
 }
 
+type EraMotionProfile = "organic" | "kinetic" | "cinematic" | "precision";
+
+function motionProfile(era: PublicEra): EraMotionProfile {
+  const value = era.theme.motionProfile;
+  return value === "kinetic" || value === "cinematic" || value === "precision"
+    ? value
+    : "organic";
+}
+
+function hasSection(era: PublicEra, sectionType: string) {
+  return era.sections.length === 0 || era.sections.some((section) => section.sectionType === sectionType);
+}
+
 function checkoutLabel(product: PublicEraProduct) {
   if (product.commerceModel === "AFFILIATE_REFERRAL") {
     return product.externalSellerName
@@ -27,11 +40,17 @@ function checkoutLabel(product: PublicEraProduct) {
   return "Acre Era route";
 }
 
-function ProductCard({ product }: { product: PublicEraProduct }) {
+function ProductCard({
+  product,
+  profile,
+}: {
+  product: PublicEraProduct;
+  profile: EraMotionProfile;
+}) {
   const image = product.images[0] ?? null;
 
   return (
-    <article className="group overflow-hidden rounded-[1.75rem] border border-soil/10 bg-surface shadow-sm">
+    <article className="era-product-card group overflow-hidden border shadow-sm" data-era-motion={profile}>
       <Link href={`/shop/${product.slug}`} className="block">
         <div className="relative aspect-[4/3] overflow-hidden bg-sage-wash">
           {image ? (
@@ -98,13 +117,18 @@ export function EraRenderer({
   current?: boolean;
 }) {
   const archived = era.lifecycleState === "CLOSED" || era.lifecycleState === "ARCHIVED";
+  const profile = motionProfile(era);
+  const showWhy = hasSection(era, "WHY_THIS_ERA");
+  const showProducts = hasSection(era, "PRODUCT_GRID");
+  const showWatchtower = hasSection(era, "WATCHTOWER_SUMMARY");
+  const showArchive = hasSection(era, "ARCHIVE_TEASER");
 
   return (
-    <main>
-      <section className="relative isolate min-h-[72svh] overflow-hidden bg-soil text-cream">
+    <main className="era-adaptive-shell" data-era-motion={profile}>
+      <section className="era-adaptive-hero relative isolate min-h-[72svh] overflow-hidden text-cream" data-era-motion={profile}>
         <EraHeroMedia media={era.media} eraName={era.name} />
-        <div className="absolute inset-0 bg-gradient-to-r from-soil/95 via-soil/70 to-soil/20" />
-        <div className="absolute inset-0 acre-era-hero-grid opacity-30" aria-hidden="true" />
+        <div className="era-adaptive-overlay absolute inset-0" aria-hidden="true" />
+        <div className="era-adaptive-pattern absolute inset-0" aria-hidden="true" />
 
         <div className="relative mx-auto flex min-h-[72svh] max-w-7xl items-end px-5 py-14 sm:px-8 lg:px-10 lg:py-20">
           <div className="max-w-3xl">
@@ -145,7 +169,7 @@ export function EraRenderer({
         </div>
       </section>
 
-      {era.publicWatchtowerFacets.length ? (
+      {showWatchtower && era.publicWatchtowerFacets.length ? (
         <section className="border-b border-soil/10 bg-surface">
           <div className="mx-auto max-w-7xl px-5 py-5 sm:px-8 lg:px-10">
             <div className="flex flex-wrap items-center gap-2">
@@ -162,7 +186,8 @@ export function EraRenderer({
         </section>
       ) : null}
 
-      <section className="mx-auto max-w-7xl px-5 py-14 sm:px-8 lg:px-10 lg:py-20">
+      {showWhy ? (
+      <section className="era-adaptive-story mx-auto max-w-7xl px-5 py-14 sm:px-8 lg:px-10 lg:py-20">
         <div className="grid gap-8 lg:grid-cols-[0.8fr_1.2fr] lg:items-end">
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.2em] text-leaf">Why this Era exists</p>
@@ -177,8 +202,10 @@ export function EraRenderer({
           </p>
         </div>
       </section>
+      ) : null}
 
-      <section className="border-y border-soil/10 bg-surface/70">
+      {showProducts ? (
+      <section className="era-adaptive-products border-y border-soil/10 bg-surface/70">
         <div className="mx-auto max-w-7xl px-5 py-14 sm:px-8 lg:px-10 lg:py-20">
           <div className="mb-8 flex flex-wrap items-end justify-between gap-4">
             <div>
@@ -197,7 +224,7 @@ export function EraRenderer({
           {era.products.length ? (
             <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
               {era.products.map((product) => (
-                <ProductCard key={product.id} product={product} />
+                <ProductCard key={product.id} product={product} profile={profile} />
               ))}
             </div>
           ) : (
@@ -210,8 +237,10 @@ export function EraRenderer({
           )}
         </div>
       </section>
+      ) : null}
 
-      <section className="mx-auto max-w-7xl px-5 py-14 sm:px-8 lg:px-10 lg:py-20">
+      {showArchive ? (
+      <section className="era-adaptive-trust mx-auto max-w-7xl px-5 py-14 sm:px-8 lg:px-10 lg:py-20">
         <div className="grid gap-5 md:grid-cols-3">
           <div className="acre-world">
             <p className="text-xs font-semibold uppercase tracking-[0.18em] text-leaf">Passport</p>
@@ -236,6 +265,7 @@ export function EraRenderer({
           </div>
         </div>
       </section>
+      ) : null}
     </main>
   );
 }
