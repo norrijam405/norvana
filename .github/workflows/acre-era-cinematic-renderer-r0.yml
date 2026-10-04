@@ -1,0 +1,45 @@
+name: Acre Era Cinematic Renderer R0
+
+on:
+  push:
+    branches:
+      - "feature/2026-10-04-acre-era-cinematic-renderer-r0"
+  pull_request:
+    branches:
+      - "feature/2026-10-03-acre-era-lifecycle-proof-r0"
+
+permissions:
+  contents: read
+
+jobs:
+  renderer-r0:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/renderer_ci
+      NEXT_TELEMETRY_DISABLED: "1"
+
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: 22
+
+      - name: Install dependencies
+        run: npm install --ignore-scripts --no-audit --no-fund
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Build
+        run: npm run build
+
+      - name: Era Engine regression
+        run: npm run test:era-engine
+
+      - name: Archive / alert / activation regression
+        run: npm run test:archive-alert-activation
+
+      - name: Signal Bus regression
+        run: npm run test:watchtower-signals
