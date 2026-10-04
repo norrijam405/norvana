@@ -1,0 +1,107 @@
+{
+  "schema": "AE_LRP_R0_FRC03_INDEPENDENT_ASSURANCE_RAW_EVIDENCE_V1",
+  "date": "2026-10-04",
+  "repository": "norrijam405/norvana",
+  "pullRequest": 15,
+  "role": "Independent Assurance",
+  "result": "PASS",
+  "finding": {
+    "id": "AE-LRP-R0-FRC-03",
+    "title": "CONTENT_REVISION_DIRECT_RESET_NEUTRALIZES_CLOSURE_CAS",
+    "status": "INDEPENDENTLY_ASSURED_CLOSED"
+  },
+  "assuredCandidate": {
+    "commit": "bcd245f48b125a4f6f875edda15077dc699f80e0",
+    "parent": "d3a044e96be8d0397825a8ec3e781b20b3bf6814",
+    "tree": "05509a76a76975d57275a34c6554a9c948876c83"
+  },
+  "execution": {
+    "evidenceExecutionHead": "4e848853fd39e505119837b0e8c7f99a76875ccc",
+    "temporaryPullRequest": 20,
+    "workflowRun": 37193547983,
+    "job": 111410580520,
+    "conclusion": "success",
+    "postgresVersion": "PostgreSQL 17.11 (Debian 17.11-1.pgdg13+2)",
+    "databaseClass": "DISPOSABLE_POSTGRESQL_17",
+    "dataClass": "SYNTHETIC_ONLY",
+    "candidateCodeMutationDuringAssurance": false,
+    "evidenceHarnessOnly": true
+  },
+  "independentCases": {
+    "revisionRegression": {
+      "zero": "23514",
+      "olderPositive": "23514",
+      "negativeUpdate": "23514",
+      "negativeInsert": "23514",
+      "caseExpression": "23514",
+      "noopRevision": 9,
+      "monotonicIncrease": 12
+    },
+    "triggerOrdering": {
+      "ordinaryUpdate": "0->1",
+      "updateFrom": "0->1",
+      "merge": "PASS",
+      "bulkMultirow": "PASS via fresh FRC regression"
+    },
+    "transactions": {
+      "multipleWrites": "PASS",
+      "savepointReset": "23514",
+      "rollback": "ROW_AND_REVISION_RESTORED"
+    },
+    "childState": {
+      "sections": "0->1->2->3",
+      "media": "0->1->2->3",
+      "watchtowerBindings": "0->1->2->3",
+      "membershipAndMultiEraProductMutation": "PASS"
+    },
+    "closureRace": {
+      "firstClose": "ERA_CHANGED_BEFORE_CLOSURE",
+      "failedCloseClosureSnapshots": 0,
+      "retryCapturedCommittedMutation": true
+    }
+  },
+  "regressionStack": {
+    "frc03FreshRechallenge": "PASS",
+    "frc03BuilderMatrix": "PASS",
+    "frc02Genuine21Case": "PASS",
+    "frc01ChildConcurrency": "PASS",
+    "sharedApplicationLifecycle": "PASS",
+    "typecheck": "PASS",
+    "eraEngine": "11/11 PASS",
+    "archiveAlertActivation": "15/15 PASS",
+    "signalBus": "12/12 PASS",
+    "archiveInvariants": "PASS through shared lifecycle + archive/alert/activation regression"
+  },
+  "priorProtections": {
+    "frc02": "INTACT",
+    "frc01": "INTACT",
+    "fc01": "INTACT"
+  },
+  "preliminaryHarnessRuns": [
+    {
+      "run": 37193430041,
+      "job": 111410229586,
+      "classification": "HARNESS_ERROR",
+      "reason": "Watchtower importance fixture used string against integer schema; no candidate defect"
+    },
+    {
+      "run": 37193490259,
+      "job": 111410411464,
+      "classification": "HARNESS_ERROR",
+      "reason": "assurance script local variable binding error after substantive probes; no candidate defect"
+    }
+  ],
+  "safety": {
+    "productionTouched": false,
+    "customerDataUsed": false,
+    "realEraActivated": false,
+    "realProductPublished": false,
+    "notificationsSent": 0,
+    "suppliersOrFulfillmentActivated": false,
+    "ordersPlaced": 0,
+    "moneySpent": false,
+    "paidInfrastructureEnabled": false,
+    "pr15Merged": false
+  },
+  "disposition": "INDEPENDENT_ASSURANCE_PASS_NO_MERGE_AUTHORIZATION"
+}
