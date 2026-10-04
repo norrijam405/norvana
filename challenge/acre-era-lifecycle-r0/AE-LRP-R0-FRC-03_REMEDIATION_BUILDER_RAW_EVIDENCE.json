@@ -1,0 +1,322 @@
+{
+  "schema": "AE_LRP_R0_FRC03_REMEDIATION_BUILDER_RAW_EVIDENCE_V1",
+  "date": "2026-10-04",
+  "repository": "norrijam405/norvana",
+  "pullRequest": 15,
+  "role": "Remediation Builder",
+  "result": "PASS",
+  "finding": {
+    "id": "AE-LRP-R0-FRC-03",
+    "title": "CONTENT_REVISION_DIRECT_RESET_NEUTRALIZES_CLOSURE_CAS"
+  },
+  "failedCandidate": {
+    "commit": "29163ee7cdd31e732c3437b55bc63ed71fa8f294",
+    "parent": "dd888f81e90e93a6dc5c116e6a558e38e4156591",
+    "tree": "a4ad399e49bd1a37b8f834d47a6835632f8b2a87"
+  },
+  "remediationCandidate": {
+    "commit": "bcd245f48b125a4f6f875edda15077dc699f80e0",
+    "parent": "d3a044e96be8d0397825a8ec3e781b20b3bf6814",
+    "tree": "05509a76a76975d57275a34c6554a9c948876c83"
+  },
+  "remediation": {
+    "migration": "drizzle/0017_era_content_revision_monotonicity_r0.sql",
+    "mechanism": [
+      "CHECK constraint rejects negative content_revision values including inserts.",
+      "BEFORE UPDATE OF content_revision trigger rejects any decrease with SQLSTATE 23514.",
+      "No-op and monotonic increases remain valid so existing Era-row and child bump triggers continue to work.",
+      "Direct SQL cannot restore a prior revision after a committed snapshot-relevant mutation."
+    ]
+  },
+  "freshExecution": {
+    "workflow": "Acre Era Lifecycle Proof R0",
+    "workflowRun": 37180224365,
+    "workflowRunNumber": 63,
+    "job": 111371124874,
+    "jobConclusion": "success",
+    "postgresImage": "postgres:17",
+    "postgresVersion": "17.11 (Debian 17.11-1.pgdg13+2)",
+    "dataClass": "SYNTHETIC_ONLY",
+    "databaseClass": "DISPOSABLE_POSTGRESQL_17",
+    "temporaryExecutionPullRequest": 18,
+    "temporaryExecutionPullRequestDisposition": "CLOSED_UNMERGED"
+  },
+  "frc03Runtime": {
+    "status": "PASS",
+    "proofClass": "DISPOSABLE_POSTGRESQL_MONOTONIC_NON_NEUTRALIZABLE_ERA_REVISION",
+    "cases": [
+      {
+        "case": "older-positive",
+        "rejected": true,
+        "sqlstate": "23514"
+      },
+      {
+        "case": "restore-earlier",
+        "rejected": true,
+        "sqlstate": "23514"
+      },
+      {
+        "case": "below-zero-update",
+        "rejected": true,
+        "sqlstate": "23514"
+      },
+      {
+        "case": "no-op-revision-update",
+        "accepted": true,
+        "revision": 5
+      },
+      {
+        "case": "negative-insert",
+        "rejected": true,
+        "sqlstate": "23514"
+      },
+      {
+        "case": "story-same-transaction-reset",
+        "resetRejected": true,
+        "sqlstate": "23514",
+        "firstClose": "FAIL_CLOSED",
+        "firstCloseError": "ERA_CHANGED_BEFORE_CLOSURE",
+        "failedCloseSnapshotsPersisted": 0,
+        "retry": "CLOSED_WITH_COMMITTED_MUTATION_CAPTURED"
+      },
+      {
+        "case": "story-later-transaction-reset",
+        "resetRejected": true,
+        "sqlstate": "23514",
+        "firstClose": "FAIL_CLOSED",
+        "firstCloseError": "ERA_CHANGED_BEFORE_CLOSURE",
+        "failedCloseSnapshotsPersisted": 0,
+        "retry": "CLOSED_WITH_COMMITTED_MUTATION_CAPTURED"
+      },
+      {
+        "case": "cte-update-from-reset",
+        "resetRejected": true,
+        "sqlstate": "23514",
+        "firstClose": "FAIL_CLOSED",
+        "firstCloseError": "ERA_CHANGED_BEFORE_CLOSURE",
+        "failedCloseSnapshotsPersisted": 0,
+        "retry": "CLOSED_WITH_COMMITTED_MUTATION_CAPTURED"
+      },
+      {
+        "case": "merge-reset",
+        "resetRejected": true,
+        "sqlstate": "23514",
+        "firstClose": "FAIL_CLOSED",
+        "firstCloseError": "ERA_CHANGED_BEFORE_CLOSURE",
+        "failedCloseSnapshotsPersisted": 0,
+        "retry": "CLOSED_WITH_COMMITTED_MUTATION_CAPTURED"
+      },
+      {
+        "case": "multifield-reset",
+        "resetRejected": true,
+        "sqlstate": "23514",
+        "firstClose": "FAIL_CLOSED",
+        "firstCloseError": "ERA_CHANGED_BEFORE_CLOSURE",
+        "failedCloseSnapshotsPersisted": 0,
+        "retry": "CLOSED_WITH_COMMITTED_MUTATION_CAPTURED"
+      },
+      {
+        "case": "sequential-reset",
+        "resetRejected": true,
+        "sqlstate": "23514",
+        "firstClose": "FAIL_CLOSED",
+        "firstCloseError": "ERA_CHANGED_BEFORE_CLOSURE",
+        "failedCloseSnapshotsPersisted": 0,
+        "retry": "CLOSED_WITH_COMMITTED_MUTATION_CAPTURED"
+      },
+      {
+        "case": "visibility-primary-lifecycle-reset",
+        "resetRejected": true,
+        "sqlstate": "23514",
+        "firstClose": "FAIL_CLOSED",
+        "firstCloseError": "ERA_CHANGED_BEFORE_CLOSURE",
+        "failedCloseSnapshotsPersisted": 0,
+        "retry": "CLOSED_WITH_COMMITTED_MUTATION_CAPTURED"
+      },
+      {
+        "case": "rollback-and-savepoint",
+        "rollbackRestored": true,
+        "savepointResetRejected": true
+      },
+      {
+        "case": "child-membership-insert",
+        "revisionBefore": 0,
+        "revisionAfter": 1,
+        "resetRejected": true
+      },
+      {
+        "case": "child-membership-update",
+        "revisionBefore": 1,
+        "revisionAfter": 2,
+        "resetRejected": true
+      },
+      {
+        "case": "child-membership-delete",
+        "revisionBefore": 2,
+        "revisionAfter": 3,
+        "resetRejected": true
+      },
+      {
+        "case": "child-section-insert",
+        "revisionBefore": 3,
+        "revisionAfter": 4,
+        "resetRejected": true
+      },
+      {
+        "case": "child-section-update",
+        "revisionBefore": 4,
+        "revisionAfter": 5,
+        "resetRejected": true
+      },
+      {
+        "case": "child-section-delete",
+        "revisionBefore": 5,
+        "revisionAfter": 6,
+        "resetRejected": true
+      },
+      {
+        "case": "child-media-insert",
+        "revisionBefore": 6,
+        "revisionAfter": 7,
+        "resetRejected": true
+      },
+      {
+        "case": "child-media-update",
+        "revisionBefore": 7,
+        "revisionAfter": 8,
+        "resetRejected": true
+      },
+      {
+        "case": "child-media-delete",
+        "revisionBefore": 8,
+        "revisionAfter": 9,
+        "resetRejected": true
+      },
+      {
+        "case": "child-watchtower-insert",
+        "revisionBefore": 9,
+        "revisionAfter": 10,
+        "resetRejected": true
+      },
+      {
+        "case": "child-watchtower-update",
+        "revisionBefore": 10,
+        "revisionAfter": 11,
+        "resetRejected": true
+      },
+      {
+        "case": "child-watchtower-delete",
+        "revisionBefore": 11,
+        "revisionAfter": 12,
+        "resetRejected": true
+      },
+      {
+        "case": "child-referenced-product-one-era",
+        "revisionBefore": 13,
+        "revisionAfter": 14,
+        "resetRejected": true
+      },
+      {
+        "case": "referenced-product-multiple-eras",
+        "bothAdvanced": true,
+        "bothResetsRejected": true
+      }
+    ],
+    "guarantees": {
+      "directRevisionLoweringRejected": true,
+      "exactPriorRevisionRestoreRejected": true,
+      "olderPositiveRejected": true,
+      "belowZeroRejected": true,
+      "sameTransactionResetRejected": true,
+      "laterCommittedResetRejected": true,
+      "ordinaryUpdateResetClosed": true,
+      "updateOnlyResetClosed": true,
+      "cteUpdateFromResetClosed": true,
+      "mergeResetClosed": true,
+      "multiFieldResetClosed": true,
+      "sequentialMutationResetClosed": true,
+      "lifecycleVisibilityPrimaryResetClosed": true,
+      "childResetMatrixCovered": true,
+      "rollbackCovered": true,
+      "savepointsCovered": true,
+      "failedCloseSnapshotsPersisted": 0,
+      "retryCapturesCommittedMutation": true
+    }
+  },
+  "preservedRegressions": {
+    "frc02": {
+      "status": "PASS",
+      "proofClass": "DISPOSABLE_POSTGRESQL_ERA_ROW_REVISION_CAS_CONCURRENCY",
+      "cases": 21,
+      "failedCloseSnapshotsPersisted": 0,
+      "retryCapturesCommittedMutation": true,
+      "concurrentEraAndChildCovered": true,
+      "twoConcurrentClosureAttemptsCovered": true
+    },
+    "frc01": {
+      "status": "PASS",
+      "proofClass": "DISPOSABLE_POSTGRESQL_CHILD_REVISION_CAS_CONCURRENCY",
+      "failedCloseSnapshotsPersisted": 0,
+      "staleAcceptedClosureSnapshots": 0
+    },
+    "fc01SharedLifecycle": {
+      "status": "PASS",
+      "proofClass": "ISOLATED_SYNTHETIC_FULL_LIFECYCLE_APPLICATION_PATH_POSTGRESQL_R1",
+      "readinessDigest": "a5a6f5f393b62ca0782eae345aa59903128bf2584938a57fa0394556ea1b4f43",
+      "snapshotDigest": "c7c555d998d6d6b2dbca3c182cabb9da43952877bee97a6fc335a88e98178f54",
+      "lifecycle": [
+        "DRAFT",
+        "ACTIVE",
+        "CLOSED",
+        "ARCHIVED"
+      ],
+      "futureStartAtRejected": true,
+      "archiveWithoutClosureRejected": true,
+      "archiveSnapshotImmutable": true,
+      "archivedHistoricalProductPreserved": true,
+      "currentMediaRightsRevocationPreserved": true,
+      "watchtowerSignalIngestion": true,
+      "alertEvaluation": true,
+      "replayIdempotence": true,
+      "sameKeyDifferentPayloadCollisionRejected": true,
+      "sensitivePrivateSignalRejected": true
+    },
+    "typecheck": "PASS",
+    "eraEngine": {
+      "tests": 11,
+      "pass": 11,
+      "failures": 0
+    },
+    "archiveAlertActivation": {
+      "tests": 15,
+      "pass": 15,
+      "failures": 0
+    },
+    "signalBus": {
+      "tests": 12,
+      "pass": 12,
+      "failures": 0
+    }
+  },
+  "nonGoverning": {
+    "workflow": "Acre Era Fresh Re-Challenge FRC-02",
+    "workflowRun": 37180224371,
+    "conclusion": "failure",
+    "interpretation": "The legacy reproducer expected the old FRC-02 race to reproduce. It failed because the defect remains closed. This workflow is not the governing FRC-03 Builder execution."
+  },
+  "safety": {
+    "productionDatabaseTouched": false,
+    "productionMigrationRun": false,
+    "productionDeployment": false,
+    "productionRoutingChanged": false,
+    "realEraActivated": false,
+    "realProductPublished": false,
+    "customerDataUsed": false,
+    "notificationsSent": 0,
+    "suppliersOrFulfillmentActivated": false,
+    "ordersPlaced": 0,
+    "moneySpent": false,
+    "paidInfrastructureEnabled": false,
+    "pr15Merged": false
+  }
+}
