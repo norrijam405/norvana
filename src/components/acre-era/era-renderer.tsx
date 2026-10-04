@@ -93,14 +93,8 @@ function ProductCard({
 
           <div className="mt-5 grid gap-2 border-t border-soil/10 pt-4 text-xs">
             <div className="flex items-center justify-between gap-3">
-              <span className="text-muted">Route</span>
+              <span className="text-muted">Buying option</span>
               <span className="text-right font-medium text-soil">{checkoutLabel(product)}</span>
-            </div>
-            <div className="flex items-center justify-between gap-3">
-              <span className="text-muted">Authorization</span>
-              <span className="text-right font-medium text-soil">
-                {humanize(product.authorizationState || "unknown")}
-              </span>
             </div>
           </div>
         </div>
@@ -120,7 +114,6 @@ export function EraRenderer({
   const profile = motionProfile(era);
   const showWhy = hasSection(era, "WHY_THIS_ERA");
   const showProducts = hasSection(era, "PRODUCT_GRID");
-  const showWatchtower = hasSection(era, "WATCHTOWER_SUMMARY");
   const showArchive = hasSection(era, "ARCHIVE_TEASER");
 
   return (
@@ -169,22 +162,6 @@ export function EraRenderer({
         </div>
       </section>
 
-      {showWatchtower && era.publicWatchtowerFacets.length ? (
-        <section className="border-b border-soil/10 bg-surface">
-          <div className="mx-auto max-w-7xl px-5 py-5 sm:px-8 lg:px-10">
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="mr-2 text-xs font-semibold uppercase tracking-[0.16em] text-muted">
-                Watchtower is watching
-              </span>
-              {era.publicWatchtowerFacets.map((facet) => (
-                <span key={facet} className="rounded-full bg-sage-wash px-3 py-1 text-xs font-medium text-soil">
-                  {humanize(facet)}
-                </span>
-              ))}
-            </div>
-          </div>
-        </section>
-      ) : null}
 
       {showWhy ? (
       <section className="era-adaptive-story mx-auto max-w-7xl px-5 py-14 sm:px-8 lg:px-10 lg:py-20">
@@ -196,9 +173,8 @@ export function EraRenderer({
             </h2>
           </div>
           <p className="max-w-2xl text-base leading-7 text-muted lg:justify-self-end">
-            Every item shown here comes through the Era’s own curation and public trust rules.
-            Source, authorization, checkout responsibility, and historical state stay visible instead of
-            being flattened into a generic product grid.
+            Everything here is selected for a reason. We keep the useful details clear — who you buy from,
+            where checkout happens, and what matters before you decide — without making shopping feel complicated.
           </p>
         </div>
       </section>
@@ -216,7 +192,7 @@ export function EraRenderer({
             </div>
             {archived ? (
               <p className="max-w-lg text-sm leading-6 text-muted">
-                These products are rendered from the immutable closure snapshot, not today’s mutable catalog.
+                This collection is shown as it appeared when this Era was active.
               </p>
             ) : null}
           </div>
@@ -229,9 +205,9 @@ export function EraRenderer({
             </div>
           ) : (
             <div className="rounded-[1.75rem] border border-dashed border-soil/20 bg-bone px-6 py-14 text-center">
-              <h3 className="text-xl font-semibold">Nothing is being presented here yet.</h3>
+              <h3 className="text-xl font-semibold">Nothing available here right now.</h3>
               <p className="mx-auto mt-2 max-w-lg text-sm leading-6 text-muted">
-                Acre Era does not fabricate inventory when an Era has no public, eligible product curation.
+                Check back soon or explore another part of Acre Era.
               </p>
             </div>
           )}
@@ -246,21 +222,21 @@ export function EraRenderer({
             <p className="text-xs font-semibold uppercase tracking-[0.18em] text-leaf">Passport</p>
             <h2 className="mt-3 text-2xl font-bold">Know what you’re buying.</h2>
             <p className="mt-3 text-sm leading-6 text-muted">
-              Source, authorization, route, condition, and evidence remain separate instead of becoming one vague trust badge.
+              See who you’re buying from, where checkout happens, product condition, returns, and other details that matter before you buy.
             </p>
           </div>
           <div className="acre-world">
             <p className="text-xs font-semibold uppercase tracking-[0.18em] text-leaf">Bring It Here</p>
             <h2 className="mt-3 text-2xl font-bold">Demand can shape the next Era.</h2>
             <p className="mt-3 text-sm leading-6 text-muted">
-              Customer requests become evidence for research and qualification—not automatic publication authority.
+              Tell us what you want to see next. Popular requests help shape future collections.
             </p>
           </div>
           <div className="acre-world">
             <p className="text-xs font-semibold uppercase tracking-[0.18em] text-leaf">Archive</p>
             <h2 className="mt-3 text-2xl font-bold">History stays history.</h2>
             <p className="mt-3 text-sm leading-6 text-muted">
-              Closed Eras preserve their historical curation while current rights controls can still hide revoked media.
+              Revisit past collections and see what Acre Era featured at the time.
             </p>
           </div>
         </div>
@@ -280,8 +256,7 @@ export function NoCurrentEra() {
             The next world opens when it is actually ready.
           </h1>
           <p className="mt-6 max-w-2xl text-base leading-7 text-cream/75 sm:text-lg">
-            There is no public Current Era right now. Acre Era would rather show that truth than expose a future,
-            incomplete, or unqualified collection.
+            We’re between featured collections right now. You can still shop everyday goods or revisit past Eras while the next one gets ready.
           </p>
           <div className="mt-8 flex flex-wrap gap-3">
             <Link href="/shop" className="btn-primary !bg-wheat !text-soil hover:!bg-cream">Browse goods</Link>
