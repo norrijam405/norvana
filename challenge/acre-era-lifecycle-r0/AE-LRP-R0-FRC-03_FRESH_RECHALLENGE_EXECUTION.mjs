@@ -9,8 +9,10 @@ async function reject(c,q,p,label){let e;try{await c.query(q,p)}catch(x){e=x}A(e
 async function waitSnapshotGate(c){for(let i=0;i<160;i++){const r=await c.query(`select 1 from pg_stat_activity where datname=current_database() and pid<>pg_backend_pid() and wait_event_type='Lock' and lower(query) like '%era_archive_snapshots%'`);if(r.rows.length)return true;await new Promise(r=>setTimeout(r,50))}return false}
 async function countClosure(c,id){return Number((await one(c,`select count(*)::int n from era_archive_snapshots where era_id=$1 and snapshot_kind='CLOSURE'`,[id])).n)}
 const cases=[];
+let postgresVersion=null;
 const c=new Client({connectionString:url}); await c.connect();
 try{
+  postgresVersion=(await one(c,"select version() v")).v;
   let s=await seed(c,"direct",1); const id=s.era.id;
   await c.query("update eras set content_revision=7 where id=$1",[id]);
   cases.push({case:"direct-zero",sqlstate:await reject(c,"update only eras set content_revision=0 where id=$1",[id],"zero")});
@@ -60,6 +62,6 @@ try{
  } finally {try{await gate.query("rollback")}catch{};await Promise.all([setup.end(),gate.end(),inspect.end(),mut.end()])}
 }
 console.log("FRC03_FRESH_RECHALLENGE_BEGIN");
-console.log(JSON.stringify({schema:"AE_LRP_R0_FRC03_FRESH_RECHALLENGE_EXECUTION_V1",candidate:"bcd245f48b125a4f6f875edda15077dc699f80e0",result:"PASS_SO_FAR",cases},null,2));
+console.log(JSON.stringify({schema:"AE_LRP_R0_FRC03_FRESH_RECHALLENGE_EXECUTION_V1",candidate:"bcd245f48b125a4f6f875edda15077dc699f80e0",postgresVersion,result:"PASS_SO_FAR",cases},null,2));
 console.log("FRC03_FRESH_RECHALLENGE_END");
 await pool.end();
