@@ -119,7 +119,7 @@ export function EraRenderer({
   return (
     <main className="era-adaptive-shell" data-era-motion={profile}>
       <section className="era-adaptive-hero relative isolate min-h-[72svh] overflow-hidden text-cream" data-era-motion={profile}>
-        <EraHeroMedia media={era.media} eraName={era.name} />
+        <EraHeroMedia media={era.media} eraName={era.name} profile={profile} />
         <div className="era-adaptive-overlay absolute inset-0" aria-hidden="true" />
         <div className="era-adaptive-pattern absolute inset-0" aria-hidden="true" />
 
