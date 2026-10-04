@@ -1,0 +1,511 @@
+{
+  "schema": "AE_LRP_R0_FRC02_REMEDIATION_BUILDER_RAW_EVIDENCE_V1",
+  "date": "2026-10-03",
+  "repository": "norrijam405/norvana",
+  "pullRequest": 15,
+  "role": "Remediation Builder",
+  "result": "PASS",
+  "finding": {
+    "id": "AE-LRP-R0-FRC-02",
+    "title": "CLOSURE_SNAPSHOT_ERA_ROW_MUTATION_NOT_COVERED_BY_REVISION_OR_UPDATED_AT_GUARD"
+  },
+  "frozenCandidate": {
+    "commit": "29163ee7cdd31e732c3437b55bc63ed71fa8f294",
+    "parent": "dd888f81e90e93a6dc5c116e6a558e38e4156591",
+    "tree": "a4ad399e49bd1a37b8f834d47a6835632f8b2a87"
+  },
+  "verifiedBlobs": {
+    "migration0015": "e27abc3d37dc2297db9243f9356831deee89fb9c",
+    "migration0016": "174ce815b4c06f032cb4595d1ae190a2bf5aa0ff",
+    "frc02BuilderProof": "3ec3c65ea2b2f481b89f42a9bdd5b7818c910311",
+    "workflow": "2231c65a1886010d98c2f115931e43cd686a7d1b",
+    "archiveAlertRegression": "6e585d412ae7d2b23299956531c7ea2716dba4bc",
+    "schema": "a5aeab4ea17371d9f45bee71c8c31e6b5364b340",
+    "archiveBuilder": "6fea9dc121c0c9a0ba706bb9f9673d99873d3f8b",
+    "lifecycleService": "fbdea16a48e6637b400c049167764338f52dbe13"
+  },
+  "execution": {
+    "workflow": "Acre Era Lifecycle Proof R0",
+    "workflowRun": 37164520239,
+    "workflowRunNumber": 54,
+    "job": 111324603342,
+    "checkoutClass": "EXACT_PULL_REQUEST_HEAD_SHA",
+    "postgresImage": "postgres:17",
+    "postgresVersion": "17.11 (Debian 17.11-1.pgdg13+2)",
+    "nodeVersion": "22.23.3",
+    "dataClass": "SYNTHETIC_ONLY",
+    "databaseClass": "DISPOSABLE_POSTGRESQL_17"
+  },
+  "snapshotRelevantEraColumns": [
+    "id",
+    "slug",
+    "name",
+    "eyebrow",
+    "story",
+    "kind",
+    "lifecycle_state",
+    "visibility",
+    "is_primary",
+    "start_at",
+    "end_at",
+    "theme_tokens",
+    "archive_policy",
+    "content_revision",
+    "created_at",
+    "updated_at"
+  ],
+  "excludedEraColumns": {
+    "watchtower_profile": "NOT_SERIALIZED_IN_ACRE_ERA_ARCHIVE_SNAPSHOT_R0"
+  },
+  "remediation": {
+    "mechanism": "PostgreSQL BEFORE UPDATE trigger advances eras.content_revision whenever any Era column serialized into ACRE_ERA_ARCHIVE_SNAPSHOT_R0 changes, including direct SQL that omits updated_at. closeEra retains transactional snapshot construction plus updated_at/content_revision final CAS.",
+    "migration": "drizzle/0016_era_row_closure_snapshot_consistency_r0.sql",
+    "trigger": "eras_bump_content_revision_on_snapshot_fields",
+    "function": "bump_era_content_revision_from_snapshot_fields",
+    "monotonicRule": "NEW.content_revision = GREATEST(NEW.content_revision, OLD.content_revision + 1)",
+    "watchtowerProfileDisposition": "EXCLUDED_FROM_GUARD_BECAUSE_NOT_SERIALIZED_IN_CLOSURE_SNAPSHOT"
+  },
+  "frc02RuntimeProof": {
+    "schema": "AE_LRP_R0_FRC02_REMEDIATION_BUILDER_POSTGRES_PROOF_V1",
+    "findingId": "AE-LRP-R0-FRC-02",
+    "status": "PASS",
+    "postgres": "17",
+    "proofClass": "DISPOSABLE_POSTGRESQL_ERA_ROW_REVISION_CAS_CONCURRENCY",
+    "snapshotRelevantEraColumns": [
+      "id",
+      "slug",
+      "name",
+      "eyebrow",
+      "story",
+      "kind",
+      "lifecycle_state",
+      "visibility",
+      "is_primary",
+      "start_at",
+      "end_at",
+      "theme_tokens",
+      "archive_policy",
+      "content_revision",
+      "created_at",
+      "updated_at"
+    ],
+    "excludedEraColumns": {
+      "watchtower_profile": "NOT_SERIALIZED_IN_ACRE_ERA_ARCHIVE_SNAPSHOT_R0"
+    },
+    "cases": [
+      {
+        "case": "slug",
+        "observedBlockedSnapshotInsert": true,
+        "mutationCommittedBeforeCloseCompleted": true,
+        "firstClose": "FAIL_CLOSED",
+        "firstCloseError": "ERA_CHANGED_BEFORE_CLOSURE",
+        "revisionBefore": 0,
+        "revisionAfterMutation": 1,
+        "retry": "CLOSED_WITH_COMMITTED_MUTATION_CAPTURED",
+        "retrySnapshotDigest": "fc59d264be3bf42487202d957e635d41dc5b4c059eab4f4329b9d4f1083e11e7",
+        "applicationCloseAdvancedRevision": true
+      },
+      {
+        "case": "name",
+        "observedBlockedSnapshotInsert": true,
+        "mutationCommittedBeforeCloseCompleted": true,
+        "firstClose": "FAIL_CLOSED",
+        "firstCloseError": "ERA_CHANGED_BEFORE_CLOSURE",
+        "revisionBefore": 0,
+        "revisionAfterMutation": 1,
+        "retry": "CLOSED_WITH_COMMITTED_MUTATION_CAPTURED",
+        "retrySnapshotDigest": "7a066ba8821dec3f316a349817fa7cec4da155316bf02b054632ca749f15d960",
+        "applicationCloseAdvancedRevision": true
+      },
+      {
+        "case": "eyebrow",
+        "observedBlockedSnapshotInsert": true,
+        "mutationCommittedBeforeCloseCompleted": true,
+        "firstClose": "FAIL_CLOSED",
+        "firstCloseError": "ERA_CHANGED_BEFORE_CLOSURE",
+        "revisionBefore": 0,
+        "revisionAfterMutation": 1,
+        "retry": "CLOSED_WITH_COMMITTED_MUTATION_CAPTURED",
+        "retrySnapshotDigest": "e8589f18db3a7fed7b000ada7a6f9ca2b6c24581fa4b7487dd4c52a74d676cef",
+        "applicationCloseAdvancedRevision": true
+      },
+      {
+        "case": "story-exact-frc02",
+        "observedBlockedSnapshotInsert": true,
+        "mutationCommittedBeforeCloseCompleted": true,
+        "firstClose": "FAIL_CLOSED",
+        "firstCloseError": "ERA_CHANGED_BEFORE_CLOSURE",
+        "revisionBefore": 0,
+        "revisionAfterMutation": 1,
+        "retry": "CLOSED_WITH_COMMITTED_MUTATION_CAPTURED",
+        "retrySnapshotDigest": "d958c4105e68949854750227489a977c64c586e4664e67d97a200998f4d3cd7f",
+        "applicationCloseAdvancedRevision": true
+      },
+      {
+        "case": "kind",
+        "observedBlockedSnapshotInsert": true,
+        "mutationCommittedBeforeCloseCompleted": true,
+        "firstClose": "FAIL_CLOSED",
+        "firstCloseError": "ERA_CHANGED_BEFORE_CLOSURE",
+        "revisionBefore": 0,
+        "revisionAfterMutation": 1,
+        "retry": "CLOSED_WITH_COMMITTED_MUTATION_CAPTURED",
+        "retrySnapshotDigest": "a25e0c6b68e53b87b189e236d79e62c1f0b4014aa2341688f72a23b5e555cd3d",
+        "applicationCloseAdvancedRevision": true
+      },
+      {
+        "case": "visibility",
+        "observedBlockedSnapshotInsert": true,
+        "mutationCommittedBeforeCloseCompleted": true,
+        "firstClose": "FAIL_CLOSED",
+        "firstCloseError": "ERA_CHANGED_BEFORE_CLOSURE",
+        "revisionBefore": 0,
+        "revisionAfterMutation": 1,
+        "retry": "CLOSED_WITH_COMMITTED_MUTATION_CAPTURED",
+        "retrySnapshotDigest": "2427165679f0889da67dbd585e18ae64872308c10aa479528544aaeb89ac77e1",
+        "applicationCloseAdvancedRevision": true
+      },
+      {
+        "case": "is-primary",
+        "observedBlockedSnapshotInsert": true,
+        "mutationCommittedBeforeCloseCompleted": true,
+        "firstClose": "FAIL_CLOSED",
+        "firstCloseError": "ERA_CHANGED_BEFORE_CLOSURE",
+        "revisionBefore": 0,
+        "revisionAfterMutation": 1,
+        "retry": "CLOSED_WITH_COMMITTED_MUTATION_CAPTURED",
+        "retrySnapshotDigest": "56ed00a7b3ca7b55131a161ab4bfbe7d70ba4f6f3c9d0364e12e8a16082447c5",
+        "applicationCloseAdvancedRevision": true
+      },
+      {
+        "case": "start-at",
+        "observedBlockedSnapshotInsert": true,
+        "mutationCommittedBeforeCloseCompleted": true,
+        "firstClose": "FAIL_CLOSED",
+        "firstCloseError": "ERA_CHANGED_BEFORE_CLOSURE",
+        "revisionBefore": 0,
+        "revisionAfterMutation": 1,
+        "retry": "CLOSED_WITH_COMMITTED_MUTATION_CAPTURED",
+        "retrySnapshotDigest": "28d62ba143305a751e33410df65ca41ccb303bef2c75d9189e0c671653ba7345",
+        "applicationCloseAdvancedRevision": true
+      },
+      {
+        "case": "end-at",
+        "observedBlockedSnapshotInsert": true,
+        "mutationCommittedBeforeCloseCompleted": true,
+        "firstClose": "FAIL_CLOSED",
+        "firstCloseError": "ERA_CHANGED_BEFORE_CLOSURE",
+        "revisionBefore": 0,
+        "revisionAfterMutation": 1,
+        "retry": "CLOSED_WITH_COMMITTED_MUTATION_CAPTURED",
+        "retrySnapshotDigest": "441ca3947d6aca78f44310bd3476952a20eb74499ae6d27c84955b184a2c0179",
+        "applicationCloseAdvancedRevision": true
+      },
+      {
+        "case": "theme-tokens",
+        "observedBlockedSnapshotInsert": true,
+        "mutationCommittedBeforeCloseCompleted": true,
+        "firstClose": "FAIL_CLOSED",
+        "firstCloseError": "ERA_CHANGED_BEFORE_CLOSURE",
+        "revisionBefore": 0,
+        "revisionAfterMutation": 1,
+        "retry": "CLOSED_WITH_COMMITTED_MUTATION_CAPTURED",
+        "retrySnapshotDigest": "d170b94053f6f7ad435ea7c57994a5120ad4bd241fe90c010e034befbfacd61b",
+        "applicationCloseAdvancedRevision": true
+      },
+      {
+        "case": "archive-policy",
+        "observedBlockedSnapshotInsert": true,
+        "mutationCommittedBeforeCloseCompleted": true,
+        "firstClose": "FAIL_CLOSED",
+        "firstCloseError": "ERA_CHANGED_BEFORE_CLOSURE",
+        "revisionBefore": 0,
+        "revisionAfterMutation": 1,
+        "retry": "CLOSED_WITH_COMMITTED_MUTATION_CAPTURED",
+        "retrySnapshotDigest": "da01d3467fab78ac4c41611b3c3ecbdbd513f29f25506f441ff203ec72ec8fe9",
+        "applicationCloseAdvancedRevision": true
+      },
+      {
+        "case": "created-at",
+        "observedBlockedSnapshotInsert": true,
+        "mutationCommittedBeforeCloseCompleted": true,
+        "firstClose": "FAIL_CLOSED",
+        "firstCloseError": "ERA_CHANGED_BEFORE_CLOSURE",
+        "revisionBefore": 0,
+        "revisionAfterMutation": 1,
+        "retry": "CLOSED_WITH_COMMITTED_MUTATION_CAPTURED",
+        "retrySnapshotDigest": "a4e1916f2c90343b66265f3946b983be00a67c15cf72106000ef1d0b30cd74ef",
+        "applicationCloseAdvancedRevision": true
+      },
+      {
+        "case": "updated-at",
+        "observedBlockedSnapshotInsert": true,
+        "mutationCommittedBeforeCloseCompleted": true,
+        "firstClose": "FAIL_CLOSED",
+        "firstCloseError": "ERA_CHANGED_BEFORE_CLOSURE",
+        "revisionBefore": 0,
+        "revisionAfterMutation": 1,
+        "retry": "CLOSED_WITH_COMMITTED_MUTATION_CAPTURED",
+        "retrySnapshotDigest": "22d86d1b019b81211df88508b72ab4d95df599c0212febd68d57d09f03fffa1c",
+        "applicationCloseAdvancedRevision": true
+      },
+      {
+        "case": "content-revision-direct",
+        "observedBlockedSnapshotInsert": true,
+        "mutationCommittedBeforeCloseCompleted": true,
+        "firstClose": "FAIL_CLOSED",
+        "firstCloseError": "ERA_CHANGED_BEFORE_CLOSURE",
+        "revisionBefore": 0,
+        "revisionAfterMutation": 7,
+        "retry": "CLOSED_WITH_COMMITTED_MUTATION_CAPTURED",
+        "retrySnapshotDigest": "0e2323f8322614ac7ebd4b800a49b3dd9e83b363cb3c2715a34d4634bc9e178e",
+        "applicationCloseAdvancedRevision": true
+      },
+      {
+        "case": "lifecycle-state",
+        "observedBlockedSnapshotInsert": true,
+        "mutationCommittedBeforeCloseCompleted": true,
+        "firstClose": "FAIL_CLOSED",
+        "firstCloseError": "ERA_CHANGED_BEFORE_CLOSURE",
+        "revisionBefore": 0,
+        "revisionAfterMutation": 1,
+        "retry": "CLOSED_WITH_COMMITTED_MUTATION_CAPTURED",
+        "retrySnapshotDigest": "0d66b8740563f61b4b2a2110b2ae69517326c2c5a39bd8209fcbe44970726149",
+        "applicationCloseAdvancedRevision": true
+      },
+      {
+        "case": "primary-visibility-lifecycle-multifield",
+        "observedBlockedSnapshotInsert": true,
+        "mutationCommittedBeforeCloseCompleted": true,
+        "firstClose": "FAIL_CLOSED",
+        "firstCloseError": "ERA_CHANGED_BEFORE_CLOSURE",
+        "revisionBefore": 0,
+        "revisionAfterMutation": 1,
+        "retry": "CLOSED_WITH_COMMITTED_MUTATION_CAPTURED",
+        "retrySnapshotDigest": "35b3d734896e478cb1fca1d661de4a13dcce1fe2965d516da07e094917928cb6",
+        "applicationCloseAdvancedRevision": true
+      },
+      {
+        "case": "sequential-era-updates",
+        "observedBlockedSnapshotInsert": true,
+        "mutationCommittedBeforeCloseCompleted": true,
+        "firstClose": "FAIL_CLOSED",
+        "firstCloseError": "ERA_CHANGED_BEFORE_CLOSURE",
+        "revisionBefore": 0,
+        "revisionAfterMutation": 2,
+        "retry": "CLOSED_WITH_COMMITTED_MUTATION_CAPTURED",
+        "retrySnapshotDigest": "6a72e869bc31922bf4aad1026c49a49518811bf772b5f4f001081514b3ec8321",
+        "applicationCloseAdvancedRevision": true
+      },
+      {
+        "case": "id",
+        "observedBlockedSnapshotInsert": true,
+        "mutationCommittedBeforeCloseCompleted": true,
+        "firstClose": "FAIL_CLOSED",
+        "firstCloseError": "ERA_CHANGED_BEFORE_CLOSURE",
+        "revisionBefore": 0,
+        "revisionAfterMutation": 1,
+        "retry": "CLOSED_WITH_COMMITTED_MUTATION_CAPTURED",
+        "retrySnapshotDigest": "fc9a0a10b921d52a16c674d73fc80307360bf6c92037acf1b59c98d4e6603a13",
+        "applicationCloseAdvancedRevision": true
+      },
+      {
+        "case": "rollback",
+        "firstClose": "CLOSED_UNCHANGED",
+        "rolledBackRevision": 1,
+        "committedRevisionBeforeClose": 0,
+        "snapshotStory": "before-story"
+      },
+      {
+        "case": "concurrent-era-and-child",
+        "firstClose": "FAIL_CLOSED",
+        "firstCloseError": "ERA_CHANGED_BEFORE_CLOSURE",
+        "failedCloseSnapshotsPersisted": 0,
+        "retryCapturedEraAndChild": true
+      },
+      {
+        "case": "two-concurrent-closures",
+        "successfulClosures": 1,
+        "rejectedClosures": 1,
+        "authoritativeClosureSnapshots": 1,
+        "rejection": "ERA_CHANGED_DURING_SNAPSHOT"
+      }
+    ],
+    "guarantees": {
+      "exactFrc02StoryRaceClosed": true,
+      "directSqlOmittingUpdatedAtCovered": true,
+      "nameCovered": true,
+      "eyebrowCovered": true,
+      "themeTokensCovered": true,
+      "archivePolicyCovered": true,
+      "visibilityPrimaryLifecycleCovered": true,
+      "allSerializedMutableEraFieldsCovered": true,
+      "multipleFieldsOneTransactionCovered": true,
+      "sequentialChangesCovered": true,
+      "concurrentEraAndChildCovered": true,
+      "rollbackCovered": true,
+      "twoConcurrentClosureAttemptsCovered": true,
+      "failedCloseSnapshotsPersisted": 0,
+      "retryCapturesCommittedMutation": true,
+      "applicationPathCloseCovered": true
+    }
+  },
+  "preservedFrc01RuntimeProof": {
+    "schema": "AE_LRP_R0_FRC01_REMEDIATION_BUILDER_POSTGRES_PROOF_V1",
+    "findingId": "AE-LRP-R0-FRC-01",
+    "status": "PASS",
+    "postgres": "17",
+    "proofClass": "DISPOSABLE_POSTGRESQL_CHILD_REVISION_CAS_CONCURRENCY",
+    "cases": [
+      {
+        "case": "product-price-update",
+        "observedBlockedCas": true,
+        "firstClose": "FAIL_CLOSED",
+        "firstCloseError": "ERA_CHANGED_BEFORE_CLOSURE",
+        "revisionBefore": 4,
+        "revisionAfterMutation": 5,
+        "retry": "CLOSED_WITH_MUTATION_CAPTURED",
+        "snapshotDigest": "e9125458138ff20ab5755e84a358eeb31d2dc8e219203a75257eb1602ca04609"
+      },
+      {
+        "case": "membership-insert",
+        "observedBlockedCas": true,
+        "firstClose": "FAIL_CLOSED",
+        "firstCloseError": "ERA_CHANGED_BEFORE_CLOSURE",
+        "revisionBefore": 4,
+        "revisionAfterMutation": 5,
+        "retry": "CLOSED_WITH_MUTATION_CAPTURED",
+        "snapshotDigest": "7fd2b2b201ccda190289381771e8bd54ff009ca69a515c1f7382671774568760"
+      },
+      {
+        "case": "section-update",
+        "observedBlockedCas": true,
+        "firstClose": "FAIL_CLOSED",
+        "firstCloseError": "ERA_CHANGED_BEFORE_CLOSURE",
+        "revisionBefore": 4,
+        "revisionAfterMutation": 5,
+        "retry": "CLOSED_WITH_MUTATION_CAPTURED",
+        "snapshotDigest": "d67fe658168cf7448f39a5c98190427f5f440d934685d31072ad20ea1f31a3cf"
+      },
+      {
+        "case": "media-update",
+        "observedBlockedCas": true,
+        "firstClose": "FAIL_CLOSED",
+        "firstCloseError": "ERA_CHANGED_BEFORE_CLOSURE",
+        "revisionBefore": 4,
+        "revisionAfterMutation": 5,
+        "retry": "CLOSED_WITH_MUTATION_CAPTURED",
+        "snapshotDigest": "7a5030525b60884dbc8c6d35ab54052677f5326d2ddde0d092d89e66e1de537f"
+      },
+      {
+        "case": "watchtower-binding-update",
+        "observedBlockedCas": true,
+        "firstClose": "FAIL_CLOSED",
+        "firstCloseError": "ERA_CHANGED_BEFORE_CLOSURE",
+        "revisionBefore": 4,
+        "revisionAfterMutation": 5,
+        "retry": "CLOSED_WITH_MUTATION_CAPTURED",
+        "snapshotDigest": "afc739dd68276bc6f0ef9732b730cd9472c024b39a6d28838a94cf467222ec3f"
+      }
+    ],
+    "guarantees": {
+      "staleAcceptedClosureSnapshots": 0,
+      "failedCloseSnapshotsPersisted": 0,
+      "productDataCovered": true,
+      "membershipPhantomCovered": true,
+      "sectionsCovered": true,
+      "mediaCovered": true,
+      "watchtowerBindingsCovered": true,
+      "committedMutationCapturedOnRetry": true
+    }
+  },
+  "fullSharedApplicationPathLifecycle": {
+    "status": "PASS",
+    "proofClass": "ISOLATED_SYNTHETIC_FULL_LIFECYCLE_APPLICATION_PATH_POSTGRESQL_R1",
+    "eraId": 27,
+    "productId": 11,
+    "readinessDigest": "ab9ce96f56adde92415cdc34a17ba397a3e4006543ed93331d4f59745310e822",
+    "snapshotDigest": "bfdff4a7a58e517968551776c7081598c89bd76b7d27233b8dfd4171c5476260",
+    "signalKey": "synthetic:price:lifecycle-proof-product:1",
+    "lifecycle": [
+      "DRAFT",
+      "ACTIVE",
+      "CLOSED",
+      "ARCHIVED"
+    ],
+    "productionPaths": {
+      "evaluateEraActivationReadiness": "PASS",
+      "activateEraSharedProductionService": "PASS",
+      "resolveCurrentPublicEra": "PASS",
+      "buildEraArchiveSnapshot": "PASS",
+      "closeEraSharedProductionService": "PASS",
+      "archiveEraSharedProductionService": "PASS",
+      "resolvePublicEraBySlugArchived": "PASS",
+      "ingestWatchtowerSignal": "PASS",
+      "evaluateAndQueueCustomerAlerts": "PASS"
+    },
+    "adversarial": {
+      "mismatchedReadinessDigestRejected": "PASS",
+      "staleReadinessAfterMutationRejected": "PASS",
+      "archiveWithoutClosureSnapshotRejected": "PASS",
+      "signalKeyPayloadCollisionRejected": "PASS",
+      "sensitivePrivateSignalPayloadRejected": "PASS",
+      "alertPayloadSanitized": "PASS",
+      "signalReplayIdempotent": "PASS",
+      "archivedProductHistorical": "PASS",
+      "revokedCurrentMediaHiddenFromArchivedResolution": "PASS",
+      "futureStartRawPrimaryRejectedByProductionResolver": "PASS",
+      "ambiguousPrimary": "DATABASE_GUARDED"
+    },
+    "authority": {
+      "notificationsSent": 0,
+      "productionTouched": false,
+      "delivery": "QUEUE_ONLY_NO_EXTERNAL_DELIVERY"
+    }
+  },
+  "regressions": {
+    "typecheck": "PASS",
+    "eraEngine": {
+      "status": "PASS",
+      "tests": 11,
+      "failures": 0
+    },
+    "archiveAlertActivation": {
+      "status": "PASS",
+      "tests": 15,
+      "failures": 0
+    },
+    "signalBus": {
+      "status": "PASS",
+      "tests": 12,
+      "failures": 0
+    }
+  },
+  "priorEvidence": {
+    "frc01Protection": "PRESERVED",
+    "fc01ProductionSharedPathProtection": "PRESERVED",
+    "archiveSnapshotImmutability": "PRESERVED",
+    "archiveRequiresValidClosureSnapshot": "PRESERVED",
+    "archivedHistoricalResolution": "PRESERVED",
+    "currentMediaRightsRevocation": "PRESERVED",
+    "futureStartAtRejection": "PRESERVED",
+    "readinessDigestCas": "PRESERVED",
+    "signalReplayIdempotenceAndCollisionHandling": "PRESERVED",
+    "queueOnlyAuthority": "PRESERVED"
+  },
+  "safety": {
+    "productionDatabaseTouched": false,
+    "productionMigrationRun": false,
+    "productionDeployment": false,
+    "vercelProductionRoutingChanged": false,
+    "realEraActivated": false,
+    "realProductPublished": false,
+    "customerDataUsed": false,
+    "notificationsSent": 0,
+    "suppliersOrFulfillmentActivated": false,
+    "ordersPlaced": 0,
+    "moneySpent": false,
+    "paidInfrastructureEnabled": false
+  },
+  "disposition": "REMEDIATION_BUILDER_PASS_REQUIRE_SEPARATE_FRESH_RECHALLENGER"
+}
