@@ -678,6 +678,95 @@ export const watchCandidateSnapshots = pgTable("watch_candidate_snapshots", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
+export const demandObservations = pgTable("demand_observations", {
+  id: serial("id").primaryKey(),
+  subjectType: varchar("subject_type", { length: 40 }).notNull(),
+  subjectKey: varchar("subject_key", { length: 255 }).notNull(),
+  internalRequests: integer("internal_requests"),
+  sellThroughRate: real("sell_through_rate"),
+  repeatPurchaseRate: real("repeat_purchase_rate"),
+  searchTrendIndex: real("search_trend_index"),
+  customerVoiceScore: real("customer_voice_score"),
+  velocityIndex: real("velocity_index"),
+  sampleSize: integer("sample_size"),
+  evidenceRef: varchar("evidence_ref", { length: 1500 }).notNull(),
+  observedAt: timestamp("observed_at").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const deliveryObservations = pgTable("delivery_observations", {
+  id: serial("id").primaryKey(),
+  routeId: integer("route_id"),
+  supplierId: integer("supplier_id"),
+  carrier: varchar("carrier", { length: 120 }).notNull().default(""),
+  serviceLevel: varchar("service_level", { length: 120 }).notNull().default(""),
+  originRegion: varchar("origin_region", { length: 160 }).notNull().default(""),
+  destinationRegion: varchar("destination_region", { length: 160 }).notNull().default(""),
+  handlingHours: integer("handling_hours").notNull().default(0),
+  transitHours: integer("transit_hours").notNull().default(0),
+  promisedHours: integer("promised_hours"),
+  deliveredOnTime: boolean("delivered_on_time").notNull().default(false),
+  lost: boolean("lost").notNull().default(false),
+  damaged: boolean("damaged").notNull().default(false),
+  trackingGapHours: integer("tracking_gap_hours"),
+  evidenceRef: varchar("evidence_ref", { length: 1500 }).notNull(),
+  observedAt: timestamp("observed_at").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const darwinEvaluations = pgTable("darwin_evaluations", {
+  id: serial("id").primaryKey(),
+  subjectType: varchar("subject_type", { length: 40 }).notNull(),
+  subjectKey: varchar("subject_key", { length: 255 }).notNull(),
+  candidateKey: varchar("candidate_key", { length: 255 }).notNull(),
+  policyVersion: varchar("policy_version", { length: 80 }).notNull().default("DARWIN_R0"),
+  eligible: boolean("eligible").notNull(),
+  fitnessScore: integer("fitness_score").notNull(),
+  rejectionCodes: json("rejection_codes").$type<string[]>().notNull().default([]),
+  economics: json("economics").$type<Record<string, unknown>>().notNull().default({}),
+  demand: json("demand").$type<Record<string, unknown>>().notNull().default({}),
+  delivery: json("delivery").$type<Record<string, unknown>>().notNull().default({}),
+  risks: json("risks").$type<Record<string, unknown>>().notNull().default({}),
+  evidenceRefs: json("evidence_refs").$type<string[]>().notNull().default([]),
+  evaluatedAt: timestamp("evaluated_at").defaultNow().notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const localProducers = pgTable(
+  "local_producers",
+  {
+    id: serial("id").primaryKey(),
+    name: varchar("name", { length: 255 }).notNull(),
+    channel: varchar("channel", { length: 40 }).notNull().default("FARM"),
+    status: varchar("status", { length: 40 }).notNull().default("PROSPECT"),
+    contactName: varchar("contact_name", { length: 255 }),
+    contactEmail: varchar("contact_email", { length: 255 }),
+    website: varchar("website", { length: 1000 }),
+    serviceAreas: json("service_areas").$type<string[]>().notNull().default([]),
+    productCategories: json("product_categories").$type<string[]>().notNull().default([]),
+    seasonalNotes: text("seasonal_notes").notNull().default(""),
+    wholesaleAvailable: boolean("wholesale_available").notNull().default(false),
+    minimumOrderCents: integer("minimum_order_cents"),
+    leadTimeHours: integer("lead_time_hours"),
+    fulfillmentModes: json("fulfillment_modes").$type<string[]>().notNull().default([]),
+    shipsNationally: boolean("ships_nationally").notNull().default(false),
+    coldChainRequired: boolean("cold_chain_required").notNull().default(false),
+    currentDeliveryDays: json("current_delivery_days").$type<string[]>().notNull().default([]),
+    packagingNotes: text("packaging_notes").notNull().default(""),
+    insuranceNotes: text("insurance_notes").notNull().default(""),
+    foodSafetyNotes: text("food_safety_notes").notNull().default(""),
+    mediaPermissionStatus: varchar("media_permission_status", { length: 30 }).notNull().default("UNKNOWN"),
+    pilotInterest: varchar("pilot_interest", { length: 20 }).notNull().default("UNKNOWN"),
+    capacityNotes: text("capacity_notes").notNull().default(""),
+    paymentPreference: text("payment_preference").notNull().default(""),
+    biggestPainPoint: text("biggest_pain_point").notNull().default(""),
+    evidenceRefs: json("evidence_refs").$type<string[]>().notNull().default([]),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  },
+  (table) => [uniqueIndex("local_producers_name_idx").on(table.name)]
+);
+
 export const watchtowerSignals = pgTable(
   "watchtower_signals",
   {
