@@ -23,6 +23,12 @@ function validEmail(value: string) {
 }
 
 export async function POST(req: NextRequest) {
+  if (process.env.PRODUCER_INTEREST_INTAKE_ENABLED !== "true") {
+    return NextResponse.json(
+      { error: "Producer interest intake is not open yet." },
+      { status: 503 }
+    );
+  }
   let quota;
   try {
     quota = await consumeCustomerVoiceQuota(req, "PRODUCER_INTEREST");
