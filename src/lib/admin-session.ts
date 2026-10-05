@@ -4,6 +4,7 @@ import { ownerSessionVersion } from "@/lib/admin-identity";
 
 export const ADMIN_SESSION_COOKIE = "norvana_admin_session";
 const SESSION_TTL_SECONDS = 60 * 60 * 12;
+const REMEMBERED_SESSION_TTL_SECONDS = 60 * 60 * 24 * 30;
 
 type AdminSessionPayload = {
   role: "owner";
@@ -26,13 +27,17 @@ export function adminSessionConfigured() {
   return Boolean(process.env.NORVANA_ADMIN_SESSION_SECRET);
 }
 
-export function createAdminSessionToken(sessionVersion = 0, now = Date.now()) {
+export function createAdminSessionToken(
+  sessionVersion = 0,
+  now = Date.now(),
+  ttlSeconds = SESSION_TTL_SECONDS
+) {
   const secret = required("NORVANA_ADMIN_SESSION_SECRET");
   const iat = Math.floor(now / 1000);
   const payload: AdminSessionPayload = {
     role: "owner",
     iat,
-    exp: iat + SESSION_TTL_SECONDS,
+    exp: iat + Math.min(Math.max(ttlSeconds, SESSION_TTL_SECONDS), REMEMBERED_SESSION_TTL_SECONDS),
     sv: sessionVersion,
   };
 
@@ -89,3 +94,4 @@ export async function currentAdminSessionFromRequest(req: NextRequest) {
 }
 
 export const ADMIN_SESSION_MAX_AGE = SESSION_TTL_SECONDS;
+export const ADMIN_REMEMBERED_SESSION_MAX_AGE = REMEMBERED_SESSION_TTL_SECONDS;
