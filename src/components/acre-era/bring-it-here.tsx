@@ -59,7 +59,7 @@ export function BringItHere() {
             Help decide what Acre Era becomes.
           </h2>
           <p className="mt-4 max-w-xl text-cream/70">
-            Ask for a product, farm, maker, or category. Repeated requests become demand evidence for sourcing and Watchtower research. A request never auto-publishes or auto-orders anything.
+            Ask for a product, farm, maker, or category. Repeated requests help Acre Era understand what customers actually want us to source next. A request is a signal, not a promise that an item will be added.
           </p>
         </div>
 
