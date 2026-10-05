@@ -1,7 +1,7 @@
-import Link from "next/link";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { ProducerConversationNotebook } from "@/components/admin/producer-conversation-notebook";
+import { WatchtowerNav } from "@/components/admin/watchtower-nav";
 import {
   ADMIN_SESSION_COOKIE,
   adminSessionConfigured,
@@ -24,30 +24,7 @@ export default async function ProducerConversationPage() {
 
   return (
     <main className="min-h-screen bg-[#0d0f0c] text-white">
-      <header className="sticky top-0 z-40 border-b border-white/10 bg-[#0d0f0c]/90 backdrop-blur-md">
-        <nav className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
-          <div>
-            <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-indigo-200">
-              ACRE ERA / WATCHTOWER
-            </p>
-            <p className="font-display text-lg font-bold">Producer Conversations</p>
-          </div>
-          <div className="flex gap-2">
-            <Link
-              href="/admin/intelligence"
-              className="rounded-lg border border-white/10 px-4 py-2 text-sm font-medium text-white/60 transition hover:bg-white/5 hover:text-white"
-            >
-              Intelligence
-            </Link>
-            <Link
-              href="/admin"
-              className="rounded-lg border border-white/10 px-4 py-2 text-sm font-medium text-white/60 transition hover:bg-white/5 hover:text-white"
-            >
-              Watchtower
-            </Link>
-          </div>
-        </nav>
-      </header>
+      <WatchtowerNav current="/admin/producers" />
 
       <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
         <section className="mb-8 overflow-hidden rounded-[2rem] border border-white/10 bg-[radial-gradient(circle_at_82%_20%,rgba(99,102,241,.18),transparent_25rem),linear-gradient(135deg,#171916,#0d0f0c)] p-8 md:p-10">
