@@ -15,7 +15,8 @@
     "test:era-engine": "node --test --experimental-strip-types tests/era-engine-r0.test.ts",
     "test:intent-routes": "node --test --experimental-strip-types tests/customer-intent-route-engine-r0.test.ts",
     "test:archive-alert-activation": "node --test --experimental-strip-types tests/archive-alert-activation-r0.test.ts",
-    "test:watchtower-signals": "node --test --experimental-strip-types tests/watchtower-signal-bus-r0.test.ts"
+    "test:watchtower-signals": "node --test --experimental-strip-types tests/watchtower-signal-bus-r0.test.ts",
+    "test:intelligence-delivery": "node --test --experimental-strip-types tests/acre-era-intelligence-delivery-r0.test.ts"
   },
   "dependencies": {
     "@stripe/stripe-js": "^9.10.0",
