@@ -122,6 +122,12 @@ export function WatchtowerHero({
               Intelligence Workbench
             </Link>
             <Link
+              href="/admin/producers"
+              className="rounded-xl border border-indigo-300/20 bg-indigo-300/10 px-5 py-3 text-sm font-semibold text-indigo-100 transition hover:bg-indigo-300/15"
+            >
+              Producer Conversations
+            </Link>
+            <Link
               href="/admin/account"
               className="rounded-xl border border-white/15 bg-black/20 px-5 py-3 text-sm font-semibold text-white/80 transition hover:bg-white/10"
             >
