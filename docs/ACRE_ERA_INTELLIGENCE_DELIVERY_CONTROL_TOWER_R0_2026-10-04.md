@@ -105,3 +105,16 @@ Existing Norvana capabilities remain canonical:
 - customer-language boundary.
 
 This lane extends those contracts rather than replacing them.
+
+
+## Preview probe status — 2026-10-04
+
+A one-shot Preview-only stock-video discovery probe may be deployed to exercise the configured Pixabay credential.
+
+Constraints:
+- Preview only.
+- Discovery/read only.
+- Secret value is never returned.
+- No customer-facing route.
+- No Production deploy or routing change.
+- No media is auto-approved or attached to an Era.
