@@ -56,6 +56,7 @@ jobs:
         run: |
           psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f drizzle/0018_acre_era_intelligence_delivery_r0.sql
           psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f drizzle/0019_producer_interest_inbox_r0.sql
+          psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f drizzle/0020_producer_conversation_notes_r0.sql
 
       - name: Verify persistence invariants
         run: |
@@ -92,6 +93,13 @@ jobs:
           VALUES
             ('Synthetic Grower', 'Test Owner', 'grower@example.test', 'Oklahoma City, OK',
              '["produce"]'::json, '["CUSTOMER_PICKUP"]'::json, 'Synthetic delivery challenge');
+
+          INSERT INTO producer_conversation_notes
+            (business_name, contact_name, contact_method, conversation_stage, answers, operator_summary, next_step, pilot_recommendation)
+          VALUES
+            ('Synthetic Grower', 'Test Owner', 'PHONE', 'DISCOVERY',
+             '{"products":"produce","delivery":"pickup"}'::json,
+             'Synthetic conversation note', 'Call Friday', 'PROMISING');
           SQL
 
           if psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -c             "UPDATE demand_observations SET internal_requests = 99 WHERE subject_key = 'synthetic-grapes';"; then
@@ -115,7 +123,13 @@ jobs:
           fi
 
           test "$(psql "$DATABASE_URL" -Atc "SELECT pilot_interest FROM local_producers WHERE name='Synthetic Farm'")" = "YES"
+          if psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -c             "UPDATE producer_conversation_notes SET pilot_recommendation = 'NOT_A_FIT' WHERE business_name = 'Synthetic Grower';"; then
+            echo "append-only producer conversation mutation unexpectedly succeeded"
+            exit 1
+          fi
+
           test "$(psql "$DATABASE_URL" -Atc "SELECT status FROM producer_interest_submissions WHERE email='grower@example.test'")" = "NEW"
+          test "$(psql "$DATABASE_URL" -Atc "SELECT pilot_recommendation FROM producer_conversation_notes WHERE business_name='Synthetic Grower'")" = "PROMISING"
 
       - name: Existing route engine regression
         run: npm run test:intent-routes
