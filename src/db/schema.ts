@@ -732,6 +732,23 @@ export const darwinEvaluations = pgTable("darwin_evaluations", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
+export const producerConversationNotes = pgTable("producer_conversation_notes", {
+  id: serial("id").primaryKey(),
+  producerId: integer("producer_id"),
+  interestSubmissionId: integer("interest_submission_id"),
+  businessName: varchar("business_name", { length: 255 }).notNull(),
+  contactName: varchar("contact_name", { length: 255 }).notNull().default(""),
+  contactMethod: varchar("contact_method", { length: 40 }).notNull().default("PHONE"),
+  conversationStage: varchar("conversation_stage", { length: 40 }).notNull().default("INTRO"),
+  answers: json("answers").$type<Record<string, unknown>>().notNull().default({}),
+  operatorSummary: text("operator_summary").notNull().default(""),
+  nextStep: text("next_step").notNull().default(""),
+  pilotRecommendation: varchar("pilot_recommendation", { length: 30 }).notNull().default("UNDECIDED"),
+  evidenceRefs: json("evidence_refs").$type<string[]>().notNull().default([]),
+  actor: varchar("actor", { length: 120 }).notNull().default("owner"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
 export const producerInterestSubmissions = pgTable("producer_interest_submissions", {
   id: serial("id").primaryKey(),
   businessName: varchar("business_name", { length: 255 }).notNull(),
