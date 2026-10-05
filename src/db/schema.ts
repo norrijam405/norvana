@@ -732,6 +732,27 @@ export const darwinEvaluations = pgTable("darwin_evaluations", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
+export const producerInterestSubmissions = pgTable("producer_interest_submissions", {
+  id: serial("id").primaryKey(),
+  businessName: varchar("business_name", { length: 255 }).notNull(),
+  contactName: varchar("contact_name", { length: 255 }).notNull(),
+  email: varchar("email", { length: 320 }).notNull(),
+  phone: varchar("phone", { length: 80 }),
+  location: varchar("location", { length: 255 }).notNull(),
+  website: varchar("website", { length: 1000 }),
+  productCategories: json("product_categories").$type<string[]>().notNull().default([]),
+  seasonality: text("seasonality").notNull().default(""),
+  salesModel: varchar("sales_model", { length: 40 }).notNull().default("UNKNOWN"),
+  fulfillmentModes: json("fulfillment_modes").$type<string[]>().notNull().default([]),
+  leadTimeNotes: text("lead_time_notes").notNull().default(""),
+  capacityNotes: text("capacity_notes").notNull().default(""),
+  painPoint: text("pain_point").notNull().default(""),
+  pilotInterest: varchar("pilot_interest", { length: 20 }).notNull().default("YES"),
+  mediaInterest: varchar("media_interest", { length: 20 }).notNull().default("DISCUSS"),
+  status: varchar("status", { length: 40 }).notNull().default("NEW"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
 export const localProducers = pgTable(
   "local_producers",
   {
