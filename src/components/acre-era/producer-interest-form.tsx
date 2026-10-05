@@ -23,7 +23,11 @@ const FULFILLMENT_OPTIONS = [
   "Refrigerated / frozen delivery",
 ] as const;
 
-export function ProducerInterestForm() {
+export function ProducerInterestForm({
+  submissionEnabled,
+}: {
+  submissionEnabled: boolean;
+}) {
   const [step, setStep] = useState(1);
   const [status, setStatus] = useState("");
   const [pending, setPending] = useState(false);
@@ -39,6 +43,10 @@ export function ProducerInterestForm() {
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setStatus("");
+    if (!submissionEnabled) {
+      setStatus("Preview mode: the form is ready, but submissions are not being stored yet.");
+      return;
+    }
     setPending(true);
 
     const data = new FormData(event.currentTarget);
@@ -218,6 +226,11 @@ export function ProducerInterestForm() {
             </div>
           </div>
 
+          {!submissionEnabled ? (
+            <p className="mt-5 rounded-xl border border-wheat/40 bg-wheat/10 p-4 text-sm leading-6 text-soil">
+              Preview mode: you can walk through the form, but submissions are intentionally disabled until Acre Era has a separately approved persistence path.
+            </p>
+          ) : null}
           {status ? <p className="mt-5 rounded-xl bg-bone p-4 text-sm leading-6 text-soil">{status}</p> : null}
 
           <div className="mt-7 flex items-center justify-between gap-3">
@@ -246,8 +259,8 @@ export function ProducerInterestForm() {
                 Continue
               </button>
             ) : (
-              <button type="submit" className="btn-primary" disabled={pending || products.length === 0}>
-                {pending ? "Sending…" : "Send producer interest"}
+              <button type="submit" className="btn-primary" disabled={!submissionEnabled || pending || products.length === 0}>
+                {!submissionEnabled ? "Preview mode — intake not open" : pending ? "Sending…" : "Send producer interest"}
               </button>
             )}
           </div>
