@@ -43,8 +43,12 @@ export type ProducerIntake = {
   biggestPainPoint?: string | null;
 };
 
-export function validateProducerIntake(input: ProducerIntake) {
+export function validateProducerIntake(
+  input: ProducerIntake,
+  options: { operational?: boolean } = { operational: true }
+) {
   const issues: string[] = [];
+  const warnings: string[] = [];
 
   if (!input.name.trim()) issues.push("PRODUCER_NAME_REQUIRED");
   if (!input.serviceAreas.length) issues.push("SERVICE_AREA_REQUIRED");
@@ -69,19 +73,21 @@ export function validateProducerIntake(input: ProducerIntake) {
 
   if (input.shipsNationally && !input.fulfillmentModes.includes("PARCEL_SHIPPING") &&
       !input.fulfillmentModes.includes("REFRIGERATED_FREIGHT")) {
-    issues.push("NATIONAL_SHIPPING_MODE_MISSING");
+    (options.operational === false ? warnings : issues).push("NATIONAL_SHIPPING_MODE_MISSING");
   }
 
   if (input.coldChainRequired &&
       !input.fulfillmentModes.some((mode) =>
         ["ACRE_SCHEDULED_ROUTE", "PRODUCER_DELIVERY", "THIRD_PARTY_COURIER", "REFRIGERATED_FREIGHT"].includes(mode)
       )) {
-    issues.push("COLD_CHAIN_FULFILLMENT_PATH_MISSING");
+    (options.operational === false ? warnings : issues).push("COLD_CHAIN_FULFILLMENT_PATH_MISSING");
   }
 
   return {
     valid: issues.length === 0,
     issues,
+    warnings,
+    operationallyQualified: issues.length === 0 && warnings.length === 0,
   };
 }
 
