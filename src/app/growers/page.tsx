@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Footer } from "@/components/footer";
+import { ProducerInterestForm } from "@/components/acre-era/producer-interest-form";
 
 export const dynamic = "force-dynamic";
 
@@ -68,7 +69,7 @@ export default function GrowersPage() {
           </div>
         </section>
 
-        <section className="mx-auto max-w-7xl px-4 py-14 sm:px-6 lg:px-8 lg:py-20">
+        <section id="delivery" className="mx-auto max-w-7xl px-4 py-14 sm:px-6 lg:px-8 lg:py-20">
           <div className="grid gap-5 md:grid-cols-2">
             {BENEFITS.map((item) => (
               <article key={item.title} className="rounded-[1.75rem] border border-soil/10 bg-cream p-7 shadow-sm md:p-8">
@@ -134,6 +135,8 @@ export default function GrowersPage() {
             </div>
           </div>
         </section>
+
+        <ProducerInterestForm />
 
         <section className="border-t border-soil/10 bg-cream">
           <div className="mx-auto max-w-7xl px-4 py-14 text-center sm:px-6 lg:px-8">
