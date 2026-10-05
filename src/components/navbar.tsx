@@ -12,7 +12,7 @@ const links = [
   { href: "/growers", label: "For Growers" },
   { href: "/shop", label: "Goods" },
   { href: "/partners", label: "Partner Finds" },
-  { href: "/#era-drop", label: "Era Drops" },
+  { href: "/era-drops", label: "Era Drops" },
   { href: "/archive", label: "Archive" },
 ];
 
