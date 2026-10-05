@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { Footer } from "./footer";
+import { JourneyHero } from "./acre-era/journey-hero";
 
 type PartnerProduct = {
   id: number;
@@ -59,7 +60,7 @@ function PartnerCard({ product, index }: { product: PartnerProduct; index: numbe
             <span className="text-6xl">↗</span>
           )}
           <span className="absolute left-3 top-3 rounded-full bg-soil/90 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-cream">
-            Partner checkout
+            Buy from partner
           </span>
         </div>
 
@@ -76,7 +77,7 @@ function PartnerCard({ product, index }: { product: PartnerProduct; index: numbe
             ) : null}
           </div>
           <p className="mt-4 text-xs font-semibold uppercase tracking-[0.16em] text-leaf">
-            Open passport + partner offer →
+            See details + buying option →
           </p>
         </div>
       </Link>
@@ -96,24 +97,17 @@ export function PartnerMarketClient({
   return (
     <>
       <main className="min-h-screen bg-bone text-soil">
-        <section className="relative overflow-hidden border-b border-soil/10 bg-soil text-cream">
-          <div className="absolute inset-0 acre-contours opacity-10" />
-          <div className="relative mx-auto max-w-7xl px-4 py-20 sm:px-6 lg:px-8 lg:py-28">
-            <p className="text-xs font-semibold uppercase tracking-[0.28em] text-wheat">Acre Era Partner Market</p>
-            <h1 className="mt-4 max-w-4xl font-display text-5xl font-black leading-[.95] md:text-7xl">
-              The good stuff can live here
-              <span className="text-wheat"> without pretending we own the checkout.</span>
-            </h1>
-            <p className="mt-6 max-w-2xl text-base leading-7 text-cream/70">
-              Curated brand and retailer finds selected by Acre Era. When a product uses partner checkout,
-              payment, shipping, returns, and warranty stay with that partner. Acre Era may earn a commission.
-            </p>
-            <div className="mt-8 flex flex-wrap gap-3">
-              <a href="#current-partner-era" className="btn-primary">See the current curation</a>
-              <Link href="/partners/archive" className="btn-ghost-light">Partner archive</Link>
-            </div>
-          </div>
-        </section>
+        <JourneyHero
+          variant="partner"
+          eyebrow="Partner Finds · premium finds · trusted buying paths"
+          title="Good products can come"
+          accent="from more than one road."
+          copy="Acre Era curates brands and retailers that fit the world we are building — from useful everyday gear to premium shoes, bags, accessories, and special finds."
+          primaryHref="#current-partner-era"
+          primaryLabel="Explore Partner Finds"
+          secondaryHref="/shop"
+          secondaryLabel="Browse Goods"
+        />
 
         <section id="current-partner-era" className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
           {activeCollection ? (
@@ -155,10 +149,10 @@ export function PartnerMarketClient({
             <div className="mb-8 flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
               <div>
                 <p className="text-xs font-semibold uppercase tracking-[0.22em] text-leaf">All active partner finds</p>
-                <h2 className="mt-2 font-display text-3xl font-black md:text-4xl">Curated beyond our own cart.</h2>
+                <h2 className="mt-2 font-display text-3xl font-black md:text-4xl">Curated beyond one storefront.</h2>
               </div>
               <p className="max-w-lg text-sm leading-6 text-muted">
-                We keep referral products separate from Acre Era-owned checkout so the source and responsibilities are always clear.
+                Some products are bought directly through Acre Era and some through trusted partners. The experience should still feel like one carefully curated world.
               </p>
             </div>
 
