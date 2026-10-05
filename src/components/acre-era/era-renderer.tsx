@@ -246,24 +246,40 @@ export function EraRenderer({
   );
 }
 
-export function NoCurrentEra() {
+export function NoCurrentEra({
+  previewMedia = [],
+}: {
+  previewMedia?: import("@/lib/era-engine/types").PublicEraMedia[];
+}) {
   return (
     <main className="min-h-[72svh] bg-soil text-cream">
-      <div className="acre-contours mx-auto flex min-h-[72svh] max-w-7xl items-end px-5 py-16 sm:px-8 lg:px-10 lg:py-20">
-        <div className="max-w-3xl">
-          <p className="text-sm font-semibold uppercase tracking-[0.2em] text-wheat">Between Eras</p>
-          <h1 className="mt-4 text-5xl font-black tracking-[-0.04em] sm:text-6xl lg:text-7xl">
-            The next world opens when it is actually ready.
-          </h1>
-          <p className="mt-6 max-w-2xl text-base leading-7 text-cream/75 sm:text-lg">
-            We’re between featured collections right now. You can still shop everyday goods or revisit past Eras while the next one gets ready.
-          </p>
-          <div className="mt-8 flex flex-wrap gap-3">
-            <Link href="/shop" className="btn-primary !bg-wheat !text-soil hover:!bg-cream">Browse goods</Link>
-            <Link href="/archive" className="btn-ghost-light">Visit the archive</Link>
+      <section className="relative isolate min-h-[72svh] overflow-hidden bg-soil">
+        {previewMedia.length ? (
+          <EraHeroMedia
+            media={previewMedia}
+            eraName="Acre Era"
+            profile="organic"
+          />
+        ) : (
+          <div className="acre-contours absolute inset-0" aria-hidden="true" />
+        )}
+        <div className="era-adaptive-overlay absolute inset-0" aria-hidden="true" />
+        <div className="relative mx-auto flex min-h-[72svh] max-w-7xl items-end px-5 py-16 sm:px-8 lg:px-10 lg:py-20">
+          <div className="max-w-3xl">
+            <p className="text-sm font-semibold uppercase tracking-[0.2em] text-wheat">Between Eras</p>
+            <h1 className="mt-4 text-5xl font-black tracking-[-0.04em] sm:text-6xl lg:text-7xl">
+              The next world opens when it is actually ready.
+            </h1>
+            <p className="mt-6 max-w-2xl text-base leading-7 text-cream/75 sm:text-lg">
+              We’re between featured collections right now. You can still shop everyday goods or revisit past Eras while the next one gets ready.
+            </p>
+            <div className="mt-8 flex flex-wrap gap-3">
+              <Link href="/shop" className="btn-primary !bg-wheat !text-soil hover:!bg-cream">Browse goods</Link>
+              <Link href="/archive" className="btn-ghost-light">Visit the archive</Link>
+            </div>
           </div>
         </div>
-      </div>
+      </section>
     </main>
   );
 }
