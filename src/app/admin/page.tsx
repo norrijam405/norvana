@@ -18,6 +18,8 @@ import { ownerCredentialState } from "@/lib/admin-identity";
 import { currentWatchtowerRuntimeId } from "@/lib/watchtower/runtime-id";
 import { AUTHORIZED_COMMERCE_PROVIDERS } from "@/lib/commerce/provider-registry";
 import { WatchtowerHero } from "@/components/admin/watchtower-hero";
+import { WATCHTOWER_CONNECTIONS, connectionStatus } from "@/lib/watchtower/connections";
+import { buildOwnerActions } from "@/lib/watchtower/owner-actions";
 
 export const dynamic = "force-dynamic";
 
@@ -132,6 +134,25 @@ export default async function AdminPage() {
   const externalActionsEnabled =
     process.env.NORVANA_EXTERNAL_FULFILLMENT_ENABLED === "true" ||
     process.env.NORVANA_SUPPLIER_CONNECTORS_ENABLED === "true";
+  const producerInterestEnabled =
+    process.env.PRODUCER_INTEREST_INTAKE_ENABLED === "true";
+  const producerConversationPersistenceEnabled =
+    process.env.PRODUCER_CONVERSATION_PERSISTENCE_ENABLED === "true";
+  const connectionStates = WATCHTOWER_CONNECTIONS.map((entry) => ({
+    entry,
+    state: connectionStatus(entry).state,
+  }));
+  const ownerActions = buildOwnerActions({
+    initialized,
+    unresolvedCandidates,
+    enabledJobs,
+    totalJobs: jobs.length,
+    ownerCredentialRotated: ownerCredential.rotated,
+    connections: connectionStates,
+    producerInterestEnabled,
+    producerConversationPersistenceEnabled,
+    externalActionsEnabled,
+  });
   const federationConfigured =
     process.env.IGNIAQUA_FEDERATION_ENABLED === "true" &&
     Boolean(process.env.IGNIAQUA_FEDERATION_BASE_URL);
@@ -179,6 +200,57 @@ export default async function AdminPage() {
           candidateCount={unresolvedCandidates}
           initialized={initialized}
         />
+
+        <section className="mt-8 rounded-[2rem] border border-border bg-surface p-5 shadow-sm md:p-7">
+          <div className="flex flex-wrap items-end justify-between gap-4">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-indigo-accent">Owner inbox</p>
+              <h2 className="mt-2 font-display text-2xl font-bold">What needs me?</h2>
+              <p className="mt-2 max-w-2xl text-sm leading-6 text-muted">
+                Watchtower translates system state into owner decisions so you do not have to read the whole dashboard to know what matters.
+              </p>
+            </div>
+            <Link
+              href="/admin/connections"
+              className="rounded-xl border border-indigo-accent/20 bg-indigo-accent/10 px-4 py-2 text-sm font-semibold text-indigo-accent"
+            >
+              Connections Center
+            </Link>
+          </div>
+
+          <div className="mt-6 grid gap-3 lg:grid-cols-2">
+            {ownerActions.slice(0, 8).map((action) => (
+              <article key={action.id} className="rounded-2xl border border-border bg-bone p-4">
+                <div className="flex items-start justify-between gap-4">
+                  <div>
+                    <span
+                      className={
+                        "inline-flex rounded-full px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] " +
+                        (action.priority === "NOW"
+                          ? "bg-rose-50 text-rose-700"
+                          : action.priority === "SOON"
+                            ? "bg-amber-50 text-amber-700"
+                            : "bg-surface text-muted")
+                      }
+                    >
+                      {action.priority}
+                    </span>
+                    <h3 className="mt-3 font-display text-lg font-semibold">{action.title}</h3>
+                    <p className="mt-2 text-sm leading-6 text-muted">{action.detail}</p>
+                  </div>
+                </div>
+                {action.href && action.actionLabel ? (
+                  <Link
+                    href={action.href}
+                    className="mt-4 inline-flex text-sm font-semibold text-indigo-accent underline decoration-indigo-accent/25 underline-offset-4"
+                  >
+                    {action.actionLabel} →
+                  </Link>
+                ) : null}
+              </article>
+            ))}
+          </div>
+        </section>
 
         <section className="mt-8 grid gap-4 md:grid-cols-3">
           <InfoCard eyebrow="SYSTEM" title="Truth state">
