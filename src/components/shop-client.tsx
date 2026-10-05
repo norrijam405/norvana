@@ -34,6 +34,20 @@ const PRODUCT_EMOJIS: Record<string, string> = {
   "wellness": "🧘",
   "bath": "🧼",
   "stationery": "📓",
+  "grocery": "🥕",
+  "food": "🍎",
+  "produce": "🥬",
+  "pets": "🐾",
+  "pet": "🐾",
+  "beauty": "✨",
+  "skincare": "🧴",
+  "family": "👨‍👩‍👧‍👦",
+  "baby": "🍼",
+  "kids": "🧸",
+  "electronics": "🎧",
+  "tech": "💻",
+  "creator": "🎥",
+  "fashion": "👟",
 };
 
 type SortOption = "newest" | "price-asc" | "price-desc" | "rating";
@@ -91,9 +105,31 @@ export function ShopClient({ products }: { products: Product[] }) {
       <main className="min-h-screen py-8">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           {/* Header */}
-          <div className="mb-8">
-            <h1 className="font-display text-3xl md:text-4xl font-bold">Shop</h1>
-            <p className="text-muted mt-2">Browse our curated collection of artisan goods.</p>
+          <div className="mb-10 rounded-[2rem] border border-soil/10 bg-cream p-7 md:p-10">
+            <p className="text-xs font-semibold uppercase tracking-[0.22em] text-leaf">Acre Era Goods</p>
+            <h1 className="mt-3 max-w-4xl font-display text-4xl font-black tracking-[-0.04em] md:text-6xl">
+              Everyday needs, useful finds, and the stuff worth coming back for.
+            </h1>
+            <p className="mt-4 max-w-3xl text-base leading-7 text-muted">
+              Household basics, family, pets, beauty, home, market, style, tech and more. The shelf grows from real availability and real demand — not filler inventory.
+            </p>
+            <div className="mt-6 grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-8">
+              {[
+                ["🧺", "Everyday"],
+                ["👨‍👩‍👧‍👦", "Family"],
+                ["🐾", "Pets"],
+                ["✨", "Beauty"],
+                ["🏡", "Home"],
+                ["🥕", "Market"],
+                ["👟", "Style"],
+                ["🎧", "Tech"],
+              ].map(([icon, label]) => (
+                <div key={label} className="rounded-xl border border-soil/10 bg-bone px-3 py-3">
+                  <span className="text-xl">{icon}</span>
+                  <span className="mt-1 block text-xs font-semibold text-soil">{label}</span>
+                </div>
+              ))}
+            </div>
           </div>
 
           {/* Filters */}
@@ -104,7 +140,7 @@ export function ShopClient({ products }: { products: Product[] }) {
               </svg>
               <input
                 type="text"
-                placeholder="Search products..."
+                placeholder="Search what you need..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 className="input pl-10"
@@ -115,7 +151,7 @@ export function ShopClient({ products }: { products: Product[] }) {
               onChange={(e) => setSelectedNiche(e.target.value)}
               className="input md:w-48"
             >
-              <option value="">All Niches</option>
+              <option value="">All departments</option>
               {niches.map((n) => (
                 <option key={n} value={n}>{n.replace("-", " ").replace(/\b\w/g, l => l.toUpperCase())}</option>
               ))}
@@ -162,9 +198,25 @@ export function ShopClient({ products }: { products: Product[] }) {
 
           {/* Product Grid */}
           {filtered.length === 0 ? (
-            <div className="text-center py-20">
-              <p className="text-4xl mb-4">🔍</p>
-              <p className="text-muted">No products found. Try adjusting your filters.</p>
+            <div className="grid gap-5 py-8 lg:grid-cols-[1.1fr_.9fr]">
+              <div className="rounded-[2rem] border border-soil/10 bg-cream p-8 md:p-10">
+                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-leaf">Shelf in progress</p>
+                <h2 className="mt-3 font-display text-3xl font-bold">We’re building the shelf with products worth carrying.</h2>
+                <p className="mt-4 max-w-xl text-sm leading-7 text-muted">
+                  Acre Era is not filling empty space with pretend inventory. As real products and partners are qualified, they will show up here across everyday needs, pets, family, beauty, home, market, style and tech.
+                </p>
+                <div className="mt-6 flex flex-wrap gap-3">
+                  <Link href="/market" className="btn-primary">Explore Market</Link>
+                  <Link href="/#bring-it-here" className="btn-secondary">Tell us what you want</Link>
+                </div>
+              </div>
+              <div className="rounded-[2rem] bg-soil p-8 text-cream md:p-10">
+                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-wheat">Built for repeat life</p>
+                <h3 className="mt-3 font-display text-2xl font-bold">Not just the flashy stuff.</h3>
+                <p className="mt-3 text-sm leading-6 text-cream/70">
+                  Dog food. Shampoo. School supplies. Kitchen basics. Produce. Chargers. Gifts. The goal is a useful store first, with rotating Eras making discovery fun.
+                </p>
+              </div>
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
