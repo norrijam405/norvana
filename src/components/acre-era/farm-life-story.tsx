@@ -4,7 +4,13 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import { FARM_FACTS } from "@/lib/acre-era/brand";
 
-export function FarmLifeStory() {
+export function FarmLifeStory({
+  videoUrl,
+  posterUrl,
+}: {
+  videoUrl?: string | null;
+  posterUrl?: string | null;
+}) {
   const [factIndex, setFactIndex] = useState(0);
   const fact = useMemo(() => FARM_FACTS[factIndex % FARM_FACTS.length], [factIndex]);
 
@@ -14,15 +20,15 @@ export function FarmLifeStory() {
         <div className="relative min-h-[360px] overflow-hidden bg-soil">
           <video
             className="absolute inset-0 h-full w-full object-cover opacity-75"
-            poster="/acre-era/farm-life-poster.svg"
+            poster={posterUrl || "/acre-era/farm-life-poster.svg"}
             muted
             loop
+            autoPlay={Boolean(videoUrl)}
             playsInline
-            controls
             preload="metadata"
             aria-label="Acre Era farm-life story"
           >
-            <source src="/acre-era/farm-life.mp4" type="video/mp4" />
+            {videoUrl ? <source src={videoUrl} type="video/mp4" /> : null}
           </video>
           <div className="absolute inset-0 bg-gradient-to-t from-soil via-soil/20 to-transparent" />
           <div className="absolute bottom-0 left-0 right-0 p-7 text-cream md:p-10">
@@ -31,7 +37,7 @@ export function FarmLifeStory() {
               See the people, places, and seasons behind the food.
             </h2>
             <p className="mt-4 max-w-lg text-sm text-cream/75">
-              The video slot is ready for real partner-farm footage. Until then, the poster keeps the section polished without pretending stock footage is one of our growers.
+              A closer look at the kind of seasonal, local-food experience Acre Era is building. When a real partner joins, their own story and media can take this space with permission.
             </p>
           </div>
         </div>
