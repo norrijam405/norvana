@@ -210,3 +210,23 @@ test("provider-neutral quote validation rejects impossible quotes", () => {
   assert.equal(result.valid, false);
   assert.ok(result.issues.includes("DELIVERY_QUOTED_COST_INVALID"));
 });
+
+
+test("producer prospect capture preserves unresolved cold-chain gaps as warnings", () => {
+  const result = validateProducerIntake({
+    name: "Cold Prospect Farm",
+    channel: "FARM",
+    serviceAreas: ["Oklahoma City"],
+    productCategories: ["produce"],
+    wholesaleAvailable: true,
+    fulfillmentModes: ["CUSTOMER_PICKUP"],
+    shipsNationally: false,
+    coldChainRequired: true,
+    mediaPermissionStatus: "DISCUSS",
+    pilotInterest: "MAYBE",
+  }, { operational: false });
+
+  assert.equal(result.valid, true);
+  assert.equal(result.operationallyQualified, false);
+  assert.ok(result.warnings.includes("COLD_CHAIN_FULFILLMENT_PATH_MISSING"));
+});
