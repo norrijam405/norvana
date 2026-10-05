@@ -64,17 +64,19 @@ export function Footer() {
               <li><Link href="/shop" className="hover:text-cream">Goods</Link></li>
               <li><Link href="/partners" className="hover:text-cream">Partner Finds</Link></li>
               <li><Link href="/partners/archive" className="hover:text-cream">Partner Archive</Link></li>
-              <li><Link href="/#era-drop" className="hover:text-cream">Era Drops</Link></li>
+              <li><Link href="/era-drops" className="hover:text-cream">Era Drops</Link></li>
               <li><Link href="/archive" className="hover:text-cream">Archive</Link></li>
             </ul>
           </div>
 
           <div>
-            <h4 className="mb-4 text-xs font-semibold uppercase tracking-[0.2em] text-wheat">Acre Era</h4>
+            <h4 className="mb-4 text-xs font-semibold uppercase tracking-[0.2em] text-wheat">Grow with Acre Era</h4>
             <ul className="space-y-2 text-sm">
-              <li><Link href="/#market" className="hover:text-cream">Fresh + local</Link></li>
-              <li><Link href="/#market" className="hover:text-cream">Farm facts</Link></li>
-              <li><Link href="/admin" className="hover:text-cream">Watchtower admin</Link></li>
+              <li><Link href="/growers" className="hover:text-cream">For growers + producers</Link></li>
+              <li><Link href="/growers#pilot" className="hover:text-cream">Start a pilot</Link></li>
+              <li><Link href="/growers#interest" className="hover:text-cream">Producer interest</Link></li>
+              <li><Link href="/growers#delivery" className="hover:text-cream">How delivery works</Link></li>
+              <li><Link href="/market#farm-facts" className="hover:text-cream">Farm facts</Link></li>
             </ul>
           </div>
         </div>
