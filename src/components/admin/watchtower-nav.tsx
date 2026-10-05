@@ -1,14 +1,14 @@
 import Link from "next/link";
 
 const ITEMS = [
-  { href: "/admin", label: "Cockpit" },
+  { href: "/admin/cockpit", label: "Cockpit" },
   { href: "/admin/money", label: "Money" },
   { href: "/admin/orders", label: "Orders + Delivery" },
   { href: "/admin/suppliers", label: "Brands + Suppliers" },
   { href: "/admin/connections", label: "Connections" },
-  { href: "/admin/producers", label: "Producer CRM" },
+  { href: "/admin/producers", label: "Farms + Producers" },
   { href: "/admin/era-studio", label: "Era Studio" },
-  { href: "/admin/system-health", label: "System Health" },
+  { href: "/admin/system-health", label: "Advanced" },
 ];
 
 export function WatchtowerNav({ current }: { current?: string }) {
