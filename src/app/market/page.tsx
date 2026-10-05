@@ -4,7 +4,6 @@ import { db } from "@/db";
 import { marketRequests, products } from "@/db/schema";
 import { FarmLifeStory } from "@/components/acre-era/farm-life-story";
 import { BringItHere } from "@/components/acre-era/bring-it-here";
-import { EvolvingField } from "@/components/acre-era/evolving-field";
 import { JourneyHero } from "@/components/acre-era/journey-hero";
 import { Footer } from "@/components/footer";
 
