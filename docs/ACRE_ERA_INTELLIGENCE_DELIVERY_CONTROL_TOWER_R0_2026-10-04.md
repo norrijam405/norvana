@@ -118,3 +118,6 @@ Constraints:
 - No customer-facing route.
 - No Production deploy or routing change.
 - No media is auto-approved or attached to an Era.
+
+
+One-shot Preview trigger armed after both repository and Vercel Preview gates were confirmed open.
