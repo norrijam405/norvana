@@ -36,6 +36,48 @@ const HOME_CLIPS: JourneyClip[] = [
   },
 ];
 
+const PARTNER_CLIPS: JourneyClip[] = [
+  {
+    label: "City Night",
+    videoUrl: "https://cdn.pixabay.com/video/2019/05/03/23258-334228230_medium.mp4",
+    posterUrl: "https://cdn.pixabay.com/video/2019/05/03/23258-334228230_medium.jpg",
+    sourceUrl: "https://pixabay.com/videos/id-23258/",
+  },
+  {
+    label: "Movement",
+    videoUrl: "https://cdn.pixabay.com/video/2018/11/29/19627-304735769_medium.mp4",
+    posterUrl: "https://cdn.pixabay.com/video/2018/11/29/19627-304735769_medium.jpg",
+    sourceUrl: "https://pixabay.com/videos/id-19627/",
+  },
+  {
+    label: "Open Road",
+    videoUrl: "https://cdn.pixabay.com/video/2015/09/20/800-139832676_medium.mp4",
+    posterUrl: "https://cdn.pixabay.com/video/2015/09/20/800-139832676_medium.jpg",
+    sourceUrl: "https://pixabay.com/videos/id-800/",
+  },
+];
+
+const DROP_CLIPS: JourneyClip[] = [
+  {
+    label: "City",
+    videoUrl: "https://cdn.pixabay.com/video/2020/09/19/50352-460423340_medium.mp4",
+    posterUrl: "https://cdn.pixabay.com/video/2020/09/19/50352-460423340_medium.jpg",
+    sourceUrl: "https://pixabay.com/videos/id-50352/",
+  },
+  {
+    label: "Mountains",
+    videoUrl: "https://cdn.pixabay.com/video/2025/09/22/305657_medium.mp4",
+    posterUrl: "https://cdn.pixabay.com/video/2025/09/22/305657_medium.jpg",
+    sourceUrl: "https://pixabay.com/videos/id-305657/",
+  },
+  {
+    label: "Play",
+    videoUrl: "https://cdn.pixabay.com/video/2024/03/03/202749-918944227_medium.mp4",
+    posterUrl: "https://cdn.pixabay.com/video/2024/03/03/202749-918944227_medium.jpg",
+    sourceUrl: "https://pixabay.com/videos/id-202749/",
+  },
+];
+
 const MARKET_CLIPS: JourneyClip[] = [
   {
     label: "Fields",
@@ -68,7 +110,7 @@ export function JourneyHero({
   secondaryHref,
   secondaryLabel,
 }: {
-  variant?: "home" | "market";
+  variant?: "home" | "market" | "partner" | "drops";
   eyebrow: string;
   title: string;
   accent: string;
@@ -78,7 +120,12 @@ export function JourneyHero({
   secondaryHref?: string;
   secondaryLabel?: string;
 }) {
-  const clips = useMemo(() => variant === "market" ? MARKET_CLIPS : HOME_CLIPS, [variant]);
+  const clips = useMemo(() => {
+    if (variant === "market") return MARKET_CLIPS;
+    if (variant === "partner") return PARTNER_CLIPS;
+    if (variant === "drops") return DROP_CLIPS;
+    return HOME_CLIPS;
+  }, [variant]);
   const [index, setIndex] = useState(0);
   const [reduceMotion, setReduceMotion] = useState(true);
 
