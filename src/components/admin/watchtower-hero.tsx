@@ -128,6 +128,12 @@ export function WatchtowerHero({
               Producer Conversations
             </Link>
             <Link
+              href="/admin/connections"
+              className="rounded-xl border border-white/15 bg-black/20 px-5 py-3 text-sm font-semibold text-white/80 transition hover:bg-white/10"
+            >
+              Connections Center
+            </Link>
+            <Link
               href="/admin/account"
               className="rounded-xl border border-white/15 bg-black/20 px-5 py-3 text-sm font-semibold text-white/80 transition hover:bg-white/10"
             >
