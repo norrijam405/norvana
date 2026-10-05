@@ -12,6 +12,13 @@ export type StockVideoCandidate = {
   contributor: string | null;
   attributionRequired: boolean;
   rightsState: "REQUIRES_REVIEW";
+  reviewFlags: Array<
+    "AI_GENERATED" |
+    "PORTRAIT_ORIENTATION" |
+    "BRAND_TERM" |
+    "PEOPLE_PRESENT" |
+    "MEDICAL_OR_HEALTH_CLAIM_RISK"
+  >;
 };
 
 export type StockVideoSearchInput = {
@@ -19,6 +26,50 @@ export type StockVideoSearchInput = {
   limit?: number;
   orientation?: "ANY" | "LANDSCAPE" | "PORTRAIT";
 };
+
+
+const BRAND_TERMS = [
+  "apple",
+  "macbook",
+  "nike",
+  "adidas",
+  "gucci",
+  "louis vuitton",
+  "chanel",
+  "samsung",
+] as const;
+
+function reviewFlagsFor(title: string, width: number | null, height: number | null) {
+  const normalized = title.toLowerCase();
+  const flags: StockVideoCandidate["reviewFlags"] = [];
+
+  if (/\bai[ -]?generated\b|\bai created\b|\bartificial intelligence\b/.test(normalized)) {
+    flags.push("AI_GENERATED");
+  }
+  if (width !== null && height !== null && height > width) {
+    flags.push("PORTRAIT_ORIENTATION");
+  }
+  if (BRAND_TERMS.some((brand) => normalized.includes(brand))) {
+    flags.push("BRAND_TERM");
+  }
+  if (/\b(person|people|woman|women|man|men|boy|girl|child|children|family|model|athlete|runner)\b/.test(normalized)) {
+    flags.push("PEOPLE_PRESENT");
+  }
+  if (/\b(acne|treatment|therapy|medical|healthcare|anti-aging|dermatology|skin health|disease|virus|pandemic)\b/.test(normalized)) {
+    flags.push("MEDICAL_OR_HEALTH_CLAIM_RISK");
+  }
+
+  return flags;
+}
+
+function orientationMatches(
+  orientation: StockVideoSearchInput["orientation"],
+  width: number | null,
+  height: number | null
+) {
+  if (!orientation || orientation === "ANY" || width === null || height === null) return true;
+  return orientation === "LANDSCAPE" ? width >= height : height > width;
+}
 
 function safeLimit(value: number | undefined) {
   if (!Number.isFinite(value)) return 12;
@@ -58,20 +109,27 @@ export async function searchPixabayVideos(
     const posterUrl = typeof rendition?.thumbnail === "string" ? rendition.thumbnail : null;
     if (!videoUrl) return [];
 
+    const title =
+      typeof hit.tags === "string" ? hit.tags : `Pixabay video ${String(hit.id ?? "")}`;
+    const width = Number.isFinite(Number(rendition?.width)) ? Number(rendition.width) : null;
+    const height = Number.isFinite(Number(rendition?.height)) ? Number(rendition.height) : null;
+    if (!orientationMatches(input.orientation, width, height)) return [];
+
     return [{
       provider: "PIXABAY" as const,
       externalId: String(hit.id ?? ""),
-      title: typeof hit.tags === "string" ? hit.tags : `Pixabay video ${String(hit.id ?? "")}`,
+      title,
       pageUrl: typeof hit.pageURL === "string" ? hit.pageURL : null,
       videoUrl,
       previewUrl: videoUrl,
       posterUrl,
-      width: Number.isFinite(Number(rendition?.width)) ? Number(rendition.width) : null,
-      height: Number.isFinite(Number(rendition?.height)) ? Number(rendition.height) : null,
+      width,
+      height,
       durationSeconds: null,
       contributor: typeof hit.user === "string" ? hit.user : null,
       attributionRequired: false,
       rightsState: "REQUIRES_REVIEW" as const,
+      reviewFlags: reviewFlagsFor(title, width, height),
     }];
   });
 }
@@ -107,22 +165,30 @@ export async function searchCoverrVideos(
       ? hit.urls as Record<string, unknown>
       : {};
 
+    const title =
+      typeof hit.title === "string" ? hit.title : `Coverr video ${String(hit.id ?? "")}`;
+    const width = Number.isFinite(Number(hit.max_width)) ? Number(hit.max_width) : null;
+    const height = Number.isFinite(Number(hit.max_height)) ? Number(hit.max_height) : null;
+
     return {
       provider: "COVERR" as const,
       externalId: String(hit.id ?? ""),
-      title: typeof hit.title === "string" ? hit.title : `Coverr video ${String(hit.id ?? "")}`,
+      title,
       pageUrl: null,
       videoUrl: typeof urls.mp4 === "string" ? urls.mp4 : null,
       previewUrl: typeof urls.mp4_preview === "string" ? urls.mp4_preview : null,
       posterUrl: typeof hit.poster === "string" ? hit.poster : null,
-      width: Number.isFinite(Number(hit.max_width)) ? Number(hit.max_width) : null,
-      height: Number.isFinite(Number(hit.max_height)) ? Number(hit.max_height) : null,
+      width,
+      height,
       durationSeconds: Number.isFinite(Number(hit.duration)) ? Number(hit.duration) : null,
       contributor: null,
       attributionRequired: true,
       rightsState: "REQUIRES_REVIEW" as const,
+      reviewFlags: reviewFlagsFor(title, width, height),
     };
-  });
+  }).filter((candidate) =>
+    orientationMatches(input.orientation, candidate.width, candidate.height)
+  );
 }
 
 export async function searchStockVideos(input: StockVideoSearchInput) {
