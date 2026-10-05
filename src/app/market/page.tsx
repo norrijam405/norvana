@@ -142,13 +142,14 @@ export default async function MarketPage() {
               <div>
                 <h2 className="font-display text-3xl font-bold">A storefront should tell more than a SKU.</h2>
                 <p className="mt-4 text-sm leading-6 text-muted">
-                  Acre Era partner profiles are planned to show the producer story, service area, seasonal availability, pickup or delivery options, wholesale availability, and verified customer signal. Partner onboarding remains a governed lane; this page does not auto-activate sellers.
+                  Acre Era can give growers and local producers a place to show what they make, what is in season, where they serve, and how customers can actually get it. We would rather start with a small pilot and learn the real demand and delivery costs than overpromise.
                 </p>
               </div>
               <div className="grid gap-3">
-                {["Story + origin", "Seasonal availability", "Pickup / delivery truth", "Wholesale readiness", "Customer Voice"].map((item) => (
+                {["Story + origin", "Seasonal availability", "Pickup / delivery options", "Wholesale readiness", "Start with a small pilot"].map((item) => (
                   <div key={item} className="rounded-xl bg-sage-wash px-4 py-3 text-sm font-medium">{item}</div>
                 ))}
+                <Link href="/growers" className="btn-primary mt-2 text-center">For growers + producers</Link>
               </div>
             </div>
           </section>
