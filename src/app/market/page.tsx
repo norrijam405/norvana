@@ -18,6 +18,14 @@ const PRODUCT_EMOJIS: Record<string, string> = {
   wellness: "🌾",
 };
 
+const PREVIEW_FARM_MEDIA =
+  process.env.VERCEL_ENV === "preview"
+    ? {
+        videoUrl: "https://cdn.pixabay.com/video/2022/09/04/130226-746395325_medium.mp4",
+        posterUrl: "https://cdn.pixabay.com/video/2022/09/04/130226-746395325_medium.jpg",
+      }
+    : { videoUrl: null, posterUrl: null };
+
 export default async function MarketPage() {
   let marketProducts: typeof products.$inferSelect[] = [];
   let requests: Array<{
@@ -72,7 +80,10 @@ export default async function MarketPage() {
         </section>
 
         <div className="mx-auto max-w-7xl space-y-10 px-4 py-12 sm:px-6 lg:px-8">
-          <FarmLifeStory />
+          <FarmLifeStory
+            videoUrl={PREVIEW_FARM_MEDIA.videoUrl}
+            posterUrl={PREVIEW_FARM_MEDIA.posterUrl}
+          />
 
           <section>
             <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
