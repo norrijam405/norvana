@@ -114,7 +114,7 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const validation = validateProducerIntake(parsed);
+  const validation = validateProducerIntake(parsed, { operational: false });
   if (!validation.valid) {
     return NextResponse.json(
       { error: "PRODUCER_INTAKE_INCOMPLETE", issues: validation.issues },
@@ -160,6 +160,8 @@ export async function POST(req: NextRequest) {
       authority: "PROSPECT_INTAKE_ONLY",
       customerFacing: false,
       nextGate: "FOUNDER_OR_OPERATOR_PARTNERSHIP_REVIEW",
+      operationalWarnings: validation.warnings,
+      operationallyQualified: validation.operationallyQualified,
     },
     { status: 201 }
   );
