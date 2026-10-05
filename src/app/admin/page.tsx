@@ -160,6 +160,12 @@ export default async function AdminPage() {
             <Link href="/admin/account" className="rounded-lg px-3 py-2 text-sm font-medium text-muted transition-colors hover:bg-surface-hover hover:text-obsidian">
               Account
             </Link>
+            <Link
+              href="/admin/intelligence"
+              className="rounded-lg border border-indigo-accent/30 bg-indigo-accent/10 px-3 py-2 text-sm font-semibold text-indigo-accent transition-colors hover:bg-indigo-accent/15"
+            >
+              Intelligence
+            </Link>
             <WatchtowerControls initialized={initialized} />
           </div>
         </nav>
