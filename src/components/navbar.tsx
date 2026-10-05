@@ -9,7 +9,6 @@ import { useCart } from "./cart-context";
 const links = [
   { href: "/", label: "Home" },
   { href: "/market", label: "Market" },
-  { href: "/growers", label: "For Growers" },
   { href: "/shop", label: "Goods" },
   { href: "/partners", label: "Partner Finds" },
   { href: "/era-drops", label: "Era Drops" },
