@@ -210,6 +210,20 @@ export function IntelligenceWorkbench() {
                 <span className="font-mono text-[10px] text-muted">{String(candidate.provider ?? "")}</span>
               </div>
               <p className="mt-2 text-xs text-amber-700">REVIEW REQUIRED</p>
+              {Array.isArray(candidate.reviewFlags) && candidate.reviewFlags.length ? (
+                <div className="mt-2 flex flex-wrap gap-1">
+                  {(candidate.reviewFlags as string[]).map((flag) => (
+                    <span
+                      key={flag}
+                      className="rounded-full border border-amber-300 bg-amber-50 px-2 py-1 text-[10px] font-medium text-amber-800"
+                    >
+                      {flag.replaceAll("_", " ")}
+                    </span>
+                  ))}
+                </div>
+              ) : (
+                <p className="mt-2 text-[10px] text-muted">No automatic risk flags. Human review still required.</p>
+              )}
             </div>
           ))}
         </div>
