@@ -14,9 +14,26 @@ permissions:
 jobs:
   intelligence-delivery-r0:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
+
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: intelligence_delivery_ci
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d intelligence_delivery_ci"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 12
+
     env:
       DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/intelligence_delivery_ci
+      PGPASSWORD: postgres
       NEXT_TELEMETRY_DISABLED: "1"
 
     steps:
@@ -34,6 +51,57 @@ jobs:
 
       - name: Intelligence + delivery tests
         run: npm run test:intelligence-delivery
+
+      - name: Apply intelligence delivery migration
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f drizzle/0018_acre_era_intelligence_delivery_r0.sql
+
+      - name: Verify persistence invariants
+        run: |
+          set -euo pipefail
+
+          psql "$DATABASE_URL" -v ON_ERROR_STOP=1 <<'SQL'
+          INSERT INTO demand_observations
+            (subject_type, subject_key, internal_requests, evidence_ref, observed_at)
+          VALUES
+            ('PRODUCT', 'synthetic-grapes', 12, 'synthetic:ci:demand', now());
+
+          INSERT INTO delivery_observations
+            (carrier, service_level, origin_region, destination_region, handling_hours, transit_hours,
+             delivered_on_time, evidence_ref, observed_at)
+          VALUES
+            ('synthetic-carrier', 'scheduled-route', 'OKC-N', 'OKC-S', 4, 3, true, 'synthetic:ci:delivery', now());
+
+          INSERT INTO darwin_evaluations
+            (subject_type, subject_key, candidate_key, eligible, fitness_score, evidence_refs)
+          VALUES
+            ('PRODUCT', 'synthetic-grapes', 'route-a', true, 88, '["synthetic:ci:darwin"]'::json);
+
+          INSERT INTO local_producers
+            (name, service_areas, product_categories, fulfillment_modes)
+          VALUES
+            ('Synthetic Farm', '["Oklahoma City"]'::json, '["produce"]'::json, '["CUSTOMER_PICKUP"]'::json);
+
+          UPDATE local_producers
+          SET pilot_interest = 'YES', updated_at = now()
+          WHERE name = 'Synthetic Farm';
+          SQL
+
+          if psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -c             "UPDATE demand_observations SET internal_requests = 99 WHERE subject_key = 'synthetic-grapes';"; then
+            echo "append-only demand observation mutation unexpectedly succeeded"
+            exit 1
+          fi
+
+          if psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -c             "DELETE FROM delivery_observations WHERE carrier = 'synthetic-carrier';"; then
+            echo "append-only delivery observation deletion unexpectedly succeeded"
+            exit 1
+          fi
+
+          if psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -c             "UPDATE darwin_evaluations SET fitness_score = 1 WHERE candidate_key = 'route-a';"; then
+            echo "append-only Darwin evaluation mutation unexpectedly succeeded"
+            exit 1
+          fi
+
+          test "$(psql "$DATABASE_URL" -Atc "SELECT pilot_interest FROM local_producers WHERE name='Synthetic Farm'")" = "YES"
 
       - name: Existing route engine regression
         run: npm run test:intent-routes
