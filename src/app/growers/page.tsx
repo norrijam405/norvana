@@ -43,6 +43,7 @@ const QUESTIONS = [
 ];
 
 export default function GrowersPage() {
+  const submissionEnabled = process.env.PRODUCER_INTEREST_INTAKE_ENABLED === "true";
   return (
     <>
       <main className="min-h-screen bg-bone">
@@ -136,7 +137,7 @@ export default function GrowersPage() {
           </div>
         </section>
 
-        <ProducerInterestForm />
+        <ProducerInterestForm submissionEnabled={submissionEnabled} />
 
         <section className="border-t border-soil/10 bg-cream">
           <div className="mx-auto max-w-7xl px-4 py-14 text-center sm:px-6 lg:px-8">
