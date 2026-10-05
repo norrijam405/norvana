@@ -17,6 +17,7 @@ import { WatchtowerWorkerSelfTest } from "@/components/admin/watchtower-worker-s
 import { ownerCredentialState } from "@/lib/admin-identity";
 import { currentWatchtowerRuntimeId } from "@/lib/watchtower/runtime-id";
 import { AUTHORIZED_COMMERCE_PROVIDERS } from "@/lib/commerce/provider-registry";
+import { WatchtowerHero } from "@/components/admin/watchtower-hero";
 
 export const dynamic = "force-dynamic";
 
@@ -140,7 +141,7 @@ export default async function AdminPage() {
       <header className="sticky top-0 z-40 border-b border-border bg-bone/85 backdrop-blur-md">
         <nav className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
           <Link href="/" className="font-display text-xl font-bold tracking-wider text-obsidian">
-            NORVANA
+            ACRE ERA
           </Link>
 
           <div className="hidden items-center gap-7 md:flex">
@@ -172,38 +173,12 @@ export default async function AdminPage() {
       </header>
 
       <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
-        <section className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-obsidian via-gray-900 to-obsidian px-6 py-10 text-white shadow-lg md:px-10 md:py-12">
-          <div
-            className="absolute inset-0 opacity-10"
-            style={{
-              backgroundImage:
-                "radial-gradient(circle at 20% 20%, #6366F1 0%, transparent 42%), radial-gradient(circle at 80% 80%, #6366F1 0%, transparent 42%)",
-            }}
-          />
-          <div className="relative grid gap-8 lg:grid-cols-[1.5fr_1fr] lg:items-end">
-            <div>
-              <p className="text-xs font-medium tracking-[0.28em] text-indigo-light">ACRE ERA / OWNER CONTROL ROOM</p>
-              <h1 className="mt-3 font-display text-3xl font-bold md:text-5xl">Watchtower</h1>
-              <p className="mt-4 max-w-2xl text-sm leading-6 text-white/60 md:text-base">
-                Monitor sourcing, brand authorization, product economics, demand, safety, and evidence
-                without giving automation authority to spend, publish, order, or activate suppliers.
-              </p>
-              <div className="mt-6 flex flex-wrap gap-2 text-xs">
-                <StatusChip tone="green">OBSERVE</StatusChip>
-                <StatusChip tone="indigo">RECOMMEND</StatusChip>
-                <StatusChip tone="muted">ACT LOCKED</StatusChip>
-                <StatusChip tone="muted">{"$"}0 DEFAULT BUDGET</StatusChip>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-2">
-              <HeroMetric label="Watchers" value={initialized ? String(jobs.length) : "—"} />
-              <HeroMetric label="Enabled" value={String(enabledJobs)} />
-              <HeroMetric label="Candidates" value={String(unresolvedCandidates)} />
-              <HeroMetric label="Authority" value="Locked" />
-            </div>
-          </div>
-        </section>
+        <WatchtowerHero
+          watcherCount={initialized ? jobs.length : null}
+          enabledCount={enabledJobs}
+          candidateCount={unresolvedCandidates}
+          initialized={initialized}
+        />
 
         <section className="mt-8 grid gap-4 md:grid-cols-3">
           <InfoCard eyebrow="SYSTEM" title="Truth state">
