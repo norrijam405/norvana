@@ -34,7 +34,7 @@ export function Footer() {
               <h3 className="font-display text-xl font-black tracking-tight">ACRE ERA</h3>
             </div>
             <p className="mt-4 max-w-md text-sm leading-6">
-              Groceries, local producers, useful goods, and curious finds—curated with visible reasons and clearer customer signal.
+              Fresh food, everyday goods, premium finds, and changing Eras — one shopping world built around what people actually want.
             </p>
             <form onSubmit={handleSubscribe} className="mt-6 flex max-w-lg gap-2">
               {submitted ? (
@@ -82,8 +82,8 @@ export function Footer() {
         </div>
 
         <div className="mt-14 flex flex-col gap-2 border-t border-cream/10 pt-7 text-xs text-cream/40 md:flex-row md:items-center md:justify-between">
-          <span>© {new Date().getFullYear()} Acre Era. Working public brand.</span>
-          <span>Internal repository codename remains Norvana during controlled migration.</span>
+          <span>© {new Date().getFullYear()} Acre Era.</span>
+          <span>Fresh living · everyday goods · premium finds · changing Eras.</span>
         </div>
       </div>
     </footer>
