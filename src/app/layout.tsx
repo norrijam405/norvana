@@ -6,9 +6,9 @@ import { Navbar } from "@/components/navbar";
 import { CartDrawer } from "@/components/cart-drawer";
 
 export const metadata: Metadata = {
-  title: "Acre Era — Common needs. Curious finds. Clear reasons.",
+  title: "Acre Era — From open roads to city lights.",
   description:
-    "A curated marketplace for groceries, local producers, useful goods, and rotating discoveries with visible product context.",
+    "Fresh food, everyday goods, premium finds, and rotating Eras in one connected shopping world.",
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {
