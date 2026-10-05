@@ -209,6 +209,16 @@ export function IntelligenceWorkbench() {
                 <p className="font-medium">{String(candidate.title ?? "Untitled")}</p>
                 <span className="font-mono text-[10px] text-muted">{String(candidate.provider ?? "")}</span>
               </div>
+              {typeof candidate.pageUrl === "string" && candidate.pageUrl ? (
+                <a
+                  href={candidate.pageUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="mt-2 inline-flex text-[11px] font-medium text-indigo-accent underline underline-offset-2"
+                >
+                  View source on {String(candidate.provider ?? "provider")}
+                </a>
+              ) : null}
               <p className="mt-2 text-xs text-amber-700">REVIEW REQUIRED</p>
               {Array.isArray(candidate.reviewFlags) && candidate.reviewFlags.length ? (
                 <div className="mt-2 flex flex-wrap gap-1">
