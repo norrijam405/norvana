@@ -44,7 +44,7 @@ const ROOMS = [
   },
   {
     href: "/admin/producers",
-    title: "Producer CRM",
+    title: "Farms + Producers",
     copy: "Farm conversations, follow-ups, pilot fit, delivery notes, and detailed discovery.",
     eyebrow: "RELATIONSHIPS",
   },
@@ -116,7 +116,7 @@ export default async function WatchtowerCockpitPage() {
 
   return (
     <main className="min-h-screen bg-[#0d0f0c] text-white">
-      <WatchtowerNav current="/admin" />
+      <WatchtowerNav current="/admin/cockpit" />
       <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
         <WatchtowerHero
           watcherCount={initialized ? jobs.length : null}
@@ -165,6 +165,28 @@ export default async function WatchtowerCockpitPage() {
                   </Link>
                 ) : null}
               </article>
+            ))}
+          </div>
+        </section>
+
+        <section className="mt-6">
+          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-indigo-200">Quick actions</p>
+          <div className="mt-3 flex flex-wrap gap-2">
+            {[
+              ["/admin/producers", "Start a farm call"],
+              ["/admin/orders", "Review orders"],
+              ["/admin/suppliers", "Check suppliers"],
+              ["/admin/connections", "Connect a service"],
+              ["/admin/era-studio", "Build an Era"],
+              ["/", "Preview storefront"],
+            ].map(([href, label]) => (
+              <Link
+                key={href + label}
+                href={href}
+                className="rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm font-semibold text-white/70 transition hover:border-indigo-300/30 hover:bg-white/10 hover:text-white"
+              >
+                {label}
+              </Link>
             ))}
           </div>
         </section>
