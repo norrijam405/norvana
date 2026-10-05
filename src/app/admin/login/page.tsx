@@ -29,7 +29,7 @@ export default function AdminLoginPage() {
         return;
       }
 
-      router.push("/admin");
+      router.push("/admin/cockpit");
     } catch {
       setError("Unable to reach the Norvana admin service.");
     } finally {
