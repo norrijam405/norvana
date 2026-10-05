@@ -5,6 +5,7 @@ import { marketRequests, products } from "@/db/schema";
 import { FarmLifeStory } from "@/components/acre-era/farm-life-story";
 import { BringItHere } from "@/components/acre-era/bring-it-here";
 import { EvolvingField } from "@/components/acre-era/evolving-field";
+import { JourneyHero } from "@/components/acre-era/journey-hero";
 import { Footer } from "@/components/footer";
 
 export const dynamic = "force-dynamic";
@@ -64,20 +65,17 @@ export default async function MarketPage() {
   return (
     <>
       <main>
-        <section className="relative isolate overflow-hidden bg-leaf text-cream">
-          <EvolvingField />
-          <div className="relative mx-auto max-w-7xl px-4 py-20 sm:px-6 md:py-28 lg:px-8">
-            <p className="text-xs font-semibold uppercase tracking-[0.28em] text-wheat">
-              Acre Era Market
-            </p>
-            <h1 className="mt-4 max-w-4xl font-display text-5xl font-black leading-[.96] md:text-7xl">
-              Fresh should feel connected to where it came from.
-            </h1>
-            <p className="mt-6 max-w-2xl text-base leading-7 text-cream/75 md:text-lg">
-              This is the farm-and-grocery side of Acre Era: seasonal food, local growers, makers, and useful context without pretending every item is local when it is not.
-            </p>
-          </div>
-        </section>
+        <JourneyHero
+          variant="market"
+          eyebrow="Local farms · independent makers · everyday food"
+          title="Fresh food. Local stories."
+          accent="From field to front door."
+          copy="Acre Era Market connects seasonal food, local producers, useful everyday staples, and the roads that carry them into real life."
+          primaryHref="#market-shelf"
+          primaryLabel="Explore the Market"
+          secondaryHref="/growers"
+          secondaryLabel="For Growers"
+        />
 
         <div className="mx-auto max-w-7xl space-y-10 px-4 py-12 sm:px-6 lg:px-8">
           <FarmLifeStory
@@ -85,14 +83,14 @@ export default async function MarketPage() {
             posterUrl={PREVIEW_FARM_MEDIA.posterUrl}
           />
 
-          <section>
+          <section id="market-shelf">
             <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
               <div>
                 <p className="text-xs font-semibold uppercase tracking-[0.22em] text-leaf">Market shelf</p>
                 <h2 className="mt-2 font-display text-3xl font-bold md:text-5xl">Fresh + useful.</h2>
               </div>
               <p className="max-w-lg text-sm leading-6 text-muted">
-                Only active catalog items in food, grocery, garden, or wellness lanes appear here. Local-source claims require separate evidence.
+                Fresh produce, pantry staples, local makers, and useful food-world finds can live together here. We keep source and availability clear without turning shopping into a technical report.
               </p>
             </div>
 
@@ -123,7 +121,7 @@ export default async function MarketPage() {
               <div className="mt-8 rounded-[1.5rem] border border-dashed border-soil/20 bg-cream p-8">
                 <h3 className="font-display text-xl font-bold">Market inventory is not published yet.</h3>
                 <p className="mt-2 max-w-2xl text-sm leading-6 text-muted">
-                  That is intentional. The page will not manufacture local-farm claims or demo inventory. Use Bring It Here below to create real demand evidence while partner sourcing is qualified.
+                  We are building this shelf from real availability instead of filling it with placeholders. As farms, makers, and food partners are ready, their products will appear here.
                 </p>
               </div>
             )}
