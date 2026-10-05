@@ -66,6 +66,7 @@ export function Footer() {
               <li><Link href="/partners/archive" className="hover:text-cream">Partner Archive</Link></li>
               <li><Link href="/era-drops" className="hover:text-cream">Era Drops</Link></li>
               <li><Link href="/archive" className="hover:text-cream">Archive</Link></li>
+              <li><Link href="/how-it-works" className="hover:text-cream">How Acre Era works</Link></li>
             </ul>
           </div>
 
