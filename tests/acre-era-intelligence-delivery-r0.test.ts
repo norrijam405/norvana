@@ -5,6 +5,8 @@ import { scoreDemand, demandBand } from "../src/lib/intelligence/demand";
 import { predictDelivery, shipmentRiskState, allocatedRouteDeliveryCostCents } from "../src/lib/logistics/delivery-intelligence";
 import { evaluateDarwinCandidate, rankDarwinCandidates } from "../src/lib/intelligence/darwin";
 import { validateProducerIntake } from "../src/lib/local-food/producer-intake";
+import { compareLocalDeliveryModes, breakEvenRouteStops } from "../src/lib/logistics/local-delivery-economics";
+import { validateDeliveryQuote } from "../src/lib/logistics/delivery-provider";
 
 test("demand scoring rewards observed velocity, repeat purchase, and sell-through", () => {
   const now = new Date("2026-10-04T18:00:00Z");
@@ -178,4 +180,33 @@ test("producer intake catches unsupported national cold-chain claims", () => {
   assert.equal(result.valid, false);
   assert.ok(result.issues.includes("NATIONAL_SHIPPING_MODE_MISSING"));
   assert.ok(result.issues.includes("COLD_CHAIN_FULFILLMENT_PATH_MISSING"));
+});
+
+
+test("scheduled delivery wins once route density spreads the cost", () => {
+  const result = compareLocalDeliveryModes({
+    stops: Array.from({ length: 10 }, (_, index) => ({
+      orderKey: `order-${index + 1}`,
+      contributionBeforeDeliveryCents: 1200,
+    })),
+    scheduledRouteCostCents: 4200,
+    thirdPartyPerOrderCents: 699,
+    minimumContributionPerOrderCents: 300,
+  });
+
+  assert.equal(result.recommendedMode, "SCHEDULED_ROUTE");
+  assert.equal(result.scheduled?.deliveryCostPerOrderCents, 420);
+  assert.ok(result.savingsCents > 0);
+  assert.equal(breakEvenRouteStops({ scheduledRouteCostCents: 4200, thirdPartyPerOrderCents: 699 }), 7);
+});
+
+test("provider-neutral quote validation rejects impossible quotes", () => {
+  const result = validateDeliveryQuote({
+    provider: "example",
+    serviceLevel: "same-day",
+    quotedCostCents: -1,
+    currency: "USD",
+  });
+  assert.equal(result.valid, false);
+  assert.ok(result.issues.includes("DELIVERY_QUOTED_COST_INVALID"));
 });
