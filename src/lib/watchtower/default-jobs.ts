@@ -221,7 +221,67 @@ export const WATCHTOWER_INTELLIGENCE_R2_JOB_TEMPLATES: WatchtowerJobTemplate[] =
   },
 ];
 
+export const WATCHTOWER_INTELLIGENCE_DELIVERY_R0_JOB_TEMPLATES: WatchtowerJobTemplate[] = [
+  {
+    slug: "acre-era-demand-learning-watch",
+    name: "Acre Era Demand Learning",
+    category: "demand",
+    description: "Combine internal customer behavior with external demand observations to improve product and Era selection.",
+    instructions:
+      "Observe requests, sell-through, repeat-purchase behavior, Customer Voice, search/trend evidence, and demand velocity. Preserve sample size, freshness, uncertainty, and evidence references. External popularity alone must not override Acre Era's own observed customer behavior. Recommend candidates only; never publish, buy, or change price.",
+    authority: "RECOMMEND",
+    cadenceMinutes: 1440,
+    budgetCents: 0,
+    sourcePolicy: {
+      preserveSampleSize: true,
+      preserveFreshness: true,
+      preferInternalObservedDemandOverHype: true,
+      noAutoPublish: true,
+      noAutoBuy: true,
+      noAutoPriceChange: true,
+    },
+  },
+  {
+    slug: "acre-era-delivery-reliability-watch",
+    name: "Acre Era Delivery Reliability",
+    category: "logistics",
+    description: "Learn supplier, carrier, service-level, and geography delivery performance from real outcomes.",
+    instructions:
+      "Observe handling time, carrier acceptance, transit duration, on-time rate, tracking gaps, loss, damage, destination region, and customer promise accuracy. Produce conservative delivery predictions and flag degrading routes. Never create shipments, change carriers, refund, reship, or contact customers automatically.",
+    authority: "RECOMMEND",
+    cadenceMinutes: 1440,
+    budgetCents: 0,
+    sourcePolicy: {
+      requireOutcomeEvidence: true,
+      segmentBySupplierCarrierGeography: true,
+      preferConservativePromises: true,
+      noAutoShipment: true,
+      noAutoRefund: true,
+      noAutoReship: true,
+    },
+  },
+  {
+    slug: "acre-era-producer-network-watch",
+    name: "Acre Era Producer Network",
+    category: "local",
+    description: "Discover farms, food hubs, cooperatives, distributors, and makers that could expand Acre Era supply.",
+    instructions:
+      "Discover producer prospects using official directories and reputable producer networks. Capture service area, product categories, seasonality, wholesale availability, lead time, fulfillment modes, cold-chain needs, national-shipping capability, and contact path. Discovery is not partnership approval. Never contact, enroll, represent, or publish a producer automatically.",
+    authority: "OBSERVE",
+    cadenceMinutes: 10080,
+    budgetCents: 0,
+    sourcePolicy: {
+      preferOfficialDirectories: true,
+      discoveryOnly: true,
+      noAutoContact: true,
+      noAutoEnrollment: true,
+      noAutoPublish: true,
+    },
+  },
+];
+
 export const WATCHTOWER_ALL_JOB_TEMPLATES: WatchtowerJobTemplate[] = [
   ...WATCHTOWER_JOB_TEMPLATES,
   ...WATCHTOWER_INTELLIGENCE_R2_JOB_TEMPLATES,
+  ...WATCHTOWER_INTELLIGENCE_DELIVERY_R0_JOB_TEMPLATES,
 ];
