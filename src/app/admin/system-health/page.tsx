@@ -96,7 +96,7 @@ export default async function SystemHealthPage() {
                 </div>
               ))}
             </div>
-            <Link href="/admin" className="mt-5 inline-flex text-sm font-semibold text-indigo-200 underline underline-offset-4">
+            <Link href="/admin/advanced" className="mt-5 inline-flex text-sm font-semibold text-indigo-200 underline underline-offset-4">
               Open legacy advanced controls →
             </Link>
           </div>
