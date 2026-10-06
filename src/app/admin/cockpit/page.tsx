@@ -49,6 +49,12 @@ const ROOMS = [
     eyebrow: "EARN",
   },
   {
+    href: "/admin/credentials",
+    title: "Business Credentials",
+    copy: "Legal entity, EIN/tax-document readiness, resale paperwork, W-9, DBA status, and supplier application packs without exposing private numbers.",
+    eyebrow: "QUALIFY",
+  },
+  {
     href: "/admin/producers",
     title: "Farms + Producers",
     copy: "Farm conversations, follow-ups, pilot fit, delivery notes, and detailed discovery.",
@@ -188,6 +194,7 @@ export default async function WatchtowerCockpitPage() {
               ["/admin/producers", "Start a farm call"],
               ["/admin/orders", "Review orders"],
               ["/admin/suppliers", "Check suppliers"],
+              ["/admin/credentials", "Business credentials"],
               ["/admin/connections", "Connect a service"],
               ["/admin/era-studio", "Build an Era"],
               ["/admin/launch", "Check launch readiness"],
