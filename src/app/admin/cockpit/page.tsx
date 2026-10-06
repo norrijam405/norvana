@@ -43,6 +43,12 @@ const ROOMS = [
     eyebrow: "CONNECT",
   },
   {
+    href: "/admin/affiliates",
+    title: "Affiliate Programs",
+    copy: "Retailer and brand programs across tech, gaming, fashion, luxury, beauty, pets, home, family, and outdoors.",
+    eyebrow: "EARN",
+  },
+  {
     href: "/admin/producers",
     title: "Farms + Producers",
     copy: "Farm conversations, follow-ups, pilot fit, delivery notes, and detailed discovery.",
