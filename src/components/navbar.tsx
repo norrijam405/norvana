@@ -8,11 +8,11 @@ import { useCart } from "./cart-context";
 
 const links = [
   { href: "/", label: "Home" },
-  { href: "/market", label: "Market" },
-  { href: "/shop", label: "Goods" },
-  { href: "/partners", label: "Partner Finds" },
+  { href: "/market", label: "Market Era" },
+  { href: "/shop", label: "Goods Era" },
+  { href: "/partners", label: "Finds Era" },
   { href: "/era-drops", label: "Era Drop" },
-  { href: "/archive", label: "Archive" },
+  { href: "/archive", label: "Past Eras" },
 ];
 
 export function Navbar() {
