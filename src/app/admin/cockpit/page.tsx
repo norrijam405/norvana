@@ -19,6 +19,12 @@ export const dynamic = "force-dynamic";
 
 const ROOMS = [
   {
+    href: "/admin/armed-mode",
+    title: "Armed Mode",
+    copy: "Green and Blue intelligence can move now; Amber asks you; Red autonomous execution stays locked until proven.",
+    eyebrow: "AUTHORITY",
+  },
+  {
     href: "/admin/money",
     title: "Money",
     copy: "Revenue, payment state, refunds, shipping charges, and eventually contribution margin.",
@@ -191,6 +197,7 @@ export default async function WatchtowerCockpitPage() {
           <p className="text-xs font-semibold uppercase tracking-[0.2em] text-indigo-200">Quick actions</p>
           <div className="mt-3 flex flex-wrap gap-2">
             {[
+              ["/admin/armed-mode", "Open Armed Mode"],
               ["/admin/producers", "Start a farm call"],
               ["/admin/orders", "Review orders"],
               ["/admin/suppliers", "Check suppliers"],
@@ -236,14 +243,15 @@ export default async function WatchtowerCockpitPage() {
         <section className="mt-8 grid gap-5 lg:grid-cols-[1.1fr_.9fr]">
           <article className="rounded-[2rem] border border-white/10 bg-white/[0.035] p-6 md:p-8">
             <p className="text-xs font-semibold uppercase tracking-[0.2em] text-indigo-200">Authority</p>
-            <h2 className="mt-2 font-display text-2xl font-bold">Watch and recommend first. Act only when unlocked.</h2>
+            <h2 className="mt-2 font-display text-2xl font-bold">Armed Mode: intelligence is live-safe; execution remains gated.</h2>
             <p className="mt-4 text-sm leading-7 text-white/50">
               Research, quotes, status, comparisons, and owner recommendations can become automatic. Spending money, contacting customers, refunding, creating deliveries, publishing Eras, or activating suppliers remain separate permissions.
             </p>
             <div className="mt-5 flex flex-wrap gap-2">
-              <span className="rounded-full border border-emerald-300/20 bg-emerald-300/10 px-3 py-1.5 text-xs text-emerald-100">WATCH</span>
-              <span className="rounded-full border border-indigo-300/20 bg-indigo-300/10 px-3 py-1.5 text-xs text-indigo-100">RECOMMEND</span>
-              <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-xs text-white/45">ACT LOCKED</span>
+              <span className="rounded-full border border-emerald-300/20 bg-emerald-300/10 px-3 py-1.5 text-xs text-emerald-100">GREEN · OBSERVE</span>
+              <span className="rounded-full border border-indigo-300/20 bg-indigo-300/10 px-3 py-1.5 text-xs text-indigo-100">BLUE · RECOMMEND</span>
+              <span className="rounded-full border border-amber-300/20 bg-amber-300/10 px-3 py-1.5 text-xs text-amber-100">AMBER · ASK ME</span>
+              <span className="rounded-full border border-rose-300/20 bg-rose-300/10 px-3 py-1.5 text-xs text-rose-100/60">RED · LOCKED</span>
             </div>
           </article>
 
