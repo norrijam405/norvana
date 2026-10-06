@@ -114,7 +114,7 @@ export function ShopClient({ products }: { products: Product[] }) {
               Everyday needs, useful finds, and the stuff worth coming back for.
             </h1>
             <p className="mt-4 max-w-3xl text-base leading-7 text-muted">
-              Household basics, family, pets, beauty, home, market, style, tech and more. The shelf grows from real availability and real demand — not filler inventory.
+              Household basics, family, pets, beauty, home, market, style, phones, gaming, electronics and more. The shelf grows from qualified supply and real demand — not filler inventory or products we cannot actually source.
             </p>
             <div className="mt-6 grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-8">
               {[
@@ -217,7 +217,7 @@ export function ShopClient({ products }: { products: Product[] }) {
                 <p className="text-xs font-semibold uppercase tracking-[0.2em] text-wheat">Built for repeat life</p>
                 <h3 className="mt-3 font-display text-2xl font-bold">Not just the flashy stuff.</h3>
                 <p className="mt-3 text-sm leading-6 text-cream/70">
-                  Dog food. Shampoo. School supplies. Kitchen basics. Produce. Chargers. Gifts. The goal is a useful store first, with rotating Eras making discovery fun.
+                  Dog food. Shampoo. School supplies. Kitchen basics. Produce. Chargers. Gaming gear. Phone accessories. Gifts. The goal is a useful store first, with rotating Eras making discovery fun.
                 </p>
               </div>
             </div>
