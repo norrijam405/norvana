@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Footer } from "@/components/footer";
 import { JourneyHero } from "@/components/acre-era/journey-hero";
+import { HOME_PREVIEW_PRODUCTS } from "@/lib/acre-era/preview-products";
 
 const WORLDS = [
   {
@@ -113,6 +114,49 @@ export function BetweenErasHome() {
             </div>
           </div>
         </section>
+
+        {process.env.VERCEL_ENV === "preview" ? (
+          <section className="mx-auto max-w-7xl px-4 py-14 sm:px-6 lg:px-8 lg:py-20">
+            <div className="flex flex-col gap-5 md:flex-row md:items-end md:justify-between">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-[0.22em] text-leaf">Preview shelf</p>
+                <h2 className="mt-3 max-w-3xl font-display text-4xl font-black tracking-[-0.035em] md:text-5xl">
+                  This is what the whole store starts to feel like with merchandise in it.
+                </h2>
+                <p className="mt-4 max-w-2xl text-sm leading-7 text-muted">
+                  These are visual merchandising concepts only — not live inventory. They are here so we can judge the mix before real suppliers are connected.
+                </p>
+              </div>
+              <Link href="/shop" className="btn-secondary">See the full Preview Shelf</Link>
+            </div>
+
+            <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              {HOME_PREVIEW_PRODUCTS.map((product) => (
+                <article key={product.id} className="overflow-hidden rounded-[1.6rem] border border-soil/10 bg-cream shadow-sm">
+                  <div className={"flex aspect-[4/3] items-center justify-center bg-gradient-to-br " + product.accent}>
+                    <div className="text-center text-cream">
+                      <div className="text-6xl">{product.icon}</div>
+                      <div className="mt-4 rounded-full border border-white/20 bg-black/15 px-3 py-1 text-[9px] font-semibold uppercase tracking-[0.14em]">
+                        Preview concept
+                      </div>
+                    </div>
+                  </div>
+                  <div className="p-5">
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-leaf">
+                      {product.niche.replace("-", " ")}
+                    </p>
+                    <h3 className="mt-2 font-display text-xl font-bold">{product.name}</h3>
+                    <p className="mt-2 text-sm leading-6 text-muted">{product.description}</p>
+                    <div className="mt-4 flex items-center justify-between">
+                      <span className="font-display text-lg font-bold">${product.price.toFixed(2)}</span>
+                      <span className="text-[10px] font-semibold uppercase tracking-[0.12em] text-muted">Not for sale</span>
+                    </div>
+                  </div>
+                </article>
+              ))}
+            </div>
+          </section>
+        ) : null}
 
         <section id="era-drop" className="mx-auto max-w-7xl px-4 py-14 sm:px-6 lg:px-8 lg:py-20">
           <div className="overflow-hidden rounded-[2.2rem] bg-soil text-cream">
