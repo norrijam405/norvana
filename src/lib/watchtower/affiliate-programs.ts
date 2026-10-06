@@ -320,3 +320,174 @@ export const AFFILIATE_PROGRAMS: AffiliateProgramEntry[] = [
     caution: "Rewards points are not the same business model as cash affiliate revenue.",
   },
 ];
+
+
+export type AffiliateNetworkEntry = {
+  slug: string;
+  name: string;
+  applyUrl: string;
+  cost: string;
+  reach: string;
+  examples: string[];
+  priority: "APPLY_NOW" | "OPTIONAL";
+  note?: string;
+};
+
+export const AFFILIATE_NETWORKS: AffiliateNetworkEntry[] = [
+  {
+    slug: "impact",
+    name: "Impact",
+    applyUrl: "https://impact.com/get-started/",
+    cost: "Free for publishers / creators",
+    reach: "Thousands of brands plus a large product marketplace.",
+    examples: ["Adidas", "Lenovo", "StockX", "L'Oréal", "Fanatics"],
+    priority: "APPLY_NOW",
+    note: "Best first network for Acre Era because several of our target brands already use it.",
+  },
+  {
+    slug: "awin",
+    name: "Awin",
+    applyUrl: "https://www.awin.com/us/publishers",
+    cost: "$1 verification deposit, credited back after first tracked sale",
+    reach: "30,000+ brands advertised across its global network.",
+    examples: ["Adidas", "AliExpress", "Dyson", "Nike", "Samsung", "Sephora", "Uniqlo"],
+    priority: "APPLY_NOW",
+    note: "Near-zero-cost gateway to many major brands; do not buy add-ons before revenue justifies them.",
+  },
+  {
+    slug: "cj",
+    name: "CJ Affiliate",
+    applyUrl: "https://www.cj.com/join",
+    cost: "Publisher signup",
+    reach: "Large established affiliate network for brands, publishers, and creators.",
+    examples: ["Retail", "Tech", "Fashion", "Travel", "Services"],
+    priority: "APPLY_NOW",
+  },
+  {
+    slug: "rakuten",
+    name: "Rakuten Advertising",
+    applyUrl: "https://rakutenadvertising.com/publishers/",
+    cost: "Publisher signup",
+    reach: "Global network with major retail, luxury, travel, and consumer brands.",
+    examples: ["Etsy", "Newegg", "Luxury", "Retail", "Travel"],
+    priority: "APPLY_NOW",
+  },
+  {
+    slug: "flexoffers",
+    name: "FlexOffers",
+    applyUrl: "https://publisherprobeta.flexoffers.com/signup/accountInfo",
+    cost: "Publisher application",
+    reach: "Thousands of advertiser programs across many categories.",
+    examples: ["Retail", "Finance", "Tech", "Travel", "Home"],
+    priority: "OPTIONAL",
+    note: "Useful as a coverage-expander after the major networks are active.",
+  },
+];
+
+export type SupplierProgramEntry = {
+  slug: string;
+  name: string;
+  kind: "DROPSHIP" | "POD" | "DIRECTORY";
+  signupUrl: string;
+  website: string;
+  entryCost: string;
+  monthlyCost: string;
+  payWhenSold: boolean;
+  priority: "START_FREE" | "TEST_LATER" | "PAID_LATER";
+  coverage: string;
+  caution?: string;
+};
+
+export const SUPPLIER_PROGRAMS: SupplierProgramEntry[] = [
+  {
+    slug: "cj-dropshipping",
+    name: "CJdropshipping",
+    kind: "DROPSHIP",
+    signupUrl: "https://www.cjdropshipping.com/",
+    website: "https://www.cjdropshipping.com/",
+    entryCost: "$0",
+    monthlyCost: "$0 basic plan",
+    payWhenSold: true,
+    priority: "START_FREE",
+    coverage: "General products, sourcing requests, store connections, order monitoring, global fulfillment, and POD options.",
+    caution: "Product, shipping, warehouse, customization, and add-on service costs still apply when used.",
+  },
+  {
+    slug: "printful",
+    name: "Printful",
+    kind: "POD",
+    signupUrl: "https://www.printful.com/",
+    website: "https://www.printful.com/",
+    entryCost: "$0",
+    monthlyCost: "$0 free plan",
+    payWhenSold: true,
+    priority: "START_FREE",
+    coverage: "Print-on-demand apparel, accessories, home goods, phone cases, and branded merchandise.",
+    caution: "You pay product, fulfillment, shipping, taxes, and optional extras when an order is placed.",
+  },
+  {
+    slug: "printify",
+    name: "Printify",
+    kind: "POD",
+    signupUrl: "https://printify.com/",
+    website: "https://printify.com/",
+    entryCost: "$0",
+    monthlyCost: "$0 free plan",
+    payWhenSold: true,
+    priority: "START_FREE",
+    coverage: "Large POD marketplace with 2,000+ products and multiple print providers.",
+    caution: "Free plan uses standard product pricing; paid plans mainly improve discounts and scale.",
+  },
+  {
+    slug: "zendrop",
+    name: "Zendrop",
+    kind: "DROPSHIP",
+    signupUrl: "https://www.zendrop.com/",
+    website: "https://www.zendrop.com/",
+    entryCost: "$0",
+    monthlyCost: "$0 limited free plan",
+    payWhenSold: true,
+    priority: "START_FREE",
+    coverage: "Large product catalog with a free entry tier and optional automation / branding upgrades.",
+    caution: "Automated fulfillment and several growth features sit behind paid plans; do not upgrade until the economics justify it.",
+  },
+  {
+    slug: "inventory-source",
+    name: "Inventory Source Supplier Directory",
+    kind: "DIRECTORY",
+    signupUrl: "https://www.inventorysource.com/dropshippers/",
+    website: "https://www.inventorysource.com/",
+    entryCost: "$0 directory",
+    monthlyCost: "$0 for directory research",
+    payWhenSold: false,
+    priority: "START_FREE",
+    coverage: "Free directory advertising 6,500+ wholesalers and dropshippers plus supplier product information.",
+    caution: "Automation and integrations can cost extra. Use the free directory for supplier discovery first.",
+  },
+  {
+    slug: "aliexpress-awin",
+    name: "AliExpress via Awin / supplier sourcing",
+    kind: "DROPSHIP",
+    signupUrl: "https://www.awin.com/us/publishers",
+    website: "https://www.aliexpress.com/",
+    entryCost: "Near $0",
+    monthlyCost: "No Acre Era subscription required for affiliate discovery",
+    payWhenSold: true,
+    priority: "TEST_LATER",
+    coverage: "Very broad global catalog; Awin currently lists AliExpress among network brands.",
+    caution: "Shipping speed, product authenticity, quality, returns, and brand authorization need item-by-item qualification before Acre Era lists anything.",
+  },
+  {
+    slug: "autods",
+    name: "AutoDS",
+    kind: "DROPSHIP",
+    signupUrl: "https://www.autods.com/pricing/",
+    website: "https://www.autods.com/",
+    entryCost: "Low-cost trial",
+    monthlyCost: "Paid subscription after trial",
+    payWhenSold: false,
+    priority: "PAID_LATER",
+    coverage: "Broad automation layer for product importing, order management, sourcing, and analytics.",
+    caution: "Not a permanent free option. Keep it locked until time savings or revenue clearly exceed the subscription.",
+  },
+];
