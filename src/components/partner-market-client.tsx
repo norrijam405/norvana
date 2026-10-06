@@ -102,7 +102,7 @@ export function PartnerMarketClient({
           eyebrow="Partner Finds · premium finds · trusted buying paths"
           title="Good products can come"
           accent="from more than one road."
-          copy="Acre Era curates brands and retailers that fit the world we are building — from useful everyday gear to premium shoes, bags, accessories, and special finds."
+          copy="Acre Era curates brands, retailers, and qualified buying paths that fit the world we are building — from useful electronics and gaming gear to premium shoes, bags, accessories, and special finds."
           primaryHref="#current-partner-era"
           primaryLabel="Explore Partner Finds"
           secondaryHref="/shop"
@@ -152,7 +152,7 @@ export function PartnerMarketClient({
                 <h2 className="mt-2 font-display text-3xl font-black md:text-4xl">Curated beyond one storefront.</h2>
               </div>
               <p className="max-w-lg text-sm leading-6 text-muted">
-                Some products are bought directly through Acre Era and some through trusted partners. The experience should still feel like one carefully curated world.
+                Some products are bought directly through Acre Era and some through trusted partners. We keep that distinction visible while still making the experience feel like one carefully curated world.
               </p>
             </div>
 
