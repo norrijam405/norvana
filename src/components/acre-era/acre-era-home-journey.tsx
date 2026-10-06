@@ -7,7 +7,7 @@ import { ACRE_ERA_PREVIEW_PRODUCTS } from "@/lib/acre-era/preview-products";
 const SCENES = [
   {
     key: "fresh",
-    tab: "Fresh",
+    tab: "Fresh Era",
     eyebrow: "Fresh living",
     title: "From open roads",
     accent: "to the table.",
@@ -22,7 +22,7 @@ const SCENES = [
   },
   {
     key: "everyday",
-    tab: "Everyday",
+    tab: "Everyday Era",
     eyebrow: "Real life",
     title: "The road keeps moving",
     accent: "and the cart fills up.",
@@ -37,7 +37,7 @@ const SCENES = [
   },
   {
     key: "city",
-    tab: "City",
+    tab: "City Era",
     eyebrow: "City energy",
     title: "Same customer",
     accent: "different mood.",
@@ -52,7 +52,7 @@ const SCENES = [
   },
   {
     key: "after-dark",
-    tab: "After Dark",
+    tab: "After Dark Era",
     eyebrow: "Premium + limited",
     title: "When the lights come on",
     accent: "the world changes.",
@@ -132,7 +132,7 @@ export function AcreEraHomeJourney({ showPreviewProducts }: { showPreviewProduct
                 Acre Era
               </span>
               <span className="text-[10px] uppercase tracking-[0.16em] text-cream/45">
-                fresh → everyday → city → premium
+                choose the Era that fits your moment
               </span>
             </div>
 
@@ -186,7 +186,7 @@ export function AcreEraHomeJourney({ showPreviewProducts }: { showPreviewProduct
           {showPreviewProducts ? (
             <div className="w-full">
               <p className="mb-3 text-[10px] font-semibold uppercase tracking-[0.18em] text-cream/45">
-                What belongs in this moment
+                In this Era
               </p>
               <div className="grid gap-3 sm:grid-cols-2">
                 {products.map((product) =>
@@ -218,7 +218,7 @@ export function AcreEraHomeJourney({ showPreviewProducts }: { showPreviewProduct
             <div className="w-full rounded-[1.6rem] border border-white/12 bg-black/25 p-6 backdrop-blur-md">
               <p className="text-xs font-semibold uppercase tracking-[0.18em] text-wheat">One world, many moods</p>
               <p className="mt-3 text-sm leading-7 text-cream/62">
-                Acre Era changes its visual language with the moment while the navigation, trust, and buying experience stay familiar.
+                Fresh food, everyday goods, style, tech, and premium finds can live in one place while each Era keeps its own mood.
               </p>
             </div>
           )}
