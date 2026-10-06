@@ -69,15 +69,15 @@ export function BetweenErasHome() {
                 See the current Era, local spotlights, what shoppers are asking for, and what Acre Era is paying attention to.
               </h2>
               <p className="mt-4 max-w-2xl text-sm leading-7 text-cream/68">
-                This is where the store feels alive — not another explanation of how we designed it.
+                Company updates, local stories, shopper ideas, community moments, and what is moving right now all land here.
               </p>
             </div>
             <div className="flex flex-col justify-end gap-3">
               <Link href="/era-drops" className="btn-primary !bg-wheat !text-soil text-center">
-                Enter the Eras
+                Open Era Drop
               </Link>
               <Link href="/market" className="btn-ghost-light text-center">
-                Meet the people behind Market
+                Enter Market Era
               </Link>
             </div>
           </div>
