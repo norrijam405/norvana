@@ -44,8 +44,8 @@ const ROOMS = [
   },
   {
     href: "/admin/affiliates",
-    title: "Affiliate Programs",
-    copy: "Retailer and brand programs across tech, gaming, fashion, luxury, beauty, pets, home, family, and outdoors.",
+    title: "Partner + Supplier Hub",
+    copy: "Affiliate networks, name-brand programs, dropship suppliers, and print-on-demand options with cost truth and signup links.",
     eyebrow: "EARN",
   },
   {
