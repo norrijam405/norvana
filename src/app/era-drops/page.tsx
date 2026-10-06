@@ -46,12 +46,12 @@ export default async function EraDropsPage() {
       <main className="bg-bone text-soil">
         <JourneyHero
           variant="drops"
-          eyebrow="Drop Era · what is happening now"
+          eyebrow="Era Drop · what is happening now"
           title="Drop into what is happening."
           accent="See what is moving."
-          copy="Drop Era is Acre Era's living media board — what is moving now, what shoppers are asking for, who deserves a spotlight, and which niche, product, place, or community story has our attention."
+          copy="Era Drop is Acre Era's living media board — what is moving now, what shoppers are asking for, who deserves a spotlight, and which niche, product, place, or community story has our attention."
           primaryHref="#era-board"
-          primaryLabel="Open Drop Era"
+          primaryLabel="Open Era Drop"
           secondaryHref="/archive"
           secondaryLabel="Past Drops"
         />
@@ -62,7 +62,7 @@ export default async function EraDropsPage() {
               <p className="text-xs font-semibold uppercase tracking-[0.2em] text-wheat">Current Drop</p>
               <h2 className="mt-3 font-display text-3xl font-black">{currentEraName}</h2>
               <p className="mt-4 text-sm leading-6 text-cream/65">
-                When the focus changes, Drop Era changes with it while the rest of Acre Era keeps shopping normally.
+                When the focus changes, Era Drop changes with it while the rest of Acre Era keeps shopping normally.
               </p>
             </article>
 
