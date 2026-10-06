@@ -46,23 +46,23 @@ export default async function EraDropsPage() {
       <main className="bg-bone text-soil">
         <JourneyHero
           variant="drops"
-          eyebrow="Acre Era · what is happening now"
-          title="Step into the Era."
+          eyebrow="Drop Era · what is happening now"
+          title="Drop into what is happening."
           accent="See what is moving."
-          copy="The Era board is where Acre Era highlights what is happening, what shoppers are asking for, who we are paying attention to, and the people or places worth putting in the spotlight."
+          copy="Drop Era is Acre Era's living media board — what is moving now, what shoppers are asking for, who deserves a spotlight, and which niche, product, place, or community story has our attention."
           primaryHref="#era-board"
-          primaryLabel="Open the board"
+          primaryLabel="Open Drop Era"
           secondaryHref="/archive"
-          secondaryLabel="Past Eras"
+          secondaryLabel="Past Drops"
         />
 
         <section id="era-board" className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8 lg:py-16">
           <div className="grid gap-4 md:grid-cols-3">
             <article className="rounded-[1.8rem] bg-soil p-6 text-cream md:p-8">
-              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-wheat">Current Era</p>
+              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-wheat">Current Drop</p>
               <h2 className="mt-3 font-display text-3xl font-black">{currentEraName}</h2>
               <p className="mt-4 text-sm leading-6 text-cream/65">
-                When a new Era becomes active, this board changes with it while the rest of Acre Era keeps moving.
+                When the focus changes, Drop Era changes with it while the rest of Acre Era keeps shopping normally.
               </p>
             </article>
 
