@@ -45,7 +45,7 @@ export function Footer() {
                     type="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    placeholder="Email for Drop Era + local updates"
+                    placeholder="Email for Era Drop + local updates"
                     className="min-w-0 flex-1 rounded-full border border-cream/15 bg-cream/[0.08] px-4 py-2.5 text-sm text-cream placeholder:text-cream/35 focus:outline-none focus:ring-2 focus:ring-wheat"
                     required
                   />
@@ -64,7 +64,7 @@ export function Footer() {
               <li><Link href="/shop" className="hover:text-cream">Goods</Link></li>
               <li><Link href="/partners" className="hover:text-cream">Partner Finds</Link></li>
               <li><Link href="/partners/archive" className="hover:text-cream">Partner Archive</Link></li>
-              <li><Link href="/era-drops" className="hover:text-cream">Drop Era</Link></li>
+              <li><Link href="/era-drops" className="hover:text-cream">Era Drop</Link></li>
               <li><Link href="/archive" className="hover:text-cream">Archive</Link></li>
               <li><Link href="/how-it-works" className="hover:text-cream">How Acre Era works</Link></li>
             </ul>
