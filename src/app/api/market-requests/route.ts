@@ -5,7 +5,16 @@ import { db } from "@/db";
 import { marketRequests } from "@/db/schema";
 import { consumeCustomerVoiceQuota } from "@/lib/customer-voice/throttle";
 
-const CATEGORIES = new Set(["product", "farm", "maker", "category"]);
+const CATEGORIES = new Set([
+  "product",
+  "farm",
+  "maker",
+  "category",
+  "school",
+  "charity",
+  "community_story",
+  "kindness",
+]);
 
 function normalizeTitle(value: unknown) {
   return String(value || "")
