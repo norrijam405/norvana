@@ -26,6 +26,18 @@ export default async function AffiliateProgramsPage() {
   const selective = AFFILIATE_PROGRAMS.filter((item) => item.priority === "SELECTIVE");
   const later = AFFILIATE_PROGRAMS.filter((item) => item.priority === "LATER");
 
+  const priorityCounts = [
+    { label: "Apply first", value: first.length },
+    { label: "Selective", value: selective.length },
+    { label: "Later", value: later.length },
+  ];
+
+  const priorityGroups = [
+    { key: "APPLY_FIRST", title: "Apply first", items: first },
+    { key: "SELECTIVE", title: "Selective", items: selective },
+    { key: "LATER", title: "Later / low priority", items: later },
+  ] as const;
+
   return (
     <main className="min-h-screen bg-[#0d0f0c] text-white">
       <WatchtowerNav current="/admin/affiliates" />
@@ -41,12 +53,8 @@ export default async function AffiliateProgramsPage() {
           </p>
 
           <div className="mt-7 grid gap-3 sm:grid-cols-3">
-            {[
-              ["Apply first", first.length],
-              ["Selective", selective.length],
-              ["Later", later.length],
-            ].map(([label,value])=>(
-              <div key={String(label)} className="rounded-2xl border border-white/10 bg-black/20 p-4">
+            {priorityCounts.map(({ label, value }) => (
+              <div key={label} className="rounded-2xl border border-white/10 bg-black/20 p-4">
                 <p className="text-[10px] uppercase tracking-[0.16em] text-white/35">{label}</p>
                 <p className="mt-2 font-display text-3xl font-bold">{value}</p>
               </div>
@@ -55,12 +63,8 @@ export default async function AffiliateProgramsPage() {
         </section>
 
         <section className="mt-8 space-y-10">
-          {[
-            ["APPLY_FIRST","Apply first",first],
-            ["SELECTIVE","Selective",selective],
-            ["LATER","Later / low priority",later],
-          ].map(([key,title,items])=>(
-            <div key={String(key)}>
+          {priorityGroups.map(({ key, title, items }) => (
+            <div key={key}>
               <div>
                 <p className="text-xs font-semibold uppercase tracking-[0.2em] text-indigo-200">{title}</p>
                 <h2 className="mt-2 font-display text-3xl font-black">
@@ -73,7 +77,7 @@ export default async function AffiliateProgramsPage() {
               </div>
 
               <div className="mt-5 grid gap-4 lg:grid-cols-2">
-                {(items as typeof AFFILIATE_PROGRAMS).map((program)=>(
+                {items.map((program) => (
                   <article key={program.slug} className="rounded-[1.5rem] border border-white/10 bg-white/[0.035] p-5">
                     <div className="flex flex-wrap items-start justify-between gap-3">
                       <div>
