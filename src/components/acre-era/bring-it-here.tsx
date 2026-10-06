@@ -70,22 +70,26 @@ export function BringItHere() {
             minLength={2}
             maxLength={120}
             required
-            placeholder="What should we bring here?"
+            placeholder="What should Acre Era know about?"
           />
           <select name="category" className="input" defaultValue="product">
             <option value="product">Product</option>
             <option value="farm">Farm / grower</option>
             <option value="maker">Maker / local business</option>
-            <option value="category">Category</option>
+            <option value="category">Category / niche</option>
+            <option value="school">School spotlight</option>
+            <option value="charity">Charity / nonprofit</option>
+            <option value="community_story">Community story</option>
+            <option value="kindness">Random act of kindness</option>
           </select>
           <textarea
             name="note"
             maxLength={500}
             className="input min-h-24 md:col-span-2"
-            placeholder="Optional: what makes it worth adding?"
+            placeholder="Optional: tell us why it matters, where it is, or what we should know."
           />
           <button disabled={submitting} className="btn-primary md:col-span-2" type="submit">
-            {submitting ? "Planting request…" : "Plant the request"}
+            {submitting ? "Sending…" : "Send the idea"}
           </button>
           {state.kind !== "idle" && (
             <p
