@@ -3,7 +3,6 @@ import { desc, inArray } from "drizzle-orm";
 import { db } from "@/db";
 import { marketRequests, products } from "@/db/schema";
 import { FarmLifeStory } from "@/components/acre-era/farm-life-story";
-import { BringItHere } from "@/components/acre-era/bring-it-here";
 import { JourneyHero } from "@/components/acre-era/journey-hero";
 import { Footer } from "@/components/footer";
 
@@ -169,31 +168,27 @@ export default async function MarketPage() {
             </section>
           ) : null}
 
-          <BringItHere />
 
-          <section id="farm-facts" className="rounded-[2rem] bg-soil p-7 text-cream md:p-10">
-            <div className="grid gap-8 lg:grid-cols-[.72fr_1.28fr]">
+          <section className="rounded-[2rem] border border-soil/10 bg-cream p-6 md:p-8">
+            <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
               <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.22em] text-wheat">Farm facts + real pressure</p>
-                <h2 className="mt-3 font-display text-3xl font-black md:text-4xl">
-                  The food looks simple on the shelf. The work behind it is not.
-                </h2>
-                <p className="mt-4 text-sm leading-7 text-cream/70">
-                  Acre Era does not need to turn shopping into a lecture, but we do want customers to understand why reliable local supply is hard and why a fair delivery model matters.
-                </p>
+                <p className="text-xs font-semibold uppercase tracking-[0.22em] text-leaf">More from the Market</p>
+                <h2 className="mt-2 font-display text-3xl font-bold md:text-4xl">Keep the shelf moving.</h2>
               </div>
-              <div className="grid gap-3 sm:grid-cols-3">
-                {[
-                  ["Weather + timing", "Growers carry weather, harvest timing, labor, and spoilage risk before a customer ever sees the product."],
-                  ["Transport matters", "A low product cost can disappear fast once packaging, handling, distance, and failed delivery are added."],
-                  ["Small pilots help", "Starting with predictable pickup days and grouped routes can be safer than promising unlimited on-demand delivery."],
-                ].map(([title, copy]) => (
-                  <article key={title} className="rounded-2xl border border-cream/10 bg-cream/5 p-5">
-                    <h3 className="font-display text-lg font-bold text-wheat">{title}</h3>
-                    <p className="mt-3 text-sm leading-6 text-cream/70">{copy}</p>
-                  </article>
-                ))}
-              </div>
+              <Link href="/shop" className="btn-secondary">Browse all Goods</Link>
+            </div>
+
+            <div className="mt-6 grid gap-3 sm:grid-cols-3">
+              {[
+                ["Fresh changes fast", "Seasonality and real availability decide what belongs here."],
+                ["Distance changes cost", "Pickup, grouped routes, and delivery distance matter more than flashy promises."],
+                ["Small operators matter", "Growers, butchers, bakers, wineries, and makers are the people behind the shelf."],
+              ].map(([title, copy]) => (
+                <article key={title} className="rounded-2xl bg-bone p-4">
+                  <h3 className="font-display text-lg font-bold">{title}</h3>
+                  <p className="mt-2 text-sm leading-6 text-muted">{copy}</p>
+                </article>
+              ))}
             </div>
           </section>
 
