@@ -11,29 +11,10 @@ export async function GET() {
   }
   let databaseReachable = false;
   let ownerIdentityPresent = false;
-  let databaseProvider = "unknown";
-  let publicTables: string[] = [];
 
   try {
     await db.execute(sql`SELECT 1`);
     databaseReachable = true;
-
-    const databaseUrl = process.env.DATABASE_URL || "";
-    if (databaseUrl.includes(".neon.tech")) databaseProvider = "neon";
-    else if (databaseUrl.includes("supabase")) databaseProvider = "supabase";
-    else if (databaseUrl.includes("render.com")) databaseProvider = "render";
-    else if (databaseUrl.includes("railway.app")) databaseProvider = "railway";
-    else if (databaseUrl) databaseProvider = "other";
-
-    const tables = await db.execute(sql`
-      SELECT table_name
-      FROM information_schema.tables
-      WHERE table_schema = 'public'
-      ORDER BY table_name
-    `);
-    publicTables = (tables.rows || [])
-      .map((row) => String(row.table_name || ""))
-      .filter(Boolean);
 
     const result = await db.execute(sql`
       SELECT EXISTS (
@@ -76,8 +57,6 @@ export async function GET() {
     {
       environment: process.env.VERCEL_ENV || process.env.NODE_ENV || "unknown",
       databaseReachable,
-      databaseProvider,
-      publicTables,
       ownerIdentityPresent,
       sessionSecretConfigured,
       bootstrapCredentialConfigured,
