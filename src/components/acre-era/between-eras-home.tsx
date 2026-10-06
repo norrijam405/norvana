@@ -1,25 +1,13 @@
 import Link from "next/link";
 import { Footer } from "@/components/footer";
-import { JourneyHero } from "@/components/acre-era/journey-hero";
 import { HOME_PREVIEW_PRODUCTS } from "@/lib/acre-era/preview-products";
-import { AcreEraJourneyStory } from "@/components/acre-era/acre-era-journey-story";
+import { AcreEraHomeJourney } from "@/components/acre-era/acre-era-home-journey";
 
 export function BetweenErasHome() {
   return (
     <>
       <main className="bg-bone text-soil">
-        <JourneyHero
-          eyebrow="Fresh living · premium finds · everyday goods · curated Eras"
-          title="From open roads"
-          accent="to city lights."
-          copy="Acre Era is one shopping world for fresh food, useful everyday goods, premium finds, and rotating experiences — connected by people, place, and what customers actually want."
-          primaryHref="/shop"
-          primaryLabel="Explore Acre Era"
-          secondaryHref="/market"
-          secondaryLabel="Visit Market"
-        />
-
-        <AcreEraJourneyStory />
+        <AcreEraHomeJourney showPreviewProducts={process.env.VERCEL_ENV === "preview"} />
 
         {process.env.VERCEL_ENV === "preview" ? (
           <section className="mx-auto max-w-7xl px-4 py-14 sm:px-6 lg:px-8 lg:py-20">
