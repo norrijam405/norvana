@@ -61,6 +61,12 @@ const ROOMS = [
     eyebrow: "LEARN",
   },
   {
+    href: "/admin/launch",
+    title: "Launch",
+    copy: "Domain, database, payments, suppliers, fulfillment, and the last gates before Production.",
+    eyebrow: "GO LIVE",
+  },
+  {
     href: "/admin/system-health",
     title: "System Health",
     copy: "Watchers, proof state, runtime health, and advanced controls.",
@@ -178,6 +184,7 @@ export default async function WatchtowerCockpitPage() {
               ["/admin/suppliers", "Check suppliers"],
               ["/admin/connections", "Connect a service"],
               ["/admin/era-studio", "Build an Era"],
+              ["/admin/launch", "Check launch readiness"],
               ["/", "Preview storefront"],
             ].map(([href, label]) => (
               <Link
