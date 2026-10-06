@@ -7,6 +7,7 @@ const ITEMS = [
   { href: "/admin/suppliers", label: "Brands + Suppliers" },
   { href: "/admin/connections", label: "Connections" },
   { href: "/admin/affiliates", label: "Partner Hub" },
+  { href: "/admin/credentials", label: "Credentials" },
   { href: "/admin/producers", label: "Farms + Producers" },
   { href: "/admin/era-studio", label: "Era Studio" },
   { href: "/admin/notifications", label: "Alerts" },
