@@ -13,7 +13,7 @@ const SCENES = [
     accent: "to the table.",
     copy: "Seasonal food, local producers, and everyday essentials start the trip close to home.",
     href: "/market",
-    cta: "Shop Market",
+    cta: "Enter Market Era",
     videoUrl: "https://cdn.pixabay.com/video/2022/09/04/130226-746395325_medium.mp4",
     posterUrl: "https://cdn.pixabay.com/video/2022/09/04/130226-746395325_medium.jpg",
     sourceUrl: "https://pixabay.com/videos/id-130226/",
@@ -28,7 +28,7 @@ const SCENES = [
     accent: "and the cart fills up.",
     copy: "Pets, family, beauty, home, and repeat buys belong in the same life as fresh food.",
     href: "/shop",
-    cta: "Shop Goods",
+    cta: "Enter Goods Era",
     videoUrl: "https://cdn.pixabay.com/video/2015/09/20/800-139832676_medium.mp4",
     posterUrl: "https://cdn.pixabay.com/video/2015/09/20/800-139832676_medium.jpg",
     sourceUrl: "https://pixabay.com/videos/id-800/",
@@ -43,7 +43,7 @@ const SCENES = [
     accent: "different mood.",
     copy: "Tech, travel, style, and a $150-plus pair of shoes do not belong to a different person.",
     href: "/partners",
-    cta: "Explore Finds",
+    cta: "Enter Finds Era",
     videoUrl: "https://cdn.pixabay.com/video/2018/11/29/19627-304735769_medium.mp4",
     posterUrl: "https://cdn.pixabay.com/video/2018/11/29/19627-304735769_medium.jpg",
     sourceUrl: "https://pixabay.com/videos/id-19627/",
@@ -58,7 +58,7 @@ const SCENES = [
     accent: "the world changes.",
     copy: "Premium accessories and Era drops get cinematic without turning the rest of Acre Era into a costume.",
     href: "/era-drops",
-    cta: "Enter Era Drops",
+    cta: "Open Era Drop",
     videoUrl: "https://cdn.pixabay.com/video/2019/05/03/23258-334228230_medium.mp4",
     posterUrl: "https://cdn.pixabay.com/video/2019/05/03/23258-334228230_medium.jpg",
     sourceUrl: "https://pixabay.com/videos/id-23258/",
@@ -148,7 +148,7 @@ export function AcreEraHomeJourney({ showPreviewProducts }: { showPreviewProduct
                 {scene.cta}
               </Link>
               <Link href="/shop" className="btn-ghost-light">
-                Shop all Acre Era
+                Browse all Acre Era
               </Link>
             </div>
           </div>
