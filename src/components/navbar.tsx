@@ -11,7 +11,7 @@ const links = [
   { href: "/market", label: "Market" },
   { href: "/shop", label: "Goods" },
   { href: "/partners", label: "Partner Finds" },
-  { href: "/era-drops", label: "Eras" },
+  { href: "/era-drops", label: "Drop Era" },
   { href: "/archive", label: "Archive" },
 ];
 
