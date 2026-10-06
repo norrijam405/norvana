@@ -15,7 +15,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="en">
       <head>
-        <meta name="impact-site-verification" content="e040bd52-d6b3-4493-83dc-3d4a50b826db" />
+        <meta name="impact-site-verification" content="6514f564-137b-4f30-9fe3-39c3e2f45016" />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link
