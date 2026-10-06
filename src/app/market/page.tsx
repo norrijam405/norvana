@@ -82,6 +82,33 @@ export default async function MarketPage() {
             posterUrl={PREVIEW_FARM_MEDIA.posterUrl}
           />
 
+          <section className="rounded-[2rem] border border-soil/10 bg-cream p-6 md:p-8">
+            <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-[0.22em] text-leaf">Behind the shelf</p>
+                <h2 className="mt-2 font-display text-3xl font-bold md:text-4xl">Food has people behind it.</h2>
+              </div>
+              <p className="max-w-xl text-sm leading-6 text-muted">
+                Market can give small operators a little room to be seen without turning the page into a documentary.
+              </p>
+            </div>
+
+            <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+              {[
+                ["🌾", "Growers", "Weather, harvest timing, labor, seasonality, and the daily work behind what looks simple on a shelf."],
+                ["🥩", "Butchers + meat shops", "Cuts, sourcing, cold-chain handling, prep, and the people keeping local meat moving safely."],
+                ["🍇", "Wineries + vineyards", "Land, seasons, fermentation, hospitality, and the small businesses built around place."],
+                ["🥖", "Bakers + makers", "Early mornings, small batches, neighborhood demand, and the craft behind everyday food."],
+              ].map(([icon, title, copy]) => (
+                <article key={title} className="rounded-2xl bg-bone p-5">
+                  <div className="text-3xl">{icon}</div>
+                  <h3 className="mt-3 font-display text-xl font-bold">{title}</h3>
+                  <p className="mt-3 text-sm leading-6 text-muted">{copy}</p>
+                </article>
+              ))}
+            </div>
+          </section>
+
           <section id="market-shelf">
             <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
               <div>
