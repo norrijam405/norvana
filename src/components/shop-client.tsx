@@ -22,6 +22,9 @@ type Product = {
   imageRightsState?: string;
   externalSellerName?: string | null;
   tags: string[];
+  previewOnly?: boolean;
+  accent?: string;
+  icon?: string;
 };
 
 const PRODUCT_EMOJIS: Record<string, string> = {
@@ -222,6 +225,7 @@ export function ShopClient({ products }: { products: Product[] }) {
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
               {filtered.map((product, i) => {
                 const isAffiliate = product.commerceModel === "AFFILIATE_REFERRAL";
+                const isPreview = product.previewOnly === true || product.commerceModel === "PREVIEW_ONLY";
                 const imageRightsOk = ["OWNED", "BRAND_AUTHORIZED", "SUPPLIER_AUTHORIZED", "AFFILIATE_FEED_AUTHORIZED"].includes(product.imageRightsState || "");
                 const displayImage = imageRightsOk ? product.images?.[0] : null;
                 return (
@@ -232,25 +236,45 @@ export function ShopClient({ products }: { products: Product[] }) {
                   transition={{ delay: i * 0.05 }}
                   className="card group hover:shadow-md transition-all"
                 >
-                  <Link href={`/shop/${product.slug}`}>
-                    <div className="aspect-square overflow-hidden bg-surface-hover rounded-xl flex items-center justify-center text-5xl group-hover:scale-105 transition-transform duration-300">
+                  <div>
+                    <div
+                      className={
+                        "aspect-square overflow-hidden rounded-xl flex items-center justify-center text-5xl transition-transform duration-300 " +
+                        (isPreview
+                          ? "bg-gradient-to-br " + (product.accent || "from-[#4a4a42] to-[#8f7c55]")
+                          : "bg-surface-hover group-hover:scale-105")
+                      }
+                    >
                       {displayImage ? (
                         // eslint-disable-next-line @next/next/no-img-element
                         <img src={displayImage} alt={product.name} className="h-full w-full object-contain bg-white" referrerPolicy="no-referrer" />
+                      ) : isPreview ? (
+                        <div className="flex h-full w-full flex-col items-center justify-center p-6 text-center text-cream">
+                          <span className="text-7xl drop-shadow-sm">{product.icon || PRODUCT_EMOJIS[product.niche] || "🎁"}</span>
+                          <span className="mt-5 rounded-full border border-white/20 bg-black/15 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.16em]">
+                            Preview concept
+                          </span>
+                        </div>
                       ) : (
                         PRODUCT_EMOJIS[product.niche] || "🎁"
                       )}
                     </div>
                     <div className="mt-4">
-                      <div className="flex items-center gap-2">
-                        <div className="flex gap-0.5">
-                          {[1, 2, 3, 4, 5].map((s) => (
-                            <span key={s} className={`text-xs ${s <= Math.round(product.rating) ? "text-yellow-400" : "text-gray-300"}`}>★</span>
-                          ))}
+                      {isPreview ? (
+                        <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-leaf">
+                          Preview shelf · not for sale
+                        </p>
+                      ) : (
+                        <div className="flex items-center gap-2">
+                          <div className="flex gap-0.5">
+                            {[1, 2, 3, 4, 5].map((s) => (
+                              <span key={s} className={`text-xs ${s <= Math.round(product.rating) ? "text-yellow-400" : "text-gray-300"}`}>★</span>
+                            ))}
+                          </div>
+                          <span className="text-xs text-muted">({product.reviewCount})</span>
                         </div>
-                        <span className="text-xs text-muted">({product.reviewCount})</span>
-                      </div>
-                      <h3 className="font-display text-base font-semibold mt-2 group-hover:text-indigo-accent transition-colors line-clamp-1">
+                      )}
+                      <h3 className="font-display text-base font-semibold mt-2 line-clamp-1">
                         {product.name}
                       </h3>
                       <p className="text-xs text-muted mt-1 line-clamp-2">{product.description}</p>
@@ -261,8 +285,12 @@ export function ShopClient({ products }: { products: Product[] }) {
                         )}
                       </div>
                     </div>
-                  </Link>
-                  {isAffiliate ? (
+                  </div>
+                  {isPreview ? (
+                    <div className="mt-4 rounded-xl border border-soil/10 bg-bone px-4 py-3 text-center text-xs font-semibold text-muted">
+                      Preview only — supplier not connected yet
+                    </div>
+                  ) : isAffiliate ? (
                     <Link href={`/shop/${product.slug}`} className="btn-primary w-full mt-4 text-sm py-2.5">
                       View at {product.externalSellerName || "partner"} →
                     </Link>
