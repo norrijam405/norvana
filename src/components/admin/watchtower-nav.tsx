@@ -9,6 +9,7 @@ const ITEMS = [
   { href: "/admin/producers", label: "Farms + Producers" },
   { href: "/admin/era-studio", label: "Era Studio" },
   { href: "/admin/notifications", label: "Alerts" },
+  { href: "/admin/launch", label: "Launch" },
   { href: "/admin/system-health", label: "Advanced" },
 ];
 
