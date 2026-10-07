@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { desc, inArray } from "drizzle-orm";
 import { db } from "@/db";
@@ -5,6 +6,17 @@ import { marketRequests, products } from "@/db/schema";
 import { FarmLifeStory } from "@/components/acre-era/farm-life-story";
 import { JourneyHero } from "@/components/acre-era/journey-hero";
 import { Footer } from "@/components/footer";
+
+export const metadata: Metadata = {
+  title: "Market Era — Local food, farms, makers, and seasonal goods",
+  description: "Explore Acre Era Market for local farms, independent makers, seasonal food, useful staples, and the people behind the shelf.",
+  alternates: { canonical: "/market" },
+  openGraph: {
+    title: "Market Era — Local food, farms, makers, and seasonal goods | Acre Era",
+    description: "Explore Acre Era Market for local farms, independent makers, seasonal food, useful staples, and the people behind the shelf.",
+    url: "/market",
+  },
+};
 
 export const dynamic = "force-dynamic";
 
