@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
@@ -26,8 +27,8 @@ export function Navbar() {
     <header className="sticky top-0 z-50 border-b border-soil/10 bg-cream/88 backdrop-blur-xl">
       <nav className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
         <Link href="/" className="group flex items-center gap-2 text-soil">
-          <span className="flex h-8 w-8 items-center justify-center rounded-full bg-soil text-sm font-black text-wheat transition group-hover:rotate-6">
-            AE
+          <span className="flex h-8 w-8 items-center justify-center overflow-hidden rounded-[0.65rem] bg-cream ring-1 ring-soil/10 transition group-hover:-rotate-2">
+            <Image src="/brand/acre-era-mark.svg" alt="" width={32} height={32} priority />
           </span>
           <span className="font-display text-lg font-black tracking-[-.02em]">ACRE ERA</span>
         </Link>
