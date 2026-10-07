@@ -77,8 +77,8 @@ const OWNER_TASKS = [
   },
   {
     priority: "NEXT",
-    title: "Create Acre Era social profiles",
-    detail: "Claim the Acre Era identity on Instagram, TikTok, and Pinterest using the approved Concept A avatar and acreera.com. Account terms, login, and MFA stay with the founder.",
+    title: "Create remaining Acre Era social profiles",
+    detail: "Instagram is claimed as @acre.era with the approved Concept A avatar. TikTok and Pinterest remain. Account terms, login, and MFA stay with the founder.",
     href: null,
   },
   {
