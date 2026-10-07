@@ -14,6 +14,7 @@ export const metadata: Metadata = {
   description:
     "Fresh food, everyday goods, premium finds, and changing Eras in one connected shopping world.",
   applicationName: "Acre Era",
+  alternates: { canonical: "/" },
   openGraph: {
     type: "website",
     siteName: "Acre Era",
@@ -43,6 +44,20 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         />
       </head>
       <body className="bg-bone text-obsidian antialiased">
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@type": "Organization",
+              name: "Acre Era",
+              url: "https://acreera.com",
+              logo: "https://acreera.com/brand/acre-era-social-avatar.svg",
+              description:
+                "Fresh food, everyday goods, premium finds, and changing Eras in one connected shopping world.",
+            }),
+          }}
+        />
         <CartProvider>
           <Navbar />
           <CartDrawer />
