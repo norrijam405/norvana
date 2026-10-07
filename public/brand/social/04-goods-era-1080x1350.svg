@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1080 1350" role="img" aria-labelledby="title desc">
+  <title id="title">Goods Era</title>
+  <desc id="desc">Acre Era Goods launch graphic for everyday products.</desc>
+  <rect width="1080" height="1350" fill="#F6F1E7"/>
+  <text x="80" y="110" fill="#526642" font-family="Arial, Helvetica, sans-serif" font-size="28" font-weight="700" letter-spacing="6">GOODS ERA</text>
+  <text x="80" y="285" fill="#2F3026" font-family="Arial, Helvetica, sans-serif" font-size="92" font-weight="900">REAL LIFE</text>
+  <text x="80" y="390" fill="#2F3026" font-family="Arial, Helvetica, sans-serif" font-size="92" font-weight="900">NEEDS MORE</text>
+  <text x="80" y="495" fill="#526642" font-family="Arial, Helvetica, sans-serif" font-size="92" font-weight="900">THAN ONE AISLE.</text>
+
+  <g font-family="Arial, Helvetica, sans-serif" font-size="30" font-weight="700">
+    <rect x="80" y="635" width="270" height="110" rx="28" fill="#E8E9D9"/><text x="120" y="704" fill="#2F3026">HOME</text>
+    <rect x="375" y="635" width="270" height="110" rx="28" fill="#E8C68A"/><text x="415" y="704" fill="#2F3026">PETS</text>
+    <rect x="670" y="635" width="330" height="110" rx="28" fill="#E8E9D9"/><text x="710" y="704" fill="#2F3026">BEAUTY</text>
+    <rect x="80" y="770" width="270" height="110" rx="28" fill="#E8C68A"/><text x="120" y="839" fill="#2F3026">FAMILY</text>
+    <rect x="375" y="770" width="270" height="110" rx="28" fill="#E8E9D9"/><text x="415" y="839" fill="#2F3026">TECH</text>
+    <rect x="670" y="770" width="330" height="110" rx="28" fill="#E8C68A"/><text x="710" y="839" fill="#2F3026">GAMING</text>
+  </g>
+
+  <text x="80" y="1030" fill="#2F3026" font-family="Arial, Helvetica, sans-serif" font-size="38" font-weight="700">Useful first.</text>
+  <text x="80" y="1090" fill="#6F7068" font-family="Arial, Helvetica, sans-serif" font-size="31">Real supply before filler inventory.</text>
+  <text x="80" y="1235" fill="#526642" font-family="Arial, Helvetica, sans-serif" font-size="28">Browse Goods Era · acreera.com</text>
+</svg>
