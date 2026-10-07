@@ -1,6 +1,18 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { Footer } from "@/components/footer";
 import { ProducerInterestForm } from "@/components/acre-era/producer-interest-form";
+
+export const metadata: Metadata = {
+  title: "For Growers and Local Producers",
+  description: "Learn how Acre Era can pilot practical partnerships with growers and local producers using clear pricing, availability, pickup, delivery, and evidence-first growth.",
+  alternates: { canonical: "/growers" },
+  openGraph: {
+    title: "For Growers and Local Producers | Acre Era",
+    description: "Learn how Acre Era can pilot practical partnerships with growers and local producers using clear pricing, availability, pickup, delivery, and evidence-first growth.",
+    url: "/growers",
+  },
+};
 
 export const dynamic = "force-dynamic";
 
