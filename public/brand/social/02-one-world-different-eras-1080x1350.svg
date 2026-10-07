@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1080 1350" role="img" aria-labelledby="title desc">
+  <title id="title">One world, different Eras</title>
+  <desc id="desc">Acre Era launch graphic introducing Market, Goods, Finds, and Era Drop.</desc>
+  <rect width="1080" height="1350" fill="#2F3026"/>
+  <text x="80" y="110" fill="#E8C68A" font-family="Arial, Helvetica, sans-serif" font-size="28" font-weight="700" letter-spacing="6">ACRE ERA</text>
+  <text x="80" y="235" fill="#F6F1E7" font-family="Arial, Helvetica, sans-serif" font-size="82" font-weight="900">ONE WORLD.</text>
+  <text x="80" y="330" fill="#E8C68A" font-family="Arial, Helvetica, sans-serif" font-size="82" font-weight="900">DIFFERENT ERAS.</text>
+
+  <g transform="translate(80 420)">
+    <rect width="920" height="155" rx="32" fill="#F6F1E7"/>
+    <text x="38" y="58" fill="#526642" font-family="Arial, Helvetica, sans-serif" font-size="24" font-weight="700" letter-spacing="4">MARKET ERA</text>
+    <text x="38" y="105" fill="#2F3026" font-family="Arial, Helvetica, sans-serif" font-size="34" font-weight="700">Food · growers · makers · local stories</text>
+  </g>
+  <g transform="translate(80 600)">
+    <rect width="920" height="155" rx="32" fill="#E8E9D9"/>
+    <text x="38" y="58" fill="#526642" font-family="Arial, Helvetica, sans-serif" font-size="24" font-weight="700" letter-spacing="4">GOODS ERA</text>
+    <text x="38" y="105" fill="#2F3026" font-family="Arial, Helvetica, sans-serif" font-size="34" font-weight="700">Home · pets · family · tech · everyday</text>
+  </g>
+  <g transform="translate(80 780)">
+    <rect width="920" height="155" rx="32" fill="#F6F1E7"/>
+    <text x="38" y="58" fill="#A45E45" font-family="Arial, Helvetica, sans-serif" font-size="24" font-weight="700" letter-spacing="4">FINDS ERA</text>
+    <text x="38" y="105" fill="#2F3026" font-family="Arial, Helvetica, sans-serif" font-size="34" font-weight="700">Premium · partner · specialty discoveries</text>
+  </g>
+  <g transform="translate(80 960)">
+    <rect width="920" height="155" rx="32" fill="#E8C68A"/>
+    <text x="38" y="58" fill="#2F3026" font-family="Arial, Helvetica, sans-serif" font-size="24" font-weight="700" letter-spacing="4">ERA DROP</text>
+    <text x="38" y="105" fill="#2F3026" font-family="Arial, Helvetica, sans-serif" font-size="34" font-weight="700">What is moving now</text>
+  </g>
+  <text x="80" y="1240" fill="#F6F1E7" opacity=".76" font-family="Arial, Helvetica, sans-serif" font-size="28">Find the Era that fits your moment.</text>
+</svg>
