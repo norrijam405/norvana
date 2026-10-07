@@ -77,8 +77,8 @@ const OWNER_TASKS = [
   },
   {
     priority: "NEXT",
-    title: "Create remaining Acre Era social profiles",
-    detail: "Instagram setup is complete as @acre.era with the approved Concept A avatar, brand bio, and acreera.com link. TikTok and Pinterest remain. Account terms, login, and MFA stay with the founder.",
+    title: "Finish Pinterest setup",
+    detail: "Instagram is complete as @acre.era. TikTok is claimed as @acreera with the Acre Era bio, Concept A avatar, and first launch post live. Pinterest remains the last first-wave social profile gate. Account terms, login, and MFA stay with the founder.",
     href: null,
   },
   {
