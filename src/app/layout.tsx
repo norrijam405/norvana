@@ -36,6 +36,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
     <html lang="en">
       <head>
         <meta name="impact-site-verification" content="4af98929-b912-4861-96bb-3361084d8006" />
+        <meta name="p:domain_verify" content="2a3c2e4cf82dcc9f630fcd73f3587cd4" />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link
