@@ -1,5 +1,13 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { Footer } from "@/components/footer";
+
+export const metadata: Metadata = {
+  title: "How Acre Era Works",
+  description:
+    "Understand Acre Era's direct, partner, and local buying paths, including who owns checkout, delivery, returns, and warranty.",
+  alternates: { canonical: "/how-it-works" },
+};
 
 const STEPS = [
   {
