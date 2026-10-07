@@ -4,129 +4,124 @@ Date: 2026-10-07
 Repository: norrijam405/norvana
 Branch: feature/2026-10-04-acre-era-intelligence-delivery-r0
 Mission: ACRE-FOUNDATION-001
-Mode: COORDINATED EXECUTION
+Current exact head: cfe8bb9fd6907d7e4d969ad9b92d1c4dca1908b0
+Mode: FOUNDER GATES / CONTINUE SAFE WORK WHEN INPUT ARRIVES
+
 Do not ask Norris to reconstruct history already preserved in GitHub.
 
 ## READ FIRST
 
 1. docs/ACRE_FOUNDATION_001_FOUNDING_BRAND_GROWTH_2026-10-07.md
 2. docs/ACRE_30_DAY_EXECUTION_ROADMAP_2026-10-07.md
-3. current PR #22 and exact current branch head
-4. current storefront and Watchtower before material UI assumptions
+3. docs/ACRE_WEEK1_IDENTITY_SEARCH_LIVE_PASS_2026-10-07.md
+4. docs/ACRE_VANGUARD_WEEK1_SOCIAL_LAUNCH_KIT_2026-10-07.md
+5. docs/ACRE_MARK_WEEK1_CUSTOMER_JOURNEY_AUDIT_2026-10-07.md
+6. docs/ACRE_WEEK1_BRAND_SOCIAL_READINESS_PASS_2026-10-07.md
+7. current PR #22 / current exact branch head
 
-## CONTINUITY
+## CURRENT VERIFIED PUBLIC STATE
 
-This is not a new project, not a redesign activation, and not a new control plane.
-
-Preserve:
-- existing Acre Era storefront;
-- current navigation;
-- Watchtower;
-- Armed Mode boundaries;
-- existing cream/soil/leaf/wheat visual language;
-- Market Era / Goods Era / Finds Era / Era Drop IA;
-- explicit commerce/source truth.
-
-## FOUNDER APPROVALS
-
-Norris has approved:
-- the coordinated 30-day plan;
-- Mark’s conversion plan;
-- Vanguard’s organic social plan;
-- Aether’s search plan;
-- Design Lead’s product/identity plan;
-- Concept A — THE ACRE MONOGRAM as the primary identity direction;
-- Design Lead discretion to refine/surprise within Concept A;
-- safe autonomous execution of non-consequential work described in the roadmap.
-
-Do not treat the first generated logo mockup as final source artwork.
-It is visual exploration, not a banked vector identity.
-
-## NEXT EXECUTION ORDER
-
-1. DESIGN:
-   refine Concept A and prove:
-   - website header;
-   - favicon;
-   - mobile;
-   - social avatar;
-   - social banner;
-   - light/dark;
-   - monochrome.
-
-2. AETHER:
-   add:
-   - robots.ts;
-   - sitemap.ts;
-   - manifest.ts;
-   - canonical origin;
-   - route metadata;
-   - Open Graph baseline;
-   - admin/watchtower exclusion;
-   - preview noindex behavior.
-
-3. MARK:
-   inspect customer journey for real friction only.
-   Do not redesign navigation without evidence.
-
-4. VANGUARD:
-   draft launch content system and profile kit.
-   No paid spend.
-
-5. VERIFY:
-   responsive + accessibility + crawl/index + brand consistency.
-
-6. BANK:
-   durable receipts and Week 1 Academy review.
-
-## CURRENT PUBLIC DOMAIN
-
+Public domain:
 https://acreera.com
 
-The apex was connected to Vercel, SSL issued, and the current safe Acre Era branch was mapped during Impact publisher verification work.
+Exact Vercel deployment:
+dpl_F1MKLzosYyYE3QcmPkSMDXyfb8TC
+
+Exact GitHub head:
+cfe8bb9fd6907d7e4d969ad9b92d1c4dca1908b0
+
+Validation:
+Acre Era Intelligence Delivery R0 run #450 — SUCCESS
+
+Apex:
+- 200
+- indexable
+- canonical acreera.com
+- Concept A mark live
+
+Preview:
+https://preview.acreera.com
+- 200
+- X-Robots-Tag noindex, nofollow, noarchive
+
+## FOUNDER-APPROVED IDENTITY
+
+Concept A — THE ACRE MONOGRAM.
+
+Do not restart logo exploration unless Norris asks.
+Do not replace the current IA.
+Do not turn Acre Era into a farm-only identity.
+
+Production assets are under:
+public/brand/
+
+Organic launch assets are under:
+public/brand/social/
+
+## TEAM STATUS
+
+Mark:
+Week 1 customer journey audit complete.
+No IA redesign justified.
+
+Vanguard:
+Week 1 profile/copy/content kit complete.
+First social vector templates complete.
+
+Aether:
+Week 1 search foundation live and verified.
+Search Console account/property verification remains human-gated.
+
+Design:
+Concept A starter system implemented and live.
+Header/footer/favicon/social foundation complete.
 
 ## AFFILIATE STATUS
 
-- Awin signup completed by founder.
-- Impact publisher website verification completed by founder.
-- Partner/supplier applications remain separate human-gated actions unless explicitly authorized.
+Awin: founder completed signup.
+Impact: founder completed signup + website verification.
 
-## WATCHTOWER / ARMED MODE
+Remaining first-wave networks:
+- CJ Affiliate
+- Rakuten
 
-GREEN Observe = safe.
-BLUE Recommend = safe.
-AMBER Ask Me = owner approval.
-RED Autonomous = locked until exact workflows are proven.
+## OWNER GATES NOW
 
-Do not enable:
-- NORVANA_WATCHTOWER_QUEUE_ENABLED
-- NORVANA_WATCHTOWER_EXECUTOR_ENABLED
-- NORVANA_EXTERNAL_FULFILLMENT_ENABLED
-- NORVANA_SUPPLIER_CONNECTORS_ENABLED
-- IGNIAQUA_FEDERATION_ENABLED
-unless separately qualified and explicitly approved.
+Founder/human input is next for:
+- Instagram/TikTok/Pinterest account creation, terms, login/MFA;
+- Google Search Console verification;
+- CJ Affiliate + Rakuten enrollment;
+- Petra/D&H/CWR/Ingram applications;
+- W-9/resale certificate/DBA verification;
+- dedicated Acre Era DB provider/workspace decision if not safely inferable.
+
+Watchtower Armed Mode owner checklist was updated to reflect this.
+
+## ARMED MODE
+
+GREEN Observe: safe.
+BLUE Recommend: safe.
+AMBER Ask Me: owner approval.
+RED Autonomous: locked.
+
+Do not enable consequential execution flags without separate qualification.
 
 ## DATABASE WARNING
 
-Current legacy database is not a fully qualified Acre Era runtime.
-Do not hide schema failures behind “ready” claims.
-Dedicated Acre Era Preview DB remains a major infrastructure gate.
+Dedicated Acre Era runtime DB remains unresolved.
+Do not claim durable autonomous Watchtower execution until:
+- isolated Preview DB exists;
+- migrations pass;
+- Preview DATABASE_URL is bound;
+- schema/runtime verified;
+- Production separately qualified.
 
-## DESIGN RULE
+## NEXT SUCCESSOR ACTION
 
-DO NOT REDESIGN ACRE ERA TO PROVE DESIGN SKILL.
-
-The current product is evidence.
-Preserve what works.
-Improve only where business, usability, accessibility, responsiveness, search, conversion, or founder feedback justifies it.
-
-## HANDOFF STANDARD
-
-A successor must:
-- bind to current durable head;
-- inspect before editing;
-- preserve lane ownership;
-- make safe reversible progress autonomously;
-- stop only at real founder/human gates;
-- leave durable receipts;
-- never ask Norris to reconstruct preserved history.
+When Norris supplies the next founder action/result:
+1. bind to current exact head;
+2. reconcile that new external state;
+3. update Watchtower owner checklist;
+4. continue the 30-day roadmap;
+5. preserve receipts;
+6. do not rebuild or create a new control plane.
