@@ -6,9 +6,28 @@ import { Navbar } from "@/components/navbar";
 import { CartDrawer } from "@/components/cart-drawer";
 
 export const metadata: Metadata = {
-  title: "Acre Era — From open roads to city lights.",
+  metadataBase: new URL("https://acreera.com"),
+  title: {
+    default: "Acre Era — Fresh food, everyday goods, and premium finds",
+    template: "%s | Acre Era",
+  },
   description:
-    "Fresh food, everyday goods, premium finds, and rotating Eras in one connected shopping world.",
+    "Fresh food, everyday goods, premium finds, and changing Eras in one connected shopping world.",
+  applicationName: "Acre Era",
+  openGraph: {
+    type: "website",
+    siteName: "Acre Era",
+    url: "https://acreera.com",
+    title: "Acre Era — Fresh food, everyday goods, and premium finds",
+    description:
+      "Fresh food, everyday goods, premium finds, and changing Eras in one connected shopping world.",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Acre Era — Fresh food, everyday goods, and premium finds",
+    description:
+      "Fresh food, everyday goods, premium finds, and changing Eras in one connected shopping world.",
+  },
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {
