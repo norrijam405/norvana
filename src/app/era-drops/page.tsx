@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { desc } from "drizzle-orm";
 import { db } from "@/db";
@@ -6,6 +7,17 @@ import { Footer } from "@/components/footer";
 import { JourneyHero } from "@/components/acre-era/journey-hero";
 import { BringItHere } from "@/components/acre-era/bring-it-here";
 import { resolveCurrentPublicEra } from "@/lib/era-engine/resolver";
+
+export const metadata: Metadata = {
+  title: "Era Drop — What Acre Era is watching now",
+  description: "See current Acre Era stories, shopper requests, local spotlights, community moments, product signals, and what is moving now.",
+  alternates: { canonical: "/era-drops" },
+  openGraph: {
+    title: "Era Drop — What Acre Era is watching now | Acre Era",
+    description: "See current Acre Era stories, shopper requests, local spotlights, community moments, product signals, and what is moving now.",
+    url: "/era-drops",
+  },
+};
 
 export const dynamic = "force-dynamic";
 
