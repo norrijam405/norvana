@@ -4,8 +4,10 @@ Date: 2026-10-07
 Repository: norrijam405/norvana
 Branch: feature/2026-10-04-acre-era-intelligence-delivery-r0
 Mission: ACRE-FOUNDATION-001
-Current exact head: cfe8bb9fd6907d7e4d969ad9b92d1c4dca1908b0
+Last certified live product head: cfe8bb9fd6907d7e4d969ad9b92d1c4dca1908b0
 Mode: FOUNDER GATES / CONTINUE SAFE WORK WHEN INPUT ARRIVES
+
+Important: documentation-only commits may exist after the certified live product head. A successor must inspect PR #22 and the current branch head before editing, while preserving the certified-live distinction.
 
 Do not ask Norris to reconstruct history already preserved in GitHub.
 
@@ -27,7 +29,7 @@ https://acreera.com
 Exact Vercel deployment:
 dpl_F1MKLzosYyYE3QcmPkSMDXyfb8TC
 
-Exact GitHub head:
+Certified live GitHub product head:
 cfe8bb9fd6907d7e4d969ad9b92d1c4dca1908b0
 
 Validation:
@@ -119,7 +121,7 @@ Do not claim durable autonomous Watchtower execution until:
 ## NEXT SUCCESSOR ACTION
 
 When Norris supplies the next founder action/result:
-1. bind to current exact head;
+1. inspect current PR #22 head and distinguish documentation-only commits from the certified live product head;
 2. reconcile that new external state;
 3. update Watchtower owner checklist;
 4. continue the 30-day roadmap;
