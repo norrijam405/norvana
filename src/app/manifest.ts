@@ -11,5 +11,19 @@ export default function manifest(): MetadataRoute.Manifest {
     background_color: "#F6F1E7",
     theme_color: "#2F3026",
     categories: ["shopping", "lifestyle"],
+    icons: [
+      {
+        src: "/brand/acre-era-social-avatar.svg",
+        sizes: "512x512",
+        type: "image/svg+xml",
+        purpose: "any",
+      },
+      {
+        src: "/icon.svg",
+        sizes: "64x64",
+        type: "image/svg+xml",
+        purpose: "any",
+      },
+    ],
   };
 }
