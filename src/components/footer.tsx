@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
 
@@ -30,7 +31,9 @@ export function Footer() {
         <div className="grid gap-12 md:grid-cols-4">
           <div className="md:col-span-2">
             <div className="flex items-center gap-2 text-cream">
-              <span className="flex h-9 w-9 items-center justify-center rounded-full bg-wheat text-sm font-black text-soil">AE</span>
+              <span className="flex h-9 w-9 items-center justify-center overflow-hidden rounded-[0.7rem] bg-cream ring-1 ring-cream/10">
+                <Image src="/brand/acre-era-mark.svg" alt="" width={36} height={36} />
+              </span>
               <h3 className="font-display text-xl font-black tracking-tight">ACRE ERA</h3>
             </div>
             <p className="mt-4 max-w-md text-sm leading-6">
