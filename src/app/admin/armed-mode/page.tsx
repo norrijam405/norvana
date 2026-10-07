@@ -71,9 +71,21 @@ const OWNER_TASKS = [
   },
   {
     priority: "NEXT",
-    title: "Open the major affiliate-network accounts",
-    detail: "Impact, Awin, CJ Affiliate, and Rakuten are the highest-leverage doors because one approval can unlock many brands.",
+    title: "Finish CJ Affiliate + Rakuten",
+    detail: "Awin and Impact are already complete. CJ Affiliate and Rakuten are the remaining major network accounts in the first-wave plan.",
     href: "/admin/affiliates",
+  },
+  {
+    priority: "NEXT",
+    title: "Create Acre Era social profiles",
+    detail: "Claim the Acre Era identity on Instagram, TikTok, and Pinterest using the approved Concept A avatar and acreera.com. Account terms, login, and MFA stay with the founder.",
+    href: null,
+  },
+  {
+    priority: "NEXT",
+    title: "Verify Acre Era in Google Search Console",
+    detail: "The crawl, sitemap, canonical, metadata, and indexability foundation is live. The remaining step is property verification in Search Console and sitemap submission.",
+    href: null,
   },
   {
     priority: "INFRA",
@@ -151,7 +163,7 @@ export default async function ArmedModePage() {
               <p className="text-xs font-semibold uppercase tracking-[0.2em] text-indigo-200">What I need from you</p>
               <h2 className="mt-2 font-display text-3xl font-black">Owner checklist</h2>
               <p className="mt-2 max-w-2xl text-sm leading-6 text-white/50">
-                These are the human/account steps that unlock real supplier relationships. Everything else stays on my side of the table.
+                These are the human/account steps that unlock real supplier relationships and public discovery. Everything else stays on my side of the table.
               </p>
             </div>
             <Link href="/admin/credentials" className="rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm font-semibold text-white/70">
@@ -167,9 +179,15 @@ export default async function ArmedModePage() {
                 </span>
                 <h3 className="mt-3 font-display text-xl font-bold">{task.title}</h3>
                 <p className="mt-2 text-sm leading-6 text-white/50">{task.detail}</p>
-                <Link href={task.href} className="mt-4 inline-flex text-sm font-semibold text-indigo-200 underline underline-offset-4">
-                  Open related room →
-                </Link>
+                {task.href ? (
+                  <Link href={task.href} className="mt-4 inline-flex text-sm font-semibold text-indigo-200 underline underline-offset-4">
+                    Open related room →
+                  </Link>
+                ) : (
+                  <span className="mt-4 inline-flex text-xs font-semibold uppercase tracking-[0.12em] text-amber-100/70">
+                    Founder action needed
+                  </span>
+                )}
               </article>
             ))}
           </div>
