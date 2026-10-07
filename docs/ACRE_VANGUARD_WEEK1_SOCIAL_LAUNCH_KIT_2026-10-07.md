@@ -92,6 +92,8 @@ Not a Week 1 creative priority.
 
 # First 8 Organic Posts
 
+Post 01 status: PUBLISHED on Instagram @acre.era (2026-10-07)
+
 ## Post 1 — WHAT IS ACRE ERA?
 
 Goal:
