@@ -77,8 +77,8 @@ const OWNER_TASKS = [
   },
   {
     priority: "NEXT",
-    title: "Finish Pinterest setup",
-    detail: "Instagram is complete as @acre.era. TikTok is claimed as @acreera with the Acre Era bio, Concept A avatar, and first launch post live. Pinterest remains the last first-wave social profile gate. Account terms, login, and MFA stay with the founder.",
+    title: "Finish social verification and launch cadence",
+    detail: "Instagram @acre.era, TikTok @acreera, and Pinterest @1AcreEra are all claimed with Acre Era branding. Next founder-facing social work is website claiming/verification where available and continuing the organic launch cadence.",
     href: null,
   },
   {
