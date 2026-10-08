@@ -16,6 +16,24 @@ const PRIORITY_LABELS = {
   LATER: "Later",
 } as const;
 
+const LIVE_ACCOUNT_STATES = [
+  {
+    name: "Awin",
+    state: "ACCEPTED",
+    detail: "Publisher account accepted. Next founder step: complete any required tax / payout profile and selectively join relevant merchant programs inside Awin.",
+  },
+  {
+    name: "CJdropshipping",
+    state: "ACCOUNT READY",
+    detail: "Supplier account already exists. Fulfillment automation stays off until catalog truth, shipping rules, returns, and order handoff are qualified.",
+  },
+  {
+    name: "Pinterest",
+    state: "WEBSITE CLAIMED",
+    detail: "Acre Era profile is live and acreera.com has been successfully claimed. Organic discovery work can proceed without paid ads.",
+  },
+] as const;
+
 export default async function AffiliateProgramsPage() {
   if (!adminSessionConfigured()) redirect("/admin");
   const cookieStore = await cookies();
@@ -58,6 +76,25 @@ export default async function AffiliateProgramsPage() {
                 <p className="text-[10px] uppercase tracking-[0.16em] text-white/35">{label}</p>
                 <p className="mt-2 font-display text-3xl font-bold">{value}</p>
               </div>
+            ))}
+          </div>
+        </section>
+
+        <section className="mt-8">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-emerald-200">Live account state</p>
+            <h2 className="mt-2 font-display text-3xl font-black">What is actually open right now</h2>
+            <p className="mt-2 max-w-3xl text-sm leading-6 text-white/50">
+              These are founder-confirmed account states. They are deliberately separate from applications we still need to submit.
+            </p>
+          </div>
+          <div className="mt-5 grid gap-3 lg:grid-cols-3">
+            {LIVE_ACCOUNT_STATES.map((item) => (
+              <article key={item.name} className="rounded-[1.4rem] border border-emerald-300/15 bg-emerald-300/[0.05] p-5">
+                <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-emerald-100">{item.state}</p>
+                <h3 className="mt-2 font-display text-xl font-bold">{item.name}</h3>
+                <p className="mt-3 text-sm leading-6 text-white/55">{item.detail}</p>
+              </article>
             ))}
           </div>
         </section>
