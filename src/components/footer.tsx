@@ -39,7 +39,7 @@ export function Footer() {
             <p className="mt-4 max-w-md text-sm leading-6">
               Fresh food, everyday goods, premium finds, and changing Eras — one shopping world built around what people actually want.
             </p>
-            <form onSubmit={handleSubscribe} className="mt-6 flex max-w-lg gap-2">
+            <form onSubmit={handleSubscribe} className="mt-6 flex max-w-lg flex-col gap-2 sm:flex-row">
               {submitted ? (
                 <p className="text-sm text-wheat">You’re on the list.</p>
               ) : (
@@ -52,7 +52,7 @@ export function Footer() {
                     className="min-w-0 flex-1 rounded-full border border-cream/15 bg-cream/[0.08] px-4 py-2.5 text-sm text-cream placeholder:text-cream/35 focus:outline-none focus:ring-2 focus:ring-wheat"
                     required
                   />
-                  <button type="submit" className="rounded-full bg-wheat px-5 py-2.5 text-sm font-semibold text-soil transition hover:bg-cream">
+                  <button type="submit" className="min-h-11 w-full rounded-full bg-wheat px-5 py-2.5 text-sm font-semibold text-soil transition hover:bg-cream sm:w-auto">
                     Join
                   </button>
                 </>
