@@ -70,15 +70,21 @@ const OWNER_TASKS = [
     href: "/admin/affiliates",
   },
   {
-    priority: "NEXT",
-    title: "Finish CJ Affiliate + Rakuten",
-    detail: "Awin and Impact are already complete. CJ Affiliate and Rakuten are the remaining major network accounts in the first-wave plan.",
+    priority: "NOW",
+    title: "Finish Awin payout / tax profile",
+    detail: "Awin has accepted Acre Era. Complete any required payout and tax profile, then we can selectively join merchants that fit Market, Goods, Finds, and future Eras.",
     href: "/admin/affiliates",
   },
   {
     priority: "NEXT",
-    title: "Finish social verification and launch cadence",
-    detail: "Instagram @acre.era, TikTok @acreera, and Pinterest @1AcreEra are all claimed with Acre Era branding. Next founder-facing social work is website claiming/verification where available and continuing the organic launch cadence.",
+    title: "Finish CJ Affiliate + Rakuten",
+    detail: "Awin is accepted. CJdropshipping is a separate supplier account and does not replace CJ Affiliate. CJ Affiliate and Rakuten remain the major first-wave affiliate-network applications.",
+    href: "/admin/affiliates",
+  },
+  {
+    priority: "NEXT",
+    title: "Continue organic social + Pinterest boards",
+    detail: "Instagram @acre.era, TikTok @acreera, and Pinterest @1AcreEra are claimed, and Pinterest has accepted the acreera.com website claim. Next founder-facing social work is organic publishing and useful Pinterest boards.",
     href: null,
   },
   {
