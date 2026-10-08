@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { FARM_FACTS } from "@/lib/acre-era/brand";
 
@@ -12,24 +12,56 @@ export function FarmLifeStory({
   posterUrl?: string | null;
 }) {
   const [factIndex, setFactIndex] = useState(0);
+  const [reduceMotion, setReduceMotion] = useState(true);
+  const [videoPlaying, setVideoPlaying] = useState(false);
+  const [videoFailed, setVideoFailed] = useState(false);
+  const videoRef = useRef<HTMLVideoElement | null>(null);
   const fact = useMemo(() => FARM_FACTS[factIndex % FARM_FACTS.length], [factIndex]);
+
+  useEffect(() => {
+    const query = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const sync = () => setReduceMotion(query.matches);
+    sync();
+    query.addEventListener("change", sync);
+    return () => query.removeEventListener("change", sync);
+  }, []);
 
   return (
     <section id="market" className="acre-section overflow-hidden rounded-[2rem] border border-soil/10 bg-sage-wash">
       <div className="grid lg:grid-cols-[1.08fr_.92fr]">
         <div className="relative min-h-[300px] overflow-hidden bg-soil sm:min-h-[360px]">
-          <video
-            className="absolute inset-0 h-full w-full object-cover opacity-75"
-            poster={posterUrl || "/acre-era/farm-life-poster.svg"}
-            muted
-            loop
-            autoPlay={Boolean(videoUrl)}
-            playsInline
-            preload="metadata"
+          <div
+            className="absolute inset-0 bg-cover bg-center opacity-75"
+            style={{ backgroundImage: `url("${posterUrl || "/acre-era/farm-life-poster.svg"}")` }}
+            role="img"
             aria-label="Acre Era farm-life story"
-          >
-            {videoUrl ? <source src={videoUrl} type="video/mp4" /> : null}
-          </video>
+          />
+          {videoUrl && !reduceMotion && !videoFailed ? (
+            <video
+              ref={videoRef}
+              className={"absolute inset-0 h-full w-full object-cover transition-opacity duration-500 " + (videoPlaying ? "opacity-75" : "opacity-0")}
+              poster={posterUrl || "/acre-era/farm-life-poster.svg"}
+              muted
+              loop
+              autoPlay
+              playsInline
+              preload="metadata"
+              aria-label="Acre Era farm-life story video"
+              onCanPlay={() => {
+                const video = videoRef.current;
+                if (!video) return;
+                video.muted = true;
+                void video.play().catch(() => setVideoFailed(true));
+              }}
+              onPlaying={() => setVideoPlaying(true)}
+              onError={() => {
+                setVideoPlaying(false);
+                setVideoFailed(true);
+              }}
+            >
+              <source src={videoUrl} type="video/mp4" />
+            </video>
+          ) : null}
           <div className="absolute inset-0 bg-gradient-to-t from-soil via-soil/20 to-transparent" />
           <div className="absolute bottom-0 left-0 right-0 p-5 text-cream sm:p-7 md:p-10">
             <p className="text-xs font-semibold uppercase tracking-[0.24em] text-wheat">Acre Era Market</p>
