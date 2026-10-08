@@ -17,7 +17,7 @@ export function FarmLifeStory({
   return (
     <section id="market" className="acre-section overflow-hidden rounded-[2rem] border border-soil/10 bg-sage-wash">
       <div className="grid lg:grid-cols-[1.08fr_.92fr]">
-        <div className="relative min-h-[360px] overflow-hidden bg-soil">
+        <div className="relative min-h-[300px] overflow-hidden bg-soil sm:min-h-[360px]">
           <video
             className="absolute inset-0 h-full w-full object-cover opacity-75"
             poster={posterUrl || "/acre-era/farm-life-poster.svg"}
@@ -31,9 +31,9 @@ export function FarmLifeStory({
             {videoUrl ? <source src={videoUrl} type="video/mp4" /> : null}
           </video>
           <div className="absolute inset-0 bg-gradient-to-t from-soil via-soil/20 to-transparent" />
-          <div className="absolute bottom-0 left-0 right-0 p-7 text-cream md:p-10">
+          <div className="absolute bottom-0 left-0 right-0 p-5 text-cream sm:p-7 md:p-10">
             <p className="text-xs font-semibold uppercase tracking-[0.24em] text-wheat">Acre Era Market</p>
-            <h2 className="mt-3 max-w-xl font-display text-3xl font-bold md:text-5xl">
+            <h2 className="mt-3 max-w-xl font-display text-2xl font-bold sm:text-3xl md:text-5xl">
               See the people, places, and seasons behind the food.
             </h2>
             <p className="mt-4 max-w-lg text-sm text-cream/75">
