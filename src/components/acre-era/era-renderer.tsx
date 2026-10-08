@@ -118,12 +118,12 @@ export function EraRenderer({
 
   return (
     <main className="era-adaptive-shell" data-era-motion={profile}>
-      <section className="era-adaptive-hero relative isolate min-h-[72svh] overflow-hidden text-cream" data-era-motion={profile}>
+      <section className="era-adaptive-hero relative isolate min-h-[66svh] overflow-hidden text-cream sm:min-h-[72svh]" data-era-motion={profile}>
         <EraHeroMedia media={era.media} eraName={era.name} profile={profile} />
         <div className="era-adaptive-overlay absolute inset-0" aria-hidden="true" />
         <div className="era-adaptive-pattern absolute inset-0" aria-hidden="true" />
 
-        <div className="relative mx-auto flex min-h-[72svh] max-w-7xl items-end px-5 py-14 sm:px-8 lg:px-10 lg:py-20">
+        <div className="relative mx-auto flex min-h-[66svh] max-w-7xl items-end px-4 pb-8 pt-16 sm:min-h-[72svh] sm:px-8 sm:py-14 lg:px-10 lg:py-20">
           <div className="max-w-3xl">
             <div className="mb-5 flex flex-wrap gap-2">
               <span className="rounded-full border border-cream/25 bg-soil/30 px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] backdrop-blur">
@@ -139,7 +139,7 @@ export function EraRenderer({
                 {era.eyebrow}
               </p>
             ) : null}
-            <h1 className="max-w-4xl text-5xl font-black tracking-[-0.04em] sm:text-6xl lg:text-8xl">
+            <h1 className="max-w-4xl text-[clamp(2.65rem,12vw,4.5rem)] font-black tracking-[-0.04em] sm:text-6xl lg:text-8xl">
               {era.name}
             </h1>
             {era.story ? (
@@ -148,13 +148,13 @@ export function EraRenderer({
               </p>
             ) : null}
 
-            <div className="mt-8 flex flex-wrap gap-3">
+            <div className="mt-8 grid gap-3 sm:flex sm:flex-wrap">
               {current ? (
-                <Link href={`/era/${era.slug}`} className="btn-primary !bg-wheat !text-soil hover:!bg-cream">
+                <Link href={`/era/${era.slug}`} className="btn-primary w-full justify-center !bg-wheat !text-soil hover:!bg-cream sm:w-auto">
                   Enter the Era
                 </Link>
               ) : null}
-              <Link href="/archive" className="btn-ghost-light">
+              <Link href="/archive" className="btn-ghost-light w-full justify-center sm:w-auto">
                 Explore the archive
               </Link>
             </div>
@@ -252,8 +252,8 @@ export function NoCurrentEra({
   previewMedia?: import("@/lib/era-engine/types").PublicEraMedia[];
 }) {
   return (
-    <main className="min-h-[72svh] bg-soil text-cream">
-      <section className="relative isolate min-h-[72svh] overflow-hidden bg-soil">
+    <main className="min-h-[66svh] bg-soil text-cream sm:min-h-[72svh]">
+      <section className="relative isolate min-h-[66svh] overflow-hidden bg-soil sm:min-h-[72svh]">
         {previewMedia.length ? (
           <EraHeroMedia
             media={previewMedia}
@@ -264,10 +264,10 @@ export function NoCurrentEra({
           <div className="acre-contours absolute inset-0" aria-hidden="true" />
         )}
         <div className="era-adaptive-overlay absolute inset-0" aria-hidden="true" />
-        <div className="relative mx-auto flex min-h-[72svh] max-w-7xl items-end px-5 py-16 sm:px-8 lg:px-10 lg:py-20">
+        <div className="relative mx-auto flex min-h-[66svh] max-w-7xl items-end px-4 pb-8 pt-16 sm:min-h-[72svh] sm:px-8 sm:py-16 lg:px-10 lg:py-20">
           <div className="max-w-3xl">
             <p className="text-sm font-semibold uppercase tracking-[0.2em] text-wheat">Between Eras</p>
-            <h1 className="mt-4 text-5xl font-black tracking-[-0.04em] sm:text-6xl lg:text-7xl">
+            <h1 className="mt-4 text-[clamp(2.65rem,12vw,4.25rem)] font-black tracking-[-0.04em] sm:text-6xl lg:text-7xl">
               The next world opens when it is actually ready.
             </h1>
             <p className="mt-6 max-w-2xl text-base leading-7 text-cream/75 sm:text-lg">
