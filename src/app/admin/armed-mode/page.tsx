@@ -70,9 +70,9 @@ const OWNER_TASKS = [
     href: "/admin/affiliates",
   },
   {
-    priority: "NOW",
-    title: "Finish Awin payout / tax profile",
-    detail: "Awin has accepted Acre Era. Complete any required payout and tax profile, then we can selectively join merchants that fit Market, Goods, Finds, and future Eras.",
+    priority: "NEXT",
+    title: "Choose first Awin merchants",
+    detail: "Awin profile, tax, and payment setup are complete. Next is a selective merchant wave aligned to Acre Era categories rather than joining everything available.",
     href: "/admin/affiliates",
   },
   {
