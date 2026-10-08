@@ -19,7 +19,7 @@ export const WATCHTOWER_JOB_TEMPLATES: WatchtowerJobTemplate[] = [
     category: "sourcing",
     description: "Find $0/month, pay-per-order, and low-fixed-cost supplier/fulfillment options.",
     instructions:
-      "Find genuine free-to-sign-up or usable $0/month suppliers and fulfillment partners. Verify product cost, shipping, fees, MOQ, returns, integration options, and whether the free tier is actually usable for fulfillment. Prefer supplier-direct fulfillment and no prepaid inventory. Save only material candidates.",
+      "Find genuine free-to-sign-up or usable $0/month suppliers and fulfillment partners. Verify product cost, shipping, fees, MOQ, returns, integration options, and whether the free tier is actually usable for fulfillment. Prefer supplier-direct fulfillment and no prepaid inventory. For product candidates, gather the exact fields required by the Product Readiness Gate: provider identity, authorization state, image rights, provenance, customer total price, delivery window, return path, stock state, and durable evidence reference. DISCOVERED does not mean READY. Save only material candidates.",
     authority: "RECOMMEND",
     cadenceMinutes: 1440,
     budgetCents: 0,
@@ -177,6 +177,8 @@ export const WATCHTOWER_INTELLIGENCE_R2_JOB_TEMPLATES: WatchtowerJobTemplate[] =
       requireCustomerExperienceFit: true,
       requireAcreEraMerchandisingFit: true,
       classifications: ["DISCOVERED", "JOIN_CANDIDATE", "HOLD", "REJECT"],
+      requireProductReadinessGateFields: true,
+      discoveredDoesNotMeanReady: true,
       noAutoEnrollment: true,
       noAutoPublish: true,
     },
