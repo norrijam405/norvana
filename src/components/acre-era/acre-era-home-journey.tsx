@@ -128,10 +128,10 @@ export function AcreEraHomeJourney({ showPreviewProducts }: { showPreviewProduct
         <div className="flex min-h-0 flex-col justify-between sm:min-h-[36rem]">
           <div>
             <div className="flex items-center gap-3">
-              <span className="rounded-full border border-wheat/25 bg-black/20 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-wheat">
+              <span className="shrink-0 whitespace-nowrap rounded-full border border-wheat/25 bg-black/20 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-wheat">
                 Acre Era
               </span>
-              <span className="text-[10px] uppercase tracking-[0.16em] text-cream/45">
+              <span className="max-w-[12rem] text-[10px] leading-4 uppercase tracking-[0.14em] text-cream/60 sm:max-w-none sm:tracking-[0.16em]">
                 choose the Era that fits your moment
               </span>
             </div>
@@ -154,14 +154,14 @@ export function AcreEraHomeJourney({ showPreviewProducts }: { showPreviewProduct
           </div>
 
           <div className="mt-10">
-            <div className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+            <div className="-mx-1 flex snap-x snap-mandatory gap-2 overflow-x-auto overscroll-x-contain px-1 pr-10 pb-1 scroll-smooth [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
               {SCENES.map((item, itemIndex) => (
                 <button
                   key={item.key}
                   type="button"
                   onClick={() => setIndex(itemIndex)}
                   className={
-                    "min-h-11 shrink-0 rounded-full border px-4 py-2 text-[10px] font-semibold uppercase tracking-[0.14em] transition " +
+                    "min-h-11 shrink-0 snap-start rounded-full border px-4 py-2 text-[10px] font-semibold uppercase tracking-[0.14em] transition " +
                     (itemIndex === index
                       ? "border-wheat bg-wheat text-soil"
                       : "border-cream/20 bg-black/20 text-cream/62 hover:border-cream/40")
