@@ -89,3 +89,31 @@ For accepted merchants:
 4. build explicit affiliate disclosure UX;
 5. surface only real products/offers with merchant provenance;
 6. measure click-through and conversion before expanding merchant count.
+
+
+## 2026-10-08 dashboard correction
+
+Founder screen recording of the logged-in U.S. Awin publisher marketplace showed that public/global Awin brand examples are not reliable evidence of joinable U.S. advertiser programs.
+
+Observed search outcomes:
+- Samsung — no advertiser found.
+- Nike — no advertiser found.
+- AliExpress — no clean matching advertiser surfaced; results were unrelated/non-matching.
+- Uniqlo — no clean Uniqlo apparel advertiser surfaced.
+- Additional public-example brands must not be treated as available unless they appear as exact matching programs in the logged-in publisher dashboard.
+
+### Corrected operating rule
+
+Awin public marketing pages are DISCOVERY HINTS ONLY.
+
+The logged-in publisher advertiser directory is the source of truth for:
+- program existence,
+- region availability,
+- joinability,
+- approval state,
+- merchant-specific commission,
+- cookie / attribution window,
+- feed / deep-link support,
+- restrictions and terms.
+
+Do not pre-build merchant roadmaps from public Awin example lists again.
