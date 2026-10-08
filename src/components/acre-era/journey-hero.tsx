@@ -148,7 +148,7 @@ export function JourneyHero({
   const clip = clips[index];
 
   return (
-    <section className="relative isolate min-h-[76svh] overflow-hidden bg-soil text-cream">
+    <section className="relative isolate min-h-[68svh] overflow-hidden bg-soil text-cream sm:min-h-[76svh]">
       <div className="absolute inset-0">
         {reduceMotion ? (
           <div
@@ -176,29 +176,29 @@ export function JourneyHero({
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_78%_18%,rgba(232,198,138,.18),transparent_28rem)]" />
       </div>
 
-      <div className="relative mx-auto flex min-h-[76svh] max-w-7xl items-end px-5 py-14 sm:px-8 lg:px-10 lg:py-20">
+      <div className="relative mx-auto flex min-h-[68svh] max-w-7xl items-end px-4 pb-8 pt-16 sm:min-h-[76svh] sm:px-8 sm:py-14 lg:px-10 lg:py-20">
         <div className="max-w-4xl">
           <p className="text-xs font-semibold uppercase tracking-[0.24em] text-wheat">{eyebrow}</p>
-          <h1 className="mt-4 font-display text-5xl font-black leading-[.93] tracking-[-0.045em] sm:text-6xl lg:text-8xl">
+          <h1 className="mt-4 font-display text-[clamp(2.65rem,12vw,4.5rem)] font-black leading-[.93] tracking-[-0.045em] sm:text-6xl lg:text-8xl">
             {title}<br /><span className="text-wheat">{accent}</span>
           </h1>
           <p className="mt-5 max-w-2xl text-base leading-7 text-cream/78 sm:text-lg">{copy}</p>
 
-          <div className="mt-7 flex flex-wrap gap-3">
-            <a href={primaryHref} className="btn-primary !bg-wheat !text-soil hover:!bg-cream">{primaryLabel}</a>
+          <div className="mt-7 grid gap-3 sm:flex sm:flex-wrap">
+            <a href={primaryHref} className="btn-primary w-full justify-center !bg-wheat !text-soil hover:!bg-cream sm:w-auto">{primaryLabel}</a>
             {secondaryHref && secondaryLabel ? (
-              <a href={secondaryHref} className="btn-ghost-light">{secondaryLabel}</a>
+              <a href={secondaryHref} className="btn-ghost-light w-full justify-center sm:w-auto">{secondaryLabel}</a>
             ) : null}
           </div>
 
-          <div className="mt-8 flex flex-wrap gap-2">
+          <div className="-mx-1 mt-8 flex gap-2 overflow-x-auto px-1 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
             {clips.map((item, itemIndex) => (
               <button
                 key={item.label}
                 type="button"
                 onClick={() => setIndex(itemIndex)}
                 className={
-                  "rounded-full border px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.14em] transition " +
+                  "min-h-11 shrink-0 rounded-full border px-4 py-2 text-[10px] font-semibold uppercase tracking-[0.14em] transition " +
                   (itemIndex === index
                     ? "border-wheat bg-wheat text-soil"
                     : "border-cream/20 bg-black/15 text-cream/70 hover:border-cream/40")
