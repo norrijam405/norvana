@@ -97,7 +97,7 @@ export function AcreEraHomeJourney({ showPreviewProducts }: { showPreviewProduct
   }, [reduceMotion]);
 
   return (
-    <section className="relative isolate min-h-[84svh] overflow-hidden bg-soil text-cream">
+    <section className="relative isolate min-h-[72svh] overflow-hidden bg-soil text-cream sm:min-h-[84svh]">
       <div className="absolute inset-0">
         {reduceMotion ? (
           <div
@@ -124,8 +124,8 @@ export function AcreEraHomeJourney({ showPreviewProducts }: { showPreviewProduct
         <div className="absolute inset-0 bg-[linear-gradient(0deg,rgba(8,8,7,.82)_0%,transparent_48%,rgba(8,8,7,.18)_100%)]" />
       </div>
 
-      <div className="relative mx-auto grid min-h-[84svh] max-w-7xl gap-8 px-5 pb-8 pt-10 sm:px-8 lg:grid-cols-[1.05fr_.95fr] lg:items-end lg:px-10 lg:pb-12 lg:pt-16">
-        <div className="flex min-h-[36rem] flex-col justify-between">
+      <div className="relative mx-auto grid min-h-[72svh] max-w-7xl gap-7 px-4 pb-7 pt-8 sm:min-h-[84svh] sm:px-8 sm:pb-8 sm:pt-10 lg:grid-cols-[1.05fr_.95fr] lg:items-end lg:px-10 lg:pb-12 lg:pt-16">
+        <div className="flex min-h-0 flex-col justify-between sm:min-h-[36rem]">
           <div>
             <div className="flex items-center gap-3">
               <span className="rounded-full border border-wheat/25 bg-black/20 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-wheat">
@@ -137,31 +137,31 @@ export function AcreEraHomeJourney({ showPreviewProducts }: { showPreviewProduct
             </div>
 
             <p className="mt-8 text-xs font-semibold uppercase tracking-[0.24em] text-wheat">{scene.eyebrow}</p>
-            <h1 className="mt-4 max-w-4xl font-display text-5xl font-black leading-[.92] tracking-[-0.05em] sm:text-6xl lg:text-8xl">
+            <h1 className="mt-4 max-w-4xl font-display text-[clamp(2.7rem,12vw,4.5rem)] font-black leading-[.92] tracking-[-0.05em] sm:text-6xl lg:text-8xl">
               {scene.title}<br />
               <span className="text-wheat">{scene.accent}</span>
             </h1>
             <p className="mt-5 max-w-2xl text-base leading-7 text-cream/76 sm:text-lg">{scene.copy}</p>
 
-            <div className="mt-7 flex flex-wrap gap-3">
-              <Link href={scene.href} className="btn-primary !bg-wheat !text-soil hover:!bg-cream">
+            <div className="mt-7 grid gap-3 sm:flex sm:flex-wrap">
+              <Link href={scene.href} className="btn-primary w-full justify-center !bg-wheat !text-soil hover:!bg-cream sm:w-auto">
                 {scene.cta}
               </Link>
-              <Link href="/shop" className="btn-ghost-light">
+              <Link href="/shop" className="btn-ghost-light w-full justify-center sm:w-auto">
                 Browse all Acre Era
               </Link>
             </div>
           </div>
 
           <div className="mt-10">
-            <div className="flex flex-wrap gap-2">
+            <div className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
               {SCENES.map((item, itemIndex) => (
                 <button
                   key={item.key}
                   type="button"
                   onClick={() => setIndex(itemIndex)}
                   className={
-                    "rounded-full border px-4 py-2 text-[10px] font-semibold uppercase tracking-[0.14em] transition " +
+                    "min-h-11 shrink-0 rounded-full border px-4 py-2 text-[10px] font-semibold uppercase tracking-[0.14em] transition " +
                     (itemIndex === index
                       ? "border-wheat bg-wheat text-soil"
                       : "border-cream/20 bg-black/20 text-cream/62 hover:border-cream/40")
