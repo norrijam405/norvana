@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 type JourneyClip = {
   label: string;
@@ -128,6 +128,9 @@ export function JourneyHero({
   }, [variant]);
   const [index, setIndex] = useState(0);
   const [reduceMotion, setReduceMotion] = useState(true);
+  const [videoPlaying, setVideoPlaying] = useState(false);
+  const [videoFailed, setVideoFailed] = useState(false);
+  const videoRef = useRef<HTMLVideoElement | null>(null);
 
   useEffect(() => {
     const query = window.matchMedia("(prefers-reduced-motion: reduce)");
@@ -136,6 +139,11 @@ export function JourneyHero({
     query.addEventListener("change", sync);
     return () => query.removeEventListener("change", sync);
   }, []);
+
+  useEffect(() => {
+    setVideoPlaying(false);
+    setVideoFailed(false);
+  }, [index]);
 
   useEffect(() => {
     if (reduceMotion) return;
@@ -150,17 +158,17 @@ export function JourneyHero({
   return (
     <section className="relative isolate min-h-[68svh] overflow-hidden bg-soil text-cream sm:min-h-[76svh]">
       <div className="absolute inset-0">
-        {reduceMotion ? (
-          <div
-            className="absolute inset-0 bg-cover bg-center"
-            style={{ backgroundImage: `url("${clip.posterUrl}")` }}
-            role="img"
-            aria-label={clip.label}
-          />
-        ) : (
+        <div
+          className="absolute inset-0 bg-cover bg-center"
+          style={{ backgroundImage: `url("${clip.posterUrl}")` }}
+          role="img"
+          aria-label={clip.label}
+        />
+        {!reduceMotion && !videoFailed ? (
           <video
+            ref={videoRef}
             key={clip.videoUrl}
-            className="absolute inset-0 h-full w-full object-cover"
+            className={"absolute inset-0 h-full w-full object-cover transition-opacity duration-500 " + (videoPlaying ? "opacity-100" : "opacity-0")}
             poster={clip.posterUrl}
             autoPlay
             muted
@@ -168,10 +176,21 @@ export function JourneyHero({
             playsInline
             preload="metadata"
             aria-label={clip.label}
+            onCanPlay={() => {
+              const video = videoRef.current;
+              if (!video) return;
+              video.muted = true;
+              void video.play().catch(() => setVideoFailed(true));
+            }}
+            onPlaying={() => setVideoPlaying(true)}
+            onError={() => {
+              setVideoPlaying(false);
+              setVideoFailed(true);
+            }}
           >
             <source src={clip.videoUrl} type="video/mp4" />
           </video>
-        )}
+        ) : null}
         <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(18,19,15,.93)_0%,rgba(18,19,15,.72)_42%,rgba(18,19,15,.28)_70%,rgba(18,19,15,.48)_100%)]" />
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_78%_18%,rgba(232,198,138,.18),transparent_28rem)]" />
       </div>
