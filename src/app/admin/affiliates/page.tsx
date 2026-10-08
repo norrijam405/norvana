@@ -19,8 +19,8 @@ const PRIORITY_LABELS = {
 const LIVE_ACCOUNT_STATES = [
   {
     name: "Awin",
-    state: "ACCEPTED",
-    detail: "Publisher account accepted. Next founder step: complete any required tax / payout profile and selectively join relevant merchant programs inside Awin.",
+    state: "OPERATIONAL",
+    detail: "Publisher account accepted; founder reports profile, tax setup, and payment setup complete. Next step is selective merchant enrollment and link/feed qualification.",
   },
   {
     name: "CJdropshipping",
