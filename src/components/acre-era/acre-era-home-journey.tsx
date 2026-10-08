@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { ACRE_ERA_PREVIEW_PRODUCTS } from "@/lib/acre-era/preview-products";
 
@@ -70,6 +70,9 @@ const SCENES = [
 export function AcreEraHomeJourney({ showPreviewProducts }: { showPreviewProducts: boolean }) {
   const [index, setIndex] = useState(0);
   const [reduceMotion, setReduceMotion] = useState(true);
+  const [videoPlaying, setVideoPlaying] = useState(false);
+  const [videoFailed, setVideoFailed] = useState(false);
+  const videoRef = useRef<HTMLVideoElement | null>(null);
   const scene = SCENES[index];
 
   const products = useMemo(
@@ -89,6 +92,11 @@ export function AcreEraHomeJourney({ showPreviewProducts }: { showPreviewProduct
   }, []);
 
   useEffect(() => {
+    setVideoPlaying(false);
+    setVideoFailed(false);
+  }, [scene.videoUrl]);
+
+  useEffect(() => {
     if (reduceMotion) return;
     const timer = window.setInterval(() => {
       setIndex((value) => (value + 1) % SCENES.length);
@@ -99,27 +107,42 @@ export function AcreEraHomeJourney({ showPreviewProducts }: { showPreviewProduct
   return (
     <section className="relative isolate min-h-[72svh] overflow-hidden bg-soil text-cream sm:min-h-[84svh]">
       <div className="absolute inset-0">
-        {reduceMotion ? (
-          <div
-            className="absolute inset-0 bg-cover bg-center"
-            style={{ backgroundImage: `url("${scene.posterUrl}")` }}
-            role="img"
-            aria-label={scene.tab}
-          />
-        ) : (
+        <div
+          className="absolute inset-0 bg-cover bg-center"
+          style={{ backgroundImage: `url("${scene.posterUrl}")` }}
+          role="img"
+          aria-label={scene.tab}
+        />
+        {!reduceMotion && !videoFailed ? (
           <video
+            ref={videoRef}
             key={scene.videoUrl}
-            className="absolute inset-0 h-full w-full object-cover"
+            className={"absolute inset-0 h-full w-full object-cover transition-opacity duration-500 " + (videoPlaying ? "opacity-100" : "opacity-0")}
             poster={scene.posterUrl}
             autoPlay
             muted
             loop
             playsInline
             preload="metadata"
+            onCanPlay={() => {
+              const video = videoRef.current;
+              if (!video) return;
+              video.muted = true;
+              void video.play().catch(() => setVideoFailed(true));
+            }}
+            onPlaying={() => setVideoPlaying(true)}
+            onPause={() => {
+              const video = videoRef.current;
+              if (video && !video.ended && document.visibilityState === "visible") setVideoPlaying(false);
+            }}
+            onError={() => {
+              setVideoPlaying(false);
+              setVideoFailed(true);
+            }}
           >
             <source src={scene.videoUrl} type="video/mp4" />
           </video>
-        )}
+        ) : null}
         <div className={"absolute inset-0 bg-gradient-to-r " + scene.overlay} />
         <div className="absolute inset-0 bg-[linear-gradient(0deg,rgba(8,8,7,.82)_0%,transparent_48%,rgba(8,8,7,.18)_100%)]" />
       </div>
