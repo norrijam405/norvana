@@ -1,39 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { SEEDED_SCOUT_PICKS } from "@/lib/watchtower/seeded-scout-picks";
 
-const ITEMS = [
-  {
-    sku: "CJSJ228498801AZ",
-    name: "Desktop Folding Full-Alloy Phone Holder",
-    priority: "1",
-    reason: "Small, simple, low unit cost, low expected support burden.",
-  },
-  {
-    sku: "CJSJ206576301AZ",
-    name: "Metal Rotating Folding Phone Bracket",
-    priority: "2",
-    reason: "Useful desk product with clear demo value and modest unit cost.",
-  },
-  {
-    sku: "CJYD197888501AZ",
-    name: "Magnetic Cable Organizer",
-    priority: "3",
-    reason: "Everyday tech/home utility; qualify one exact light variant only.",
-  },
-  {
-    sku: "CJJT174982701AZ",
-    name: "Portable Washable Pet Hair Roller",
-    priority: "4",
-    reason: "Evergreen pet problem, reusable, strong before/after demo.",
-  },
-  {
-    sku: "CJMY200580801AZ",
-    name: "2-in-1 Pet Hair Removal Roller",
-    priority: "5",
-    reason: "Simple pet/home candidate with no batteries or electronics.",
-  },
-];
+const ITEMS = SEEDED_SCOUT_PICKS;
+
 
 const STORAGE_KEY = "acre-era-cj-route-check-r0";
 
@@ -91,7 +62,7 @@ export function CjRouteCheckPanel() {
               <div className="min-w-0 flex-1">
                 <div className="flex flex-wrap items-center gap-2">
                   <span className="rounded-full border border-white/10 bg-white/5 px-2 py-1 text-[9px] font-semibold uppercase tracking-[0.12em] text-white/40">
-                    Priority {item.priority}
+                    Priority {String(item.priority)}
                   </span>
                   <code className="text-[11px] text-indigo-200">{item.sku}</code>
                 </div>
