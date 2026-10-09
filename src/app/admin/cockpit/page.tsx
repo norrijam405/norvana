@@ -12,6 +12,7 @@ import {
 import { ownerCredentialState } from "@/lib/admin-identity";
 import { WatchtowerHero } from "@/components/admin/watchtower-hero";
 import { ScoutCandidateActions } from "@/components/admin/scout-candidate-actions";
+import { ScoutCompareBoard } from "@/components/admin/scout-compare-board";
 import { WatchtowerNav } from "@/components/admin/watchtower-nav";
 import { WATCHTOWER_CONNECTIONS, connectionStatus } from "@/lib/watchtower/connections";
 import { buildOwnerActions } from "@/lib/watchtower/owner-actions";
@@ -102,6 +103,31 @@ function candidateConfidence(snapshot?: typeof watchCandidateSnapshots.$inferSel
   if (raw === null) return null;
   const normalized = raw <= 1 ? raw * 100 : raw;
   return Math.max(0, Math.min(100, Math.round(normalized)));
+}
+
+function facetNumber(value: unknown) {
+  const facet = record(value);
+  if (!["OBSERVED", "VERIFIED"].includes(String(facet.status || "").toUpperCase())) return null;
+  return numeric(facet.value);
+}
+
+function candidateWhyNow(snapshot?: typeof watchCandidateSnapshots.$inferSelect) {
+  if (!snapshot) return "No verified timing signal yet. Scout interest is based on fit, not urgency.";
+  const demand = record(snapshot.demand);
+  const trend = facetNumber(demand.searchTrend);
+  const requests = facetNumber(demand.internalRequests);
+  const voice = facetNumber(demand.customerVoice);
+  const sellThrough = facetNumber(demand.sellThrough);
+
+  const signals: string[] = [];
+  if (trend !== null && trend >= 65) signals.push(`search trend is elevated (${Math.round(trend)}/100)`);
+  if (requests !== null && requests > 0) signals.push(`${Math.round(requests)} internal request(s) observed`);
+  if (voice !== null && voice >= 65) signals.push(`customer-interest signal is strong (${Math.round(voice)}/100)`);
+  if (sellThrough !== null && sellThrough >= 0.5) signals.push(`sell-through evidence is favorable (${Math.round(sellThrough * 100)}%)`);
+
+  return signals.length
+    ? `Why now: ${signals.join("; ")}.`
+    : "No strong observed timing signal yet. Treat this as an evergreen candidate, not a rush buy.";
 }
 
 const ROOMS = [
@@ -206,6 +232,13 @@ export default async function WatchtowerCockpitPage() {
     }
   }
   const scoutPicks = candidates.filter((candidate) => ["NEW", "SHORTLISTED", "STAGED"].includes(candidate.status)).slice(0, 10);
+  const weekCutoff = Date.now() - 7 * 24 * 60 * 60 * 1000;
+  const weeklyCandidates = candidates.filter((candidate) => candidate.updatedAt.getTime() >= weekCutoff);
+  const weeklyReady = weeklyCandidates.filter((candidate) => ["READY_AFFILIATE", "READY_SUPPLIER"].includes(candidate.truthState)).length;
+  const weeklyStaged = weeklyCandidates.filter((candidate) => candidate.status === "STAGED").length;
+  const weeklyShortlisted = weeklyCandidates.filter((candidate) => candidate.status === "SHORTLISTED").length;
+  const weeklyPassed = weeklyCandidates.filter((candidate) => candidate.status === "DISMISSED").length;
+  const shelfTarget = 10;
 
   const ownerCredential = await ownerCredentialState();
   const enabledJobs = jobs.filter((job) => job.status === "ENABLED").length;
@@ -321,6 +354,7 @@ export default async function WatchtowerCockpitPage() {
                   candidate.recommendation.trim() ||
                   firstString(record(snapshot?.scorecard), ["reason", "recommendation", "summary"]) ||
                   `Scout found a potentially useful ${candidate.lane || "product"} opportunity. Qualification is still incomplete.`;
+                const whyNow = candidateWhyNow(snapshot);
 
                 return (
                   <article key={candidate.id} className="overflow-hidden rounded-[1.6rem] border border-white/10 bg-black/20">
@@ -383,6 +417,11 @@ export default async function WatchtowerCockpitPage() {
                       <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-indigo-200">Why Scout likes it</p>
                       <p className="mt-2 text-sm leading-6 text-white/60">{why}</p>
 
+                      <div className="mt-4 rounded-xl border border-wheat/10 bg-wheat/[0.04] p-3">
+                        <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-wheat/70">Why now?</p>
+                        <p className="mt-1 text-xs leading-5 text-white/50">{whyNow}</p>
+                      </div>
+
                       <div className="mt-4">
                         <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-amber-100/70">What could kill the deal</p>
                         {riskFlags.length ? (
@@ -431,21 +470,75 @@ export default async function WatchtowerCockpitPage() {
               No Scout product candidates are waiting right now. When Scouts find something, the memo will appear here.
             </div>
           )}
+
+          {scoutPicks.length >= 2 ? (
+            <ScoutCompareBoard
+              items={scoutPicks.map((candidate) => {
+                const snapshot = latestSnapshotByCandidate.get(candidate.id);
+                const economics = candidateEconomics(candidate, snapshot);
+                const why =
+                  candidate.recommendation.trim() ||
+                  firstString(record(snapshot?.scorecard), ["reason", "recommendation", "summary"]) ||
+                  "Qualification is still incomplete.";
+                const riskFlags = Array.from(new Set([
+                  ...(Array.isArray(candidate.riskFlags) ? candidate.riskFlags : []),
+                  ...(Array.isArray(snapshot?.riskFlags) ? snapshot.riskFlags : []),
+                ]));
+                return {
+                  id: candidate.id,
+                  title: candidate.title,
+                  lane: candidate.lane,
+                  source: candidate.sourceName || "Source pending",
+                  truthState: candidate.truthState,
+                  projected: economics.commission || economics.projected,
+                  margin: economics.margin,
+                  salePrice: economics.salePrice,
+                  productCost: economics.productCost,
+                  shipping: economics.shipping,
+                  confidence: candidateConfidence(snapshot),
+                  riskCount: riskFlags.length,
+                  why,
+                  whyNow: candidateWhyNow(snapshot),
+                };
+              })}
+            />
+          ) : null}
         </section>
 
         <section className="mt-6 rounded-[1.6rem] border border-white/10 bg-black/20 p-5">
-          <div className="flex flex-wrap items-center justify-between gap-4">
+          <div className="flex flex-wrap items-end justify-between gap-4">
             <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-wheat">Shelf pace</p>
-              <h2 className="mt-2 font-display text-2xl font-bold">10 qualified items per week.</h2>
+              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-wheat">This week's shelf</p>
+              <h2 className="mt-2 font-display text-2xl font-bold">{weeklyReady} / {shelfTarget} qualified products.</h2>
               <p className="mt-2 max-w-2xl text-sm leading-6 text-white/45">
-                Start with quality and learn the real conversion, shipping, and return pattern. Graduate to 15–20/week after the first 4 weeks if readiness pass rate and customer experience stay healthy.
+                Quality first. Graduate to 15–20/week only after four weeks of healthy readiness, shipping, returns, and customer experience.
               </p>
             </div>
-            <div className="rounded-2xl border border-wheat/15 bg-wheat/[0.06] px-5 py-4 text-right">
-              <p className="text-[10px] uppercase tracking-[0.16em] text-wheat/60">Current target</p>
-              <p className="mt-1 font-display text-3xl font-black text-wheat">10 / week</p>
+            <div className="w-full max-w-sm">
+              <div className="flex items-center justify-between text-[10px] uppercase tracking-[0.14em] text-white/35">
+                <span>Qualified</span>
+                <span>{Math.min(100, Math.round((weeklyReady / shelfTarget) * 100))}%</span>
+              </div>
+              <div className="mt-2 h-2 overflow-hidden rounded-full bg-white/[0.06]">
+                <div
+                  className="h-full rounded-full bg-wheat"
+                  style={{ width: `${Math.min(100, Math.round((weeklyReady / shelfTarget) * 100))}%` }}
+                />
+              </div>
             </div>
+          </div>
+          <div className="mt-5 grid gap-2 sm:grid-cols-4">
+            {[
+              ["Ready", weeklyReady],
+              ["Staged", weeklyStaged],
+              ["Shortlisted", weeklyShortlisted],
+              ["Passed", weeklyPassed],
+            ].map(([label, value]) => (
+              <div key={String(label)} className="rounded-xl border border-white/10 bg-white/[0.035] px-4 py-3">
+                <p className="text-[9px] uppercase tracking-[0.14em] text-white/30">{label}</p>
+                <p className="mt-1 font-display text-xl font-bold text-white/75">{String(value)}</p>
+              </div>
+            ))}
           </div>
         </section>
 
