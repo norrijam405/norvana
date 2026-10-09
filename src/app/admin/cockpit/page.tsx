@@ -11,6 +11,7 @@ import {
 } from "@/lib/admin-session";
 import { ownerCredentialState } from "@/lib/admin-identity";
 import { WatchtowerHero } from "@/components/admin/watchtower-hero";
+import { ScoutCandidateActions } from "@/components/admin/scout-candidate-actions";
 import { WatchtowerNav } from "@/components/admin/watchtower-nav";
 import { WATCHTOWER_CONNECTIONS, connectionStatus } from "@/lib/watchtower/connections";
 import { buildOwnerActions } from "@/lib/watchtower/owner-actions";
@@ -204,7 +205,7 @@ export default async function WatchtowerCockpitPage() {
       latestSnapshotByCandidate.set(snapshot.candidateId, snapshot);
     }
   }
-  const scoutPicks = candidates.filter((candidate) => candidate.status === "NEW").slice(0, 8);
+  const scoutPicks = candidates.filter((candidate) => ["NEW", "SHORTLISTED", "STAGED"].includes(candidate.status)).slice(0, 10);
 
   const ownerCredential = await ownerCredentialState();
   const enabledJobs = jobs.filter((job) => job.status === "ENABLED").length;
@@ -399,6 +400,12 @@ export default async function WatchtowerCockpitPage() {
                         )}
                       </div>
 
+                      <ScoutCandidateActions
+                        candidateId={candidate.id}
+                        lane={candidate.lane}
+                        status={candidate.status}
+                      />
+
                       <div className="mt-4 flex flex-wrap items-center gap-3">
                         {candidate.sourceUrl ? (
                           <a
@@ -424,6 +431,22 @@ export default async function WatchtowerCockpitPage() {
               No Scout product candidates are waiting right now. When Scouts find something, the memo will appear here.
             </div>
           )}
+        </section>
+
+        <section className="mt-6 rounded-[1.6rem] border border-white/10 bg-black/20 p-5">
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-wheat">Shelf pace</p>
+              <h2 className="mt-2 font-display text-2xl font-bold">10 qualified items per week.</h2>
+              <p className="mt-2 max-w-2xl text-sm leading-6 text-white/45">
+                Start with quality and learn the real conversion, shipping, and return pattern. Graduate to 15–20/week after the first 4 weeks if readiness pass rate and customer experience stay healthy.
+              </p>
+            </div>
+            <div className="rounded-2xl border border-wheat/15 bg-wheat/[0.06] px-5 py-4 text-right">
+              <p className="text-[10px] uppercase tracking-[0.16em] text-wheat/60">Current target</p>
+              <p className="mt-1 font-display text-3xl font-black text-wheat">10 / week</p>
+            </div>
+          </div>
         </section>
 
         <section className="mt-6">
