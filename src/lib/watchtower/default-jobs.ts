@@ -25,6 +25,11 @@ export const WATCHTOWER_JOB_TEMPLATES: WatchtowerJobTemplate[] = [
     budgetCents: 0,
     sourcePolicy: {
       preferOfficialSources: true,
+      preferLiveSupplierProductPages: true,
+      prioritizeSimpleLowReturnRiskProducts: true,
+      requireShippingDestinationCheck: true,
+      requireStockState: true,
+      requireReturnPath: true,
       rejectTrialsPresentedAsFree: true,
       requireCostBreakdown: true,
     },
