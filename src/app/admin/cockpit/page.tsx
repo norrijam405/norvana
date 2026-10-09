@@ -16,6 +16,7 @@ import { ScoutCompareBoard } from "@/components/admin/scout-compare-board";
 import { WatchtowerNav } from "@/components/admin/watchtower-nav";
 import { WATCHTOWER_CONNECTIONS, connectionStatus } from "@/lib/watchtower/connections";
 import { buildOwnerActions } from "@/lib/watchtower/owner-actions";
+import { SEEDED_SCOUT_PICKS } from "@/lib/watchtower/seeded-scout-picks";
 
 export const dynamic = "force-dynamic";
 
@@ -318,6 +319,72 @@ export default async function WatchtowerCockpitPage() {
                     {action.actionLabel} →
                   </Link>
                 ) : null}
+              </article>
+            ))}
+          </div>
+        </section>
+
+        <section className="mt-8 rounded-[2rem] border border-emerald-300/15 bg-emerald-300/[0.035] p-6 md:p-8">
+          <div className="flex flex-wrap items-end justify-between gap-4">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-emerald-200">Scout picks · Wave 01</p>
+              <h2 className="mt-2 font-display text-3xl font-black">These are the five items we actually picked.</h2>
+              <p className="mt-2 max-w-3xl text-sm leading-6 text-white/50">
+                These picks are preserved independently of the Watchtower database so they remain visible while the live candidate tables are being initialized.
+                They are HOLD, not READY: route economics still need proof.
+              </p>
+            </div>
+            <Link href="/admin/suppliers" className="rounded-xl border border-emerald-300/20 bg-emerald-300/10 px-4 py-2.5 text-sm font-semibold text-emerald-100">
+              Open CJ route checks →
+            </Link>
+          </div>
+
+          <div className="mt-6 grid gap-4 lg:grid-cols-2 xl:grid-cols-3">
+            {SEEDED_SCOUT_PICKS.map((pick) => (
+              <article key={pick.sku} className="overflow-hidden rounded-[1.5rem] border border-white/10 bg-black/20">
+                <div className="flex min-h-32 items-center justify-center bg-gradient-to-br from-white/[0.06] to-white/[0.02]">
+                  <div className="text-center">
+                    <div className="text-4xl">{pick.lane.includes("Pets") ? "🐾" : pick.lane.includes("Cable") ? "🔌" : "📱"}</div>
+                    <p className="mt-2 text-[9px] font-semibold uppercase tracking-[0.16em] text-white/30">Product image pending rights/data</p>
+                  </div>
+                </div>
+                <div className="p-5">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="rounded-full border border-amber-300/15 bg-amber-300/[0.06] px-2.5 py-1 text-[9px] font-semibold uppercase tracking-[0.12em] text-amber-100">
+                      #{pick.priority} · {pick.state}
+                    </span>
+                    <code className="text-[10px] text-indigo-200">{pick.sku}</code>
+                  </div>
+                  <h3 className="mt-3 font-display text-xl font-bold">{pick.name}</h3>
+                  <p className="mt-1 text-xs text-white/35">{pick.lane}</p>
+
+                  <div className="mt-4 grid grid-cols-2 gap-2">
+                    <div className="rounded-xl border border-white/10 bg-white/[0.035] p-3">
+                      <p className="text-[9px] uppercase tracking-[0.12em] text-white/30">Supplier price</p>
+                      <p className="mt-1 font-semibold text-white/75">{pick.supplierPrice}</p>
+                    </div>
+                    <div className="rounded-xl border border-white/10 bg-white/[0.035] p-3">
+                      <p className="text-[9px] uppercase tracking-[0.12em] text-white/30">Projected profit</p>
+                      <p className="mt-1 font-semibold text-amber-100">Pending route</p>
+                    </div>
+                  </div>
+
+                  <div className="mt-4">
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-emerald-200">Why we want it</p>
+                    <p className="mt-2 text-sm leading-6 text-white/55">{pick.reason}</p>
+                  </div>
+
+                  <div className="mt-4">
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-amber-100/70">What still blocks it</p>
+                    <div className="mt-2 flex flex-wrap gap-2">
+                      {pick.blockers.slice(0, 4).map((blocker) => (
+                        <span key={blocker} className="rounded-full border border-amber-300/10 bg-amber-300/[0.04] px-2.5 py-1 text-[10px] text-amber-100/65">
+                          {blocker}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                </div>
               </article>
             ))}
           </div>
