@@ -28,6 +28,8 @@ export const WATCHTOWER_JOB_TEMPLATES: WatchtowerJobTemplate[] = [
       preferLiveSupplierProductPages: true,
       prioritizeSimpleLowReturnRiskProducts: true,
       requireShippingDestinationCheck: true,
+      zeroShippingWithoutCalculatedRouteMeansUnknown: true,
+      dashInventoryMeansUnknown: true,
       requireStockState: true,
       requireReturnPath: true,
       rejectTrialsPresentedAsFree: true,
