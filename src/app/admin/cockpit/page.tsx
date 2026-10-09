@@ -542,6 +542,62 @@ export default async function WatchtowerCockpitPage() {
           </div>
         </section>
 
+        <section className="mt-6 grid gap-5 xl:grid-cols-2">
+          <article className="rounded-[1.6rem] border border-white/10 bg-white/[0.035] p-5">
+            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-emerald-200">Scout accuracy</p>
+            <h2 className="mt-2 font-display text-2xl font-bold">The Scouts get graded too.</h2>
+            <p className="mt-3 text-sm leading-6 text-white/50">
+              Watchtower will compare projected contribution against actual settled outcomes. Fewer than five settled orders stays
+              INSUFFICIENT DATA — one lucky sale does not earn a victory lap.
+            </p>
+            <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-3">
+              {[
+                ["LEARN", "< 5 settled orders"],
+                ["PUSH", "beats forecast + healthy returns/conversion"],
+                ["KEEP", "positive, stable economics"],
+                ["REPRICE", ">35% below forecast"],
+                ["DEMOTE", "50+ visits, <0.5% conversion"],
+                ["REMOVE", "loss-making or 20%+ returns"],
+              ].map(([label, detail]) => (
+                <div key={label} className="rounded-xl border border-white/10 bg-black/20 p-3">
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-white/70">{label}</p>
+                  <p className="mt-1 text-[10px] leading-4 text-white/35">{detail}</p>
+                </div>
+              ))}
+            </div>
+            <p className="mt-4 text-[11px] text-white/35">
+              Current state: waiting for qualified products and settled outcomes. No accuracy claim yet.
+            </p>
+          </article>
+
+          <article className="rounded-[1.6rem] border border-white/10 bg-black/20 p-5">
+            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-indigo-200">Council review</p>
+            <h2 className="mt-2 font-display text-2xl font-bold">Specialist request is posted.</h2>
+            <p className="mt-3 text-sm leading-6 text-white/50">
+              Mark, Vanguard, Aether, and Cato were asked through the real IgniAqua Federal Agent Mailbox for bounded review of the product operating system.
+            </p>
+            <div className="mt-4 grid grid-cols-2 gap-2">
+              {["Mark", "Vanguard", "Aether", "Cato"].map((name) => (
+                <div key={name} className="rounded-xl border border-amber-300/10 bg-amber-300/[0.04] px-3 py-3">
+                  <p className="text-xs font-semibold text-white/70">{name}</p>
+                  <p className="mt-1 text-[10px] uppercase tracking-[0.12em] text-amber-100/55">Awaiting response</p>
+                </div>
+              ))}
+            </div>
+            <a
+              href="https://github.com/norrijam405/IgniAqua-Control-Plane/issues/32"
+              target="_blank"
+              rel="noreferrer"
+              className="mt-4 inline-flex rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-xs font-semibold text-indigo-200"
+            >
+              Open Federal Mailbox ↗
+            </a>
+            <p className="mt-3 text-[10px] text-white/30">
+              POSTED does not mean received or completed. Watchtower will not manufacture specialist opinions.
+            </p>
+          </article>
+        </section>
+
         <section className="mt-6">
           <p className="text-xs font-semibold uppercase tracking-[0.2em] text-indigo-200">Quick actions</p>
           <div className="mt-3 flex flex-wrap gap-2">
