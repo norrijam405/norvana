@@ -10,6 +10,7 @@ import {
 } from "@/lib/admin-session";
 import { WatchtowerNav } from "@/components/admin/watchtower-nav";
 import { SUPPLIER_ACCESS_BOARD } from "@/lib/watchtower/supplier-access";
+import { CjRouteCheckPanel } from "@/components/admin/cj-route-check-panel";
 
 export const dynamic = "force-dynamic";
 
@@ -125,6 +126,8 @@ export default async function SuppliersPage() {
             ))}
           </div>
         </section>
+
+        <CjRouteCheckPanel />
 
         <section className="mt-6 grid gap-5 xl:grid-cols-[1.1fr_.9fr]">
           <div className="rounded-[2rem] border border-white/10 bg-white/[0.035] p-6">
