@@ -7,6 +7,7 @@ import { evaluateDarwinCandidate, rankDarwinCandidates } from "../src/lib/intell
 import { validateProducerIntake } from "../src/lib/local-food/producer-intake";
 import { compareLocalDeliveryModes, breakEvenRouteStops } from "../src/lib/logistics/local-delivery-economics";
 import { validateDeliveryQuote } from "../src/lib/logistics/delivery-provider";
+import { gradeScoutForecast, postLaunchDecision } from "../src/lib/watchtower/scout-accuracy";
 
 test("demand scoring rewards observed velocity, repeat purchase, and sell-through", () => {
   const now = new Date("2026-10-04T18:00:00Z");
@@ -229,4 +230,51 @@ test("producer prospect capture preserves unresolved cold-chain gaps as warnings
   assert.equal(result.valid, true);
   assert.equal(result.operationallyQualified, false);
   assert.ok(result.warnings.includes("COLD_CHAIN_FULFILLMENT_PATH_MISSING"));
+});
+
+
+test("Scout accuracy refuses to grade tiny samples", () => {
+  const result = gradeScoutForecast({
+    projectedContributionPerOrderCents: 840,
+    actualContributionCents: 2100,
+    settledOrders: 3,
+  });
+  assert.equal(result.state, "INSUFFICIENT_DATA");
+  assert.equal(result.accuracyPct, null);
+});
+
+test("Scout accuracy measures forecast error and bias after five settled orders", () => {
+  const result = gradeScoutForecast({
+    projectedContributionPerOrderCents: 840,
+    actualContributionCents: 3500,
+    settledOrders: 5,
+  });
+  assert.equal(result.state, "MEASURED");
+  assert.equal(result.actualContributionPerOrderCents, 700);
+  assert.equal(result.accuracyPct, 83);
+  assert.equal(result.bias, "OVER_ESTIMATED");
+});
+
+test("post-launch policy removes negative contribution products", () => {
+  const result = postLaunchDecision({
+    projectedContributionPerOrderCents: 800,
+    actualContributionCents: -500,
+    settledOrders: 8,
+    outboundClicks: 100,
+    convertedOrders: 8,
+    returnRate: 0.05,
+  });
+  assert.equal(result.decision, "REMOVE");
+});
+
+test("post-launch policy can push products beating forecast with healthy conversion and returns", () => {
+  const result = postLaunchDecision({
+    projectedContributionPerOrderCents: 800,
+    actualContributionCents: 7600,
+    settledOrders: 8,
+    outboundClicks: 200,
+    convertedOrders: 8,
+    returnRate: 0.04,
+  });
+  assert.equal(result.decision, "PUSH");
 });
