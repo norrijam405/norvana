@@ -1,6 +1,7 @@
 'use client';
 
 import { FormEvent, useEffect, useMemo, useState } from "react";
+import { MerchandisingPlaceButton } from "@/components/admin/merchandising-place-button";
 
 type Answers = Record<string, string | boolean>;
 
@@ -70,6 +71,9 @@ export function ProducerConversationNotebook({
   const [nextStep, setNextStep] = useState("");
   const [status, setStatus] = useState("");
   const [pending, setPending] = useState(false);
+  const [marketItemName, setMarketItemName] = useState("");
+  const [marketItemCategory, setMarketItemCategory] = useState("produce");
+  const [marketItemCost, setMarketItemCost] = useState("");
 
   const payload = useMemo(
     () => ({
@@ -308,6 +312,70 @@ export function ProducerConversationNotebook({
             placeholder="Send pilot outline Friday, request wholesale sheet, visit farm, call back after harvest…"
           />
         </label>
+      </section>
+
+      <section className="rounded-[2rem] border border-emerald-300/15 bg-emerald-300/[0.035] p-6">
+        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-emerald-200">Market placement</p>
+        <h3 className="mt-2 font-display text-2xl font-bold text-white">Put an actual farm item on the Market staging shelf.</h3>
+        <p className="mt-3 max-w-3xl text-sm leading-6 text-white/50">
+          The farm stays the source record. The item becomes a private staged product linked back to this producer name.
+          Nothing is published or made purchasable by this action.
+        </p>
+
+        <div className="mt-5 grid gap-3 md:grid-cols-3">
+          <Field
+            label="Actual item"
+            value={marketItemName}
+            onChange={setMarketItemName}
+            placeholder="e.g. 1 lb heirloom tomatoes"
+          />
+          <Select
+            label="Market category"
+            value={marketItemCategory}
+            onChange={setMarketItemCategory}
+            options={[
+              ["produce", "Produce"],
+              ["grocery", "Grocery"],
+              ["food", "Prepared / packaged food"],
+              ["garden", "Garden"],
+              ["wellness", "Wellness"],
+            ]}
+          />
+          <Field
+            label="Known producer cost (optional)"
+            value={marketItemCost}
+            onChange={setMarketItemCost}
+            placeholder="e.g. 3.50"
+          />
+        </div>
+
+        <div className="mt-4">
+          <MerchandisingPlaceButton
+            disabled={!businessName.trim() || !marketItemName.trim()}
+            payload={{
+              name: marketItemName.trim(),
+              lane: `Farm / ${marketItemCategory} / Market`,
+              sourceType: "FARM",
+              sourceName: businessName.trim(),
+              sourceKey: `farm:${businessName.trim().toLowerCase()}:${marketItemName.trim().toLowerCase()}`,
+              productCost: marketItemCost.trim() && Number.isFinite(Number(marketItemCost)) ? Number(marketItemCost) : null,
+              routeEvidence: {
+                conversationStage,
+                pilotRecommendation,
+                source: "producer-conversation-notebook",
+              },
+            }}
+            label="▶ Stage in Market Era"
+            onPlaced={() => {
+              setStatus(`${marketItemName || "Farm item"} staged for Market Era. It is still private.`);
+              setMarketItemName("");
+              setMarketItemCost("");
+            }}
+          />
+          {!businessName.trim() || !marketItemName.trim() ? (
+            <p className="mt-2 text-[10px] text-white/30">Add the farm name and an actual item name to unlock placement.</p>
+          ) : null}
+        </div>
       </section>
 
       <section className="flex flex-col gap-4 rounded-[2rem] border border-white/10 bg-black/20 p-6 sm:flex-row sm:items-center sm:justify-between">
