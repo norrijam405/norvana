@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="title">
+  <title id="title">Acre Era social avatar</title>
+  <rect width="512" height="512" rx="120" fill="#F6F1E7"/>
+  <g transform="translate(92 80) scale(5.1)">
+    <path fill="#2F3026" d="M5 54 24 8h9l10 24V8h16v7H50v10h8v7h-8v15h10v7H42L29 20 15 54H5Z"/>
+    <path fill="#E8C68A" d="M15 42h30c5.8 0 10.3-1.8 14-5.4v7.8C55 48.1 50.2 50 44.7 50H12l3-8Z"/>
+    <path fill="#526642" d="M24 37c4.2-8.1 9.2-13.2 15-15.2-1.5 6.6-5.7 12.1-12.6 16.4L24 37Z"/>
+  </g>
+</svg>

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { PublicEraMedia } from "@/lib/era-engine/types";
 
 type EraMotionProfile = "organic" | "kinetic" | "cinematic" | "precision";
@@ -50,6 +50,9 @@ export function EraHeroMedia({
   profile: EraMotionProfile;
 }) {
   const [reduceMotion, setReduceMotion] = useState(true);
+  const [videoPlaying, setVideoPlaying] = useState(false);
+  const [videoFailed, setVideoFailed] = useState(false);
+  const videoRef = useRef<HTMLVideoElement | null>(null);
 
   useEffect(() => {
     const query = window.matchMedia("(prefers-reduced-motion: reduce)");
@@ -66,28 +69,13 @@ export function EraHeroMedia({
 
   const hero = ordered[0] ?? null;
 
+  useEffect(() => {
+    setVideoPlaying(false);
+    setVideoFailed(false);
+  }, [hero?.mediaUrl]);
+
   if (!hero) {
     return <HeroFallback eraName={eraName} profile={profile} />;
-  }
-
-  if (isVideo(hero) && !reduceMotion) {
-    return (
-      <>
-        <video
-          className="absolute inset-0 h-full w-full object-cover"
-          poster={hero.posterUrl ?? undefined}
-          autoPlay
-          muted
-          loop
-          playsInline
-          preload="metadata"
-          aria-label={hero.altText || `${eraName} hero video`}
-        >
-          <source src={hero.mediaUrl} />
-        </video>
-        <div className="absolute inset-0 bg-black/5" aria-hidden="true" />
-      </>
-    );
   }
 
   const still =
@@ -95,6 +83,48 @@ export function EraHeroMedia({
     (!isVideo(hero) ? hero.mediaUrl : null) ||
     ordered.find((asset) => !isVideo(asset))?.mediaUrl ||
     null;
+
+  if (isVideo(hero) && !reduceMotion && !videoFailed) {
+    return (
+      <>
+        {still ? (
+          <div
+            className="absolute inset-0 bg-cover bg-center"
+            role="img"
+            aria-label={hero.altText || `${eraName} hero image`}
+            style={{ backgroundImage: `url("${still.replaceAll('"', "%22")}")` }}
+          />
+        ) : (
+          <HeroFallback eraName={eraName} profile={profile} />
+        )}
+        <video
+          ref={videoRef}
+          className={"absolute inset-0 h-full w-full object-cover transition-opacity duration-500 " + (videoPlaying ? "opacity-100" : "opacity-0")}
+          poster={hero.posterUrl ?? undefined}
+          autoPlay
+          muted
+          loop
+          playsInline
+          preload="metadata"
+          aria-label={hero.altText || `${eraName} hero video`}
+          onCanPlay={() => {
+            const video = videoRef.current;
+            if (!video) return;
+            video.muted = true;
+            void video.play().catch(() => setVideoFailed(true));
+          }}
+          onPlaying={() => setVideoPlaying(true)}
+          onError={() => {
+            setVideoPlaying(false);
+            setVideoFailed(true);
+          }}
+        >
+          <source src={hero.mediaUrl} />
+        </video>
+        <div className="absolute inset-0 bg-black/5" aria-hidden="true" />
+      </>
+    );
+  }
 
   if (!still) {
     return <HeroFallback eraName={eraName} profile={profile} />;

@@ -6,15 +6,37 @@ import { Navbar } from "@/components/navbar";
 import { CartDrawer } from "@/components/cart-drawer";
 
 export const metadata: Metadata = {
-  title: "Acre Era — Common needs. Curious finds. Clear reasons.",
+  metadataBase: new URL("https://acreera.com"),
+  title: {
+    default: "Acre Era — Fresh food, everyday goods, and premium finds",
+    template: "%s | Acre Era",
+  },
   description:
-    "A curated marketplace for groceries, local producers, useful goods, and rotating discoveries with visible product context.",
+    "Fresh food, everyday goods, premium finds, and changing Eras in one connected shopping world.",
+  applicationName: "Acre Era",
+  alternates: { canonical: "/" },
+  openGraph: {
+    type: "website",
+    siteName: "Acre Era",
+    url: "https://acreera.com",
+    title: "Acre Era — Fresh food, everyday goods, and premium finds",
+    description:
+      "Fresh food, everyday goods, premium finds, and changing Eras in one connected shopping world.",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Acre Era — Fresh food, everyday goods, and premium finds",
+    description:
+      "Fresh food, everyday goods, premium finds, and changing Eras in one connected shopping world.",
+  },
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="en">
       <head>
+        <meta name="impact-site-verification" content="4af98929-b912-4861-96bb-3361084d8006" />
+        <meta name="p:domain_verify" content="2a3c2e4cf82dcc9f630fcd73f3587cd4" />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link
@@ -23,6 +45,20 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         />
       </head>
       <body className="bg-bone text-obsidian antialiased">
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@type": "Organization",
+              name: "Acre Era",
+              url: "https://acreera.com",
+              logo: "https://acreera.com/brand/acre-era-social-avatar.svg",
+              description:
+                "Fresh food, everyday goods, premium finds, and changing Eras in one connected shopping world.",
+            }),
+          }}
+        />
         <CartProvider>
           <Navbar />
           <CartDrawer />

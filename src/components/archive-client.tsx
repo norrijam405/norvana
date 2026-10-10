@@ -1,79 +1,118 @@
 "use client";
 
+import Link from "next/link";
 import { motion } from "framer-motion";
 import { Footer } from "./footer";
 
-type Volume = {
+type ArchiveEra = {
   id: number;
-  volumeNumber: number;
-  niche: string;
-  description: string;
-  startDate: string;
-  endDate: string;
-  isActive: boolean;
-  productCount: number;
+  slug: string;
+  name: string;
+  eyebrow: string;
+  story: string;
+  kind: string;
+  lifecycleState: string;
+  startAt: Date | string | null;
+  endAt: Date | string | null;
 };
 
-const VOLUME_EMOJIS = ["🏡", "🍳", "🌿", "🎨", "✨"];
+function dateLabel(value: Date | string | null) {
+  if (!value) return null;
+  const date = new Date(value);
+  if (!Number.isFinite(date.getTime())) return null;
+  return new Intl.DateTimeFormat("en-US", {
+    month: "short",
+    year: "numeric",
+  }).format(date);
+}
 
-export function ArchiveClient({ volumes }: { volumes: Volume[] }) {
+export function ArchiveClient({ eras }: { eras: ArchiveEra[] }) {
   return (
     <>
-      <main className="min-h-screen py-8">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="mb-12">
-            <p className="text-sm text-indigo-accent font-medium tracking-widest uppercase">The Archive</p>
-            <h1 className="font-display text-3xl md:text-4xl font-bold mt-2">Past Volumes</h1>
-            <p className="text-muted mt-3 max-w-xl">
-              Every volume tells a story. Explore past collections and the objects that defined each season.
+      <main className="min-h-screen bg-bone">
+        <section className="border-b border-soil/10 bg-soil text-cream">
+          <div className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8 lg:py-24">
+            <p className="text-xs font-semibold uppercase tracking-[0.24em] text-wheat">Acre Era Archive</p>
+            <h1 className="mt-4 max-w-4xl font-display text-5xl font-black tracking-[-0.04em] sm:text-6xl lg:text-7xl">
+              Past worlds stay worth revisiting.
+            </h1>
+            <p className="mt-5 max-w-2xl text-base leading-7 text-cream/70">
+              The Archive keeps past Acre Eras understandable as they were presented at the time. It is a history of what we featured, not a graveyard of old placeholder collections.
             </p>
           </div>
+        </section>
 
-          {volumes.length === 0 ? (
-            <div className="text-center py-20">
-              <p className="text-4xl mb-4">📚</p>
-              <p className="text-muted">No volumes yet. Seed the database to get started.</p>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-              {volumes.map((volume, i) => (
-                <motion.div
-                  key={volume.id}
-                  initial={{ opacity: 0, y: 30 }}
+        <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
+          {eras.length ? (
+            <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
+              {eras.map((era, index) => (
+                <motion.article
+                  key={era.id}
+                  initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: i * 0.15 }}
-                  className="group relative overflow-hidden rounded-2xl border border-border bg-surface hover:shadow-lg transition-all duration-500"
+                  transition={{ delay: Math.min(index, 8) * 0.06 }}
+                  className="overflow-hidden rounded-[1.75rem] border border-soil/10 bg-cream shadow-sm"
                 >
-                  <div className={`aspect-[4/3] flex items-center justify-center text-7xl bg-gradient-to-br ${
-                    volume.isActive
-                      ? "from-indigo-accent/10 to-indigo-accent/5"
-                      : "from-gray-100 to-gray-50 grayscale group-hover:grayscale-0"
-                  } transition-all duration-500`}>
-                    {VOLUME_EMOJIS[i] || "📦"}
+                  <div className="relative aspect-[16/10] overflow-hidden bg-soil">
+                    <div className="absolute inset-0 acre-contours opacity-40" />
+                    <div className="absolute inset-x-0 bottom-0 p-6 text-cream">
+                      <p className="text-xs font-semibold uppercase tracking-[0.18em] text-wheat">
+                        {era.eyebrow || "From the Archive"}
+                      </p>
+                      <h2 className="mt-2 font-display text-3xl font-bold">{era.name}</h2>
+                    </div>
                   </div>
                   <div className="p-6">
-                    <div className="flex items-center gap-2 mb-2">
-                      <span className="text-sm text-indigo-accent font-mono font-semibold">
-                        Vol. {volume.volumeNumber}
-                      </span>
-                      {volume.isActive && (
-                        <span className="badge bg-indigo-accent text-white">Active</span>
-                      )}
+                    <div className="flex flex-wrap gap-2 text-xs text-muted">
+                      <span>{era.kind.replaceAll("_", " ")}</span>
+                      {dateLabel(era.startAt) || dateLabel(era.endAt) ? (
+                        <span>
+                          · {dateLabel(era.startAt) || "Started"} {dateLabel(era.endAt) ? "→ " + dateLabel(era.endAt) : ""}
+                        </span>
+                      ) : null}
                     </div>
-                    <h3 className="font-display text-xl font-semibold">{volume.niche}</h3>
-                    <p className="text-sm text-muted mt-2 line-clamp-2">{volume.description}</p>
-                    <div className="flex items-center justify-between mt-4 pt-4 border-t border-border">
-                      <span className="text-xs text-muted">
-                        {volume.startDate} → {volume.endDate}
-                      </span>
-                      <span className="text-xs font-medium text-indigo-accent">
-                        {volume.productCount} products
-                      </span>
-                    </div>
+                    <p className="mt-3 line-clamp-3 text-sm leading-6 text-muted">
+                      {era.story || "Revisit the products and story that defined this Acre Era."}
+                    </p>
+                    <Link
+                      href={"/era/" + era.slug}
+                      className="mt-5 inline-flex text-sm font-semibold text-leaf underline decoration-leaf/25 underline-offset-4"
+                    >
+                      Revisit this Era →
+                    </Link>
                   </div>
-                </motion.div>
+                </motion.article>
               ))}
             </div>
+          ) : (
+            <section className="grid gap-5 lg:grid-cols-[1.1fr_.9fr]">
+              <div className="rounded-[2rem] border border-soil/10 bg-cream p-8 md:p-10">
+                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-leaf">The shelves are new</p>
+                <h2 className="mt-3 font-display text-3xl font-bold">No Acre Eras have closed yet.</h2>
+                <p className="mt-4 max-w-xl text-sm leading-7 text-muted">
+                  That is normal this early. Once a real Era finishes, it will live here with its original story and curation instead of being rewritten into something it was not.
+                </p>
+                <div className="mt-6 flex flex-wrap gap-3">
+                  <Link href="/" className="btn-primary">See what is current</Link>
+                  <Link href="/market" className="btn-secondary">Explore Market</Link>
+                </div>
+              </div>
+              <div className="rounded-[2rem] bg-sage-wash p-8 md:p-10">
+                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-leaf">What belongs here</p>
+                <div className="mt-5 space-y-3">
+                  {[
+                    "Past seasonal collections",
+                    "Popular discovery Eras",
+                    "Farm and local-market moments",
+                    "Family, pets, beauty, tech and more",
+                  ].map((item) => (
+                    <div key={item} className="rounded-xl bg-cream px-4 py-3 text-sm font-medium text-soil">
+                      {item}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </section>
           )}
         </div>
       </main>

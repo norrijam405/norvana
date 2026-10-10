@@ -1,11 +1,22 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { desc, inArray } from "drizzle-orm";
 import { db } from "@/db";
 import { marketRequests, products } from "@/db/schema";
 import { FarmLifeStory } from "@/components/acre-era/farm-life-story";
-import { BringItHere } from "@/components/acre-era/bring-it-here";
-import { EvolvingField } from "@/components/acre-era/evolving-field";
+import { JourneyHero } from "@/components/acre-era/journey-hero";
 import { Footer } from "@/components/footer";
+
+export const metadata: Metadata = {
+  title: "Market Era — Local food, farms, makers, and seasonal goods",
+  description: "Explore Acre Era Market for local farms, independent makers, seasonal food, useful staples, and the people behind the shelf.",
+  alternates: { canonical: "/market" },
+  openGraph: {
+    title: "Market Era — Local food, farms, makers, and seasonal goods | Acre Era",
+    description: "Explore Acre Era Market for local farms, independent makers, seasonal food, useful staples, and the people behind the shelf.",
+    url: "/market",
+  },
+};
 
 export const dynamic = "force-dynamic";
 
@@ -17,6 +28,14 @@ const PRODUCT_EMOJIS: Record<string, string> = {
   garden: "🌿",
   wellness: "🌾",
 };
+
+const PREVIEW_FARM_MEDIA =
+  process.env.VERCEL_ENV === "preview"
+    ? {
+        videoUrl: "https://cdn.pixabay.com/video/2022/09/04/130226-746395325_medium.mp4",
+        posterUrl: "https://cdn.pixabay.com/video/2022/09/04/130226-746395325_medium.jpg",
+      }
+    : { videoUrl: null, posterUrl: null };
 
 export default async function MarketPage() {
   let marketProducts: typeof products.$inferSelect[] = [];
@@ -56,32 +75,59 @@ export default async function MarketPage() {
   return (
     <>
       <main>
-        <section className="relative isolate overflow-hidden bg-leaf text-cream">
-          <EvolvingField />
-          <div className="relative mx-auto max-w-7xl px-4 py-20 sm:px-6 md:py-28 lg:px-8">
-            <p className="text-xs font-semibold uppercase tracking-[0.28em] text-wheat">
-              Acre Era Market
-            </p>
-            <h1 className="mt-4 max-w-4xl font-display text-5xl font-black leading-[.96] md:text-7xl">
-              Fresh should feel connected to where it came from.
-            </h1>
-            <p className="mt-6 max-w-2xl text-base leading-7 text-cream/75 md:text-lg">
-              This is the farm-and-grocery side of Acre Era: seasonal food, local growers, makers, and useful context without pretending every item is local when it is not.
-            </p>
-          </div>
-        </section>
+        <JourneyHero
+          variant="market"
+          eyebrow="Local farms · independent makers · everyday food"
+          title="Fresh food. Local stories."
+          accent="From field to front door."
+          copy="Acre Era Market connects seasonal food, local producers, useful everyday staples, and the roads that carry them into real life."
+          primaryHref="#market-shelf"
+          primaryLabel="Explore the Market"
+          secondaryHref="/growers"
+          secondaryLabel="For Growers"
+        />
 
         <div className="mx-auto max-w-7xl space-y-10 px-4 py-12 sm:px-6 lg:px-8">
-          <FarmLifeStory />
+          <FarmLifeStory
+            videoUrl={PREVIEW_FARM_MEDIA.videoUrl}
+            posterUrl={PREVIEW_FARM_MEDIA.posterUrl}
+          />
 
-          <section>
+          <section className="rounded-[2rem] border border-soil/10 bg-cream p-6 md:p-8">
+            <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-[0.22em] text-leaf">Behind the shelf</p>
+                <h2 className="mt-2 font-display text-3xl font-bold md:text-4xl">Food has people behind it.</h2>
+              </div>
+              <p className="max-w-xl text-sm leading-6 text-muted">
+                Market can give small operators a little room to be seen without turning the page into a documentary.
+              </p>
+            </div>
+
+            <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+              {[
+                ["🌾", "Growers", "Weather, harvest timing, labor, seasonality, and the daily work behind what looks simple on a shelf."],
+                ["🥩", "Butchers + meat shops", "Cuts, sourcing, cold-chain handling, prep, and the people keeping local meat moving safely."],
+                ["🍇", "Wineries + vineyards", "Land, seasons, fermentation, hospitality, and the small businesses built around place."],
+                ["🥖", "Bakers + makers", "Early mornings, small batches, neighborhood demand, and the craft behind everyday food."],
+              ].map(([icon, title, copy]) => (
+                <article key={title} className="rounded-2xl bg-bone p-5">
+                  <div className="text-3xl">{icon}</div>
+                  <h3 className="mt-3 font-display text-xl font-bold">{title}</h3>
+                  <p className="mt-3 text-sm leading-6 text-muted">{copy}</p>
+                </article>
+              ))}
+            </div>
+          </section>
+
+          <section id="market-shelf">
             <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
               <div>
                 <p className="text-xs font-semibold uppercase tracking-[0.22em] text-leaf">Market shelf</p>
                 <h2 className="mt-2 font-display text-3xl font-bold md:text-5xl">Fresh + useful.</h2>
               </div>
               <p className="max-w-lg text-sm leading-6 text-muted">
-                Only active catalog items in food, grocery, garden, or wellness lanes appear here. Local-source claims require separate evidence.
+                Fresh produce, pantry staples, local makers, and useful food-world finds can live together here. We keep source and availability clear without turning shopping into a technical report.
               </p>
             </div>
 
@@ -112,7 +158,7 @@ export default async function MarketPage() {
               <div className="mt-8 rounded-[1.5rem] border border-dashed border-soil/20 bg-cream p-8">
                 <h3 className="font-display text-xl font-bold">Market inventory is not published yet.</h3>
                 <p className="mt-2 max-w-2xl text-sm leading-6 text-muted">
-                  That is intentional. The page will not manufacture local-farm claims or demo inventory. Use Bring It Here below to create real demand evidence while partner sourcing is qualified.
+                  We are building this shelf from real availability instead of filling it with placeholders. As farms, makers, and food partners are ready, their products will appear here.
                 </p>
               </div>
             )}
@@ -134,7 +180,29 @@ export default async function MarketPage() {
             </section>
           ) : null}
 
-          <BringItHere />
+
+          <section className="rounded-[2rem] border border-soil/10 bg-cream p-6 md:p-8">
+            <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-[0.22em] text-leaf">More from the Market</p>
+                <h2 className="mt-2 font-display text-3xl font-bold md:text-4xl">Keep the shelf moving.</h2>
+              </div>
+              <Link href="/shop" className="btn-secondary">Browse all Goods</Link>
+            </div>
+
+            <div className="mt-6 grid gap-3 sm:grid-cols-3">
+              {[
+                ["Fresh changes fast", "Seasonality and real availability decide what belongs here."],
+                ["Distance changes cost", "Pickup, grouped routes, and delivery distance matter more than flashy promises."],
+                ["Small operators matter", "Growers, butchers, bakers, wineries, and makers are the people behind the shelf."],
+              ].map(([title, copy]) => (
+                <article key={title} className="rounded-2xl bg-bone p-4">
+                  <h3 className="font-display text-lg font-bold">{title}</h3>
+                  <p className="mt-2 text-sm leading-6 text-muted">{copy}</p>
+                </article>
+              ))}
+            </div>
+          </section>
 
           <section className="rounded-[2rem] border border-soil/10 bg-cream p-7 md:p-10">
             <p className="text-xs font-semibold uppercase tracking-[0.22em] text-leaf">For growers + local businesses</p>
@@ -142,13 +210,14 @@ export default async function MarketPage() {
               <div>
                 <h2 className="font-display text-3xl font-bold">A storefront should tell more than a SKU.</h2>
                 <p className="mt-4 text-sm leading-6 text-muted">
-                  Acre Era partner profiles are planned to show the producer story, service area, seasonal availability, pickup or delivery options, wholesale availability, and verified customer signal. Partner onboarding remains a governed lane; this page does not auto-activate sellers.
+                  Acre Era can give growers and local producers a place to show what they make, what is in season, where they serve, and how customers can actually get it. We would rather start with a small pilot and learn the real demand and delivery costs than overpromise.
                 </p>
               </div>
               <div className="grid gap-3">
-                {["Story + origin", "Seasonal availability", "Pickup / delivery truth", "Wholesale readiness", "Customer Voice"].map((item) => (
+                {["Story + origin", "Seasonal availability", "Pickup / delivery options", "Wholesale readiness", "Start with a small pilot"].map((item) => (
                   <div key={item} className="rounded-xl bg-sage-wash px-4 py-3 text-sm font-medium">{item}</div>
                 ))}
+                <Link href="/growers" className="btn-primary mt-2 text-center">For growers + producers</Link>
               </div>
             </div>
           </section>
