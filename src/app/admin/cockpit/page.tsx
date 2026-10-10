@@ -510,6 +510,9 @@ export default async function WatchtowerCockpitPage() {
                         candidateId={candidate.id}
                         lane={candidate.lane}
                         status={candidate.status}
+                        title={candidate.title}
+                        sourceName={candidate.sourceName}
+                        sourceUrl={candidate.sourceUrl}
                       />
 
                       <div className="mt-4 flex flex-wrap items-center gap-3">
