@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { MerchandisingPlaceButton } from "@/components/admin/merchandising-place-button";
 
 function placementForLane(lane: string) {
   const value = lane.toLowerCase();
@@ -15,10 +16,16 @@ export function ScoutCandidateActions({
   candidateId,
   lane,
   status,
+  title,
+  sourceName,
+  sourceUrl,
 }: {
   candidateId: number;
   lane: string;
   status: string;
+  title: string;
+  sourceName?: string | null;
+  sourceUrl?: string | null;
 }) {
   const router = useRouter();
   const [pending, setPending] = useState<string | null>(null);
@@ -68,14 +75,19 @@ export function ScoutCandidateActions({
           Keep
         </label>
 
-        <button
-          type="button"
+        <MerchandisingPlaceButton
           disabled={Boolean(pending)}
-          onClick={() => void act("STAGE")}
-          className="min-h-11 rounded-xl border border-emerald-300/20 bg-emerald-300/10 px-4 py-2 text-xs font-semibold text-emerald-100 disabled:opacity-50"
-        >
-          {pending === "STAGE" ? "Staging…" : staged ? `Staged · ${target}` : `▶ Place in ${target}`}
-        </button>
+          payload={{
+            name: title,
+            lane,
+            sourceType: /(farm|produce|fresh|grocery|food|market)/i.test(lane) ? "GROCERY" : "SUPPLIER",
+            sourceName: sourceName || null,
+            sourceKey: `watch-candidate:${candidateId}`,
+            routeEvidence: sourceUrl ? { sourceUrl } : {},
+          }}
+          label={staged ? `Re-place · ${target}` : `▶ Place in ${target}`}
+          onPlaced={() => void act("STAGE")}
+        />
 
         <button
           type="button"
