@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { SEEDED_SCOUT_PICKS } from "@/lib/watchtower/seeded-scout-picks";
+import { MerchandisingPlaceButton } from "@/components/admin/merchandising-place-button";
 
 const ITEMS = SEEDED_SCOUT_PICKS;
 const STORAGE_KEY = "acre-era-cj-route-check-r1";
@@ -12,6 +13,7 @@ type RouteState = {
   processingDays: string;
   deliveryMinDays: string;
   deliveryMaxDays: string;
+  productCost: string;
   shippingCost: string;
   notes: string;
 };
@@ -22,6 +24,7 @@ const EMPTY_ROUTE: RouteState = {
   processingDays: "",
   deliveryMinDays: "",
   deliveryMaxDays: "",
+  productCost: "",
   shippingCost: "",
   notes: "",
 };
@@ -35,6 +38,7 @@ function qualify(route: RouteState) {
   const processing = numeric(route.processingDays);
   const deliveryMin = numeric(route.deliveryMinDays);
   const deliveryMax = numeric(route.deliveryMaxDays);
+  const productCost = numeric(route.productCost);
   const shipping = numeric(route.shippingCost);
 
   const complete =
@@ -43,6 +47,8 @@ function qualify(route: RouteState) {
     processing !== null &&
     deliveryMin !== null &&
     deliveryMax !== null &&
+    productCost !== null &&
+    productCost >= 0 &&
     shipping !== null &&
     shipping >= 0;
 
@@ -209,7 +215,21 @@ export function CjRouteCheckPanel() {
               </label>
             </div>
 
-            <div className="mt-3 grid gap-3 md:grid-cols-[14rem_1fr]">
+            <div className="mt-3 grid gap-3 md:grid-cols-[14rem_14rem_1fr]">
+              <label>
+                <span className="text-[10px] uppercase tracking-[0.12em] text-white/35">Exact product cost USD</span>
+                <div className="mt-1 flex min-h-11 items-center rounded-xl border border-white/10 bg-white/[0.045] px-3">
+                  <span className="mr-2 text-white/35">$</span>
+                  <input
+                    inputMode="decimal"
+                    value={route.productCost}
+                    onChange={(event) => update(item.sku, { productCost: event.target.value })}
+                    placeholder="0.00"
+                    className="w-full bg-transparent text-sm text-white outline-none placeholder:text-white/20"
+                  />
+                </div>
+              </label>
+
               <label>
                 <span className="text-[10px] uppercase tracking-[0.12em] text-white/35">Calculated shipping USD</span>
                 <div className="mt-1 flex min-h-11 items-center rounded-xl border border-white/10 bg-white/[0.045] px-3">
@@ -240,6 +260,36 @@ export function CjRouteCheckPanel() {
               <p className="mt-1 text-[10px] text-white/35">
                 Supplier price observed earlier: {item.supplierPrice}. ROUTE VERIFIED still does not equal READY SUPPLIER; final landed economics, returns, rights, and readiness checks remain required.
               </p>
+            </div>
+
+            <div className="mt-3 flex flex-wrap items-start gap-3">
+              <MerchandisingPlaceButton
+                disabled={result.state !== "ROUTE_VERIFIED"}
+                payload={{
+                  name: item.name,
+                  lane: item.lane,
+                  sourceType: "SUPPLIER",
+                  sourceProviderSlug: "cjdropshipping",
+                  sourceName: "CJdropshipping",
+                  sourceKey: item.sku,
+                  supplierSku: item.sku,
+                  productCost: numeric(route.productCost),
+                  shippingCost: numeric(route.shippingCost),
+                  routeEvidence: {
+                    variant: route.variant,
+                    stock: route.stock,
+                    processingDays: numeric(route.processingDays),
+                    deliveryMinDays: numeric(route.deliveryMinDays),
+                    deliveryMaxDays: numeric(route.deliveryMaxDays),
+                    note: route.notes,
+                  },
+                }}
+              />
+              {result.state !== "ROUTE_VERIFIED" ? (
+                <p className="max-w-md text-[10px] leading-4 text-white/30">
+                  Finish the route evidence first. Placement stays locked until Watchtower can prove the exact variant, stock, processing, delivery, cost, and shipping.
+                </p>
+              ) : null}
             </div>
           </article>
         ))}
