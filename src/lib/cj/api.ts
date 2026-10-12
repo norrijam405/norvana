@@ -36,22 +36,38 @@ function parseExpiry(value?: string) {
   return Number.isFinite(parsed) ? parsed : Date.now() + 23 * 60 * 60 * 1000;
 }
 
+function isRateLimit(message: string, status: number) {
+  return status === 429 || /too many requests|qps limit|rate limit/i.test(message);
+}
+
 async function cjJson<T>(url: string, init: RequestInit = {}) {
-  await cjThrottle();
-  const response = await fetch(url, {
-    ...init,
-    cache: "no-store",
-    headers: {
-      ...(init.headers || {}),
-      "content-type": "application/json",
-    },
-  });
-  const payload = (await response.json().catch(() => null)) as CjEnvelope<T> | null;
-  if (!response.ok || !payload || payload.result === false || payload.success === false) {
+  let lastMessage = "CJ request failed.";
+  for (let attempt = 0; attempt < 4; attempt += 1) {
+    await cjThrottle();
+    const response = await fetch(url, {
+      ...init,
+      cache: "no-store",
+      headers: {
+        ...(init.headers || {}),
+        "content-type": "application/json",
+      },
+    });
+    const payload = (await response.json().catch(() => null)) as CjEnvelope<T> | null;
     const message = payload?.message || `CJ request failed (${response.status}).`;
+    lastMessage = message;
+
+    if (response.ok && payload && payload.result !== false && payload.success !== false) {
+      return payload;
+    }
+
+    if (isRateLimit(message, response.status) && attempt < 3) {
+      await new Promise((resolve) => setTimeout(resolve, 1200 + attempt * 500));
+      continue;
+    }
+
     throw new Error(message);
   }
-  return payload;
+  throw new Error(lastMessage);
 }
 
 export async function getCjAccessToken() {
