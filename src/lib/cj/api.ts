@@ -22,6 +22,13 @@ type CachedToken = {
 };
 
 let tokenCache: CachedToken | null = null;
+let lastCjRequestAt = 0;
+
+async function cjThrottle() {
+  const waitMs = Math.max(0, 1050 - (Date.now() - lastCjRequestAt));
+  if (waitMs > 0) await new Promise((resolve) => setTimeout(resolve, waitMs));
+  lastCjRequestAt = Date.now();
+}
 
 function parseExpiry(value?: string) {
   if (!value) return Date.now() + 23 * 60 * 60 * 1000;
@@ -30,6 +37,7 @@ function parseExpiry(value?: string) {
 }
 
 async function cjJson<T>(url: string, init: RequestInit = {}) {
+  await cjThrottle();
   const response = await fetch(url, {
     ...init,
     cache: "no-store",
@@ -122,15 +130,19 @@ export type CjFreightRow = {
 
 export async function loadCjProductBySku(sku: string) {
   const q = encodeURIComponent(sku);
-  const productPayload = await cjAuthed<CjProduct>(`/product/query?productSku=${q}`);
+  let productPayload: CjEnvelope<CjProduct>;
+  try {
+    productPayload = await cjAuthed<CjProduct>(`/product/query?productSku=${q}`);
+  } catch {
+    productPayload = await cjAuthed<CjProduct>(`/product/query?variantSku=${q}`);
+  }
   const product = productPayload.data;
   if (!product?.pid) throw new Error("CJ did not return a product for that SKU.");
 
-  const variantsPayload = await cjAuthed<CjVariant[]>(`/product/variant/query?productSku=${q}`);
   return {
     product,
-    variants: Array.isArray(variantsPayload.data) ? variantsPayload.data : product.variants || [],
-    requestId: variantsPayload.requestId || productPayload.requestId || null,
+    variants: Array.isArray(product.variants) ? product.variants : [],
+    requestId: productPayload.requestId || null,
   };
 }
 
