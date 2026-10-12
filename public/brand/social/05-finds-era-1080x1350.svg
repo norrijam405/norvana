@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1080 1350" role="img" aria-labelledby="title desc">
+  <title id="title">Finds Era</title>
+  <desc id="desc">Acre Era Finds launch graphic for curated partner and premium discoveries.</desc>
+  <rect width="1080" height="1350" fill="#242720"/>
+  <circle cx="870" cy="170" r="260" fill="#A45E45" opacity=".24"/>
+  <circle cx="160" cy="1170" r="300" fill="#E8C68A" opacity=".12"/>
+  <text x="80" y="110" fill="#E8C68A" font-family="Arial, Helvetica, sans-serif" font-size="28" font-weight="700" letter-spacing="6">FINDS ERA</text>
+  <text x="80" y="290" fill="#F6F1E7" font-family="Arial, Helvetica, sans-serif" font-size="90" font-weight="900">GOOD PRODUCTS</text>
+  <text x="80" y="395" fill="#F6F1E7" font-family="Arial, Helvetica, sans-serif" font-size="90" font-weight="900">CAN COME FROM</text>
+  <text x="80" y="500" fill="#E8C68A" font-family="Arial, Helvetica, sans-serif" font-size="90" font-weight="900">MORE THAN ONE ROAD.</text>
+
+  <g transform="translate(80 660)">
+    <rect width="920" height="160" rx="34" fill="#F6F1E7"/>
+    <text x="38" y="62" fill="#A45E45" font-family="Arial, Helvetica, sans-serif" font-size="24" font-weight="700" letter-spacing="4">CURATED, NOT DUMPED</text>
+    <text x="38" y="112" fill="#2F3026" font-family="Arial, Helvetica, sans-serif" font-size="32" font-weight="700">Premium · name-brand · specialty · hard-to-find</text>
+  </g>
+
+  <g transform="translate(80 850)">
+    <rect width="920" height="160" rx="34" fill="#E8C68A"/>
+    <text x="38" y="62" fill="#2F3026" font-family="Arial, Helvetica, sans-serif" font-size="24" font-weight="700" letter-spacing="4">CHECKOUT TRUTH</text>
+    <text x="38" y="112" fill="#2F3026" font-family="Arial, Helvetica, sans-serif" font-size="31" font-weight="700">If a partner owns checkout, shipping, returns, or warranty — we say so.</text>
+  </g>
+
+  <text x="80" y="1200" fill="#F6F1E7" font-family="Arial, Helvetica, sans-serif" font-size="30">Explore Finds Era · acreera.com</text>
+</svg>

@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1080 1350" role="img" aria-labelledby="title desc">
+  <title id="title">What is Acre Era?</title>
+  <desc id="desc">A branded Acre Era launch card introducing the connected shopping world.</desc>
+  <rect width="1080" height="1350" fill="#F6F1E7"/>
+  <circle cx="905" cy="120" r="290" fill="#E8C68A" opacity=".22"/>
+  <circle cx="120" cy="1210" r="320" fill="#526642" opacity=".12"/>
+  <g transform="translate(92 88) scale(2.2)">
+    <path fill="#2F3026" d="M5 54 24 8h9l10 24V8h16v7H50v10h8v7h-8v15h10v7H42L29 20 15 54H5Z"/>
+    <path fill="#E8C68A" d="M15 42h30c5.8 0 10.3-1.8 14-5.4v7.8C55 48.1 50.2 50 44.7 50H12l3-8Z"/>
+    <path fill="#526642" d="M24 37c4.2-8.1 9.2-13.2 15-15.2-1.5 6.6-5.7 12.1-12.6 16.4L24 37Z"/>
+  </g>
+  <text x="92" y="300" fill="#526642" font-family="Arial, Helvetica, sans-serif" font-size="30" font-weight="700" letter-spacing="7">START HERE</text>
+  <text x="92" y="430" fill="#2F3026" font-family="Arial, Helvetica, sans-serif" font-size="92" font-weight="800">WHAT IS</text>
+  <text x="92" y="535" fill="#2F3026" font-family="Arial, Helvetica, sans-serif" font-size="112" font-weight="900">ACRE ERA?</text>
+  <text x="92" y="650" fill="#6F7068" font-family="Arial, Helvetica, sans-serif" font-size="38">Fresh food. Everyday goods.</text>
+  <text x="92" y="705" fill="#6F7068" font-family="Arial, Helvetica, sans-serif" font-size="38">Premium finds. Changing Eras.</text>
+  <path d="M92 835C300 755 520 770 714 830s258 69 366 26v196c-161 58-329 44-511-8s-319-42-477 30Z" fill="#526642"/>
+  <path d="M92 920c220-56 420-39 605 4s271 48 383 17v126c-147 40-306 31-473-11s-328-36-515 22Z" fill="#E8C68A" opacity=".9"/>
+  <text x="92" y="1200" fill="#2F3026" font-family="Arial, Helvetica, sans-serif" font-size="30" font-weight="700" letter-spacing="3">ONE BUSINESS · DIFFERENT MOMENTS</text>
+  <text x="92" y="1260" fill="#526642" font-family="Arial, Helvetica, sans-serif" font-size="30">acreera.com</text>
+</svg>

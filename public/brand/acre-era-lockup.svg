@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 80" role="img" aria-labelledby="title desc">
+  <title id="title">Acre Era</title>
+  <desc id="desc">Acre Era AE monogram with wordmark.</desc>
+  <g transform="translate(8 8) scale(.95)">
+    <path fill="#2F3026" d="M5 54 24 8h9l10 24V8h16v7H50v10h8v7h-8v15h10v7H42L29 20 15 54H5Z"/>
+    <path fill="#E8C68A" d="M15 42h30c5.8 0 10.3-1.8 14-5.4v7.8C55 48.1 50.2 50 44.7 50H12l3-8Z"/>
+    <path fill="#526642" d="M24 37c4.2-8.1 9.2-13.2 15-15.2-1.5 6.6-5.7 12.1-12.6 16.4L24 37Z"/>
+  </g>
+  <text x="82" y="49" fill="#2F3026" font-family="Arial, Helvetica, sans-serif" font-size="34" font-weight="800" letter-spacing="1.5">ACRE ERA</text>
+</svg>

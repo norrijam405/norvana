@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1500 500" role="img" aria-labelledby="title desc">
+  <title id="title">Acre Era social banner</title>
+  <desc id="desc">Acre Era brand banner with AE monogram and open horizon motif.</desc>
+  <rect width="1500" height="500" fill="#2F3026"/>
+  <circle cx="1210" cy="90" r="260" fill="#526642" opacity=".22"/>
+  <circle cx="1340" cy="430" r="330" fill="#E8C68A" opacity=".12"/>
+  <path d="M0 405C230 330 390 356 580 397s382 59 604 10 225-107 316-116v209H0Z" fill="#405134"/>
+  <path d="M0 432c220-57 400-41 595 4s381 48 581 6 232-75 324-82v140H0Z" fill="#E8C68A" opacity=".42"/>
+  <g transform="translate(110 96) scale(4.6)">
+    <path fill="#F6F1E7" d="M5 54 24 8h9l10 24V8h16v7H50v10h8v7h-8v15h10v7H42L29 20 15 54H5Z"/>
+    <path fill="#E8C68A" d="M15 42h30c5.8 0 10.3-1.8 14-5.4v7.8C55 48.1 50.2 50 44.7 50H12l3-8Z"/>
+    <path fill="#A9B88E" d="M24 37c4.2-8.1 9.2-13.2 15-15.2-1.5 6.6-5.7 12.1-12.6 16.4L24 37Z"/>
+  </g>
+  <text x="455" y="205" fill="#F6F1E7" font-family="Arial, Helvetica, sans-serif" font-size="74" font-weight="800" letter-spacing="2">ACRE ERA</text>
+  <text x="458" y="270" fill="#E8C68A" font-family="Arial, Helvetica, sans-serif" font-size="28" font-weight="700" letter-spacing="5">FROM OPEN ROADS TO OPEN MARKETS</text>
+  <text x="458" y="325" fill="#F6F1E7" opacity=".76" font-family="Arial, Helvetica, sans-serif" font-size="24">Fresh food · everyday goods · premium finds · changing Eras</text>
+</svg>

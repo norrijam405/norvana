@@ -1,0 +1,25 @@
+{
+  "id": "/watchtower",
+  "name": "Acre Era Watchtower",
+  "short_name": "Watchtower",
+  "description": "Acre Era owner cockpit for orders, money, farms, suppliers, connections, and alerts.",
+  "start_url": "/watchtower",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#0d0f0c",
+  "theme_color": "#0d0f0c",
+  "icons": [
+    {
+      "src": "/watchtower-icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "shortcuts": [
+    { "name": "Cockpit", "url": "/admin/cockpit" },
+    { "name": "Orders", "url": "/admin/orders" },
+    { "name": "Farms", "url": "/admin/producers" },
+    { "name": "Alerts", "url": "/admin/notifications" }
+  ]
+}

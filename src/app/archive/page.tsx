@@ -1,27 +1,27 @@
+import { and, desc, eq, inArray } from "drizzle-orm";
 import { db } from "@/db";
-import { nicheVolumes, products } from "@/db/schema";
-import { asc, eq, sql } from "drizzle-orm";
+import { eras } from "@/db/schema";
 import { ArchiveClient } from "@/components/archive-client";
 
 export const dynamic = "force-dynamic";
 
 export default async function ArchivePage() {
-  let volumes: (typeof nicheVolumes.$inferSelect & { productCount: number })[] = [];
+  let archivedEras: typeof eras.$inferSelect[] = [];
 
   try {
-    const vols = await db.select().from(nicheVolumes).orderBy(asc(nicheVolumes.volumeNumber));
-    volumes = await Promise.all(
-      vols.map(async (v) => {
-        const [count] = await db
-          .select({ count: sql<number>`count(*)::int` })
-          .from(products)
-          .where(eq(products.volumeNumber, v.volumeNumber));
-        return { ...v, productCount: count.count };
-      })
-    );
+    archivedEras = await db
+      .select()
+      .from(eras)
+      .where(
+        and(
+          eq(eras.visibility, "PUBLIC"),
+          inArray(eras.lifecycleState, ["CLOSED", "ARCHIVED"])
+        )
+      )
+      .orderBy(desc(eras.endAt), desc(eras.updatedAt));
   } catch {
-    // Tables may not exist
+    // Preview may not have an applied Era schema/data source yet.
   }
 
-  return <ArchiveClient volumes={volumes} />;
+  return <ArchiveClient eras={archivedEras} />;
 }

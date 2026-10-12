@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { and, asc, eq } from "drizzle-orm";
 import { db } from "@/db";
 import {
@@ -6,6 +7,17 @@ import {
   products,
 } from "@/db/schema";
 import { PartnerMarketClient } from "@/components/partner-market-client";
+
+export const metadata: Metadata = {
+  title: "Finds Era — Curated partner and name-brand discoveries",
+  description: "Discover curated partner finds, premium products, specialty goods, and name-brand recommendations with clear checkout and ownership paths.",
+  alternates: { canonical: "/partners" },
+  openGraph: {
+    title: "Finds Era — Curated partner and name-brand discoveries | Acre Era",
+    description: "Discover curated partner finds, premium products, specialty goods, and name-brand recommendations with clear checkout and ownership paths.",
+    url: "/partners",
+  },
+};
 
 export const dynamic = "force-dynamic";
 

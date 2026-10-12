@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import {
   ADMIN_SESSION_COOKIE,
   ADMIN_SESSION_MAX_AGE,
+  ADMIN_REMEMBERED_SESSION_MAX_AGE,
   adminSessionConfigured,
   currentAdminSessionFromRequest,
   createAdminSessionToken,
@@ -83,6 +84,7 @@ export async function POST(req: NextRequest) {
 
   const password =
     typeof parsed.body.password === "string" ? parsed.body.password : "";
+  const rememberDevice = parsed.body.rememberDevice === true;
 
   let valid = false;
   try {
@@ -117,15 +119,22 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const response = NextResponse.json({ authenticated: true });
+  const maxAge = rememberDevice
+    ? ADMIN_REMEMBERED_SESSION_MAX_AGE
+    : ADMIN_SESSION_MAX_AGE;
+  const response = NextResponse.json({
+    authenticated: true,
+    remembered: rememberDevice,
+    maxAgeSeconds: maxAge,
+  });
   response.cookies.set({
     name: ADMIN_SESSION_COOKIE,
-    value: createAdminSessionToken(sessionVersion),
+    value: createAdminSessionToken(sessionVersion, Date.now(), maxAge),
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
     sameSite: "strict",
     path: "/",
-    maxAge: ADMIN_SESSION_MAX_AGE,
+    maxAge,
   });
   return response;
 }

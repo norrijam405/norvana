@@ -19,12 +19,19 @@ export const WATCHTOWER_JOB_TEMPLATES: WatchtowerJobTemplate[] = [
     category: "sourcing",
     description: "Find $0/month, pay-per-order, and low-fixed-cost supplier/fulfillment options.",
     instructions:
-      "Find genuine free-to-sign-up or usable $0/month suppliers and fulfillment partners. Verify product cost, shipping, fees, MOQ, returns, integration options, and whether the free tier is actually usable for fulfillment. Prefer supplier-direct fulfillment and no prepaid inventory. Save only material candidates.",
+      "Find genuine free-to-sign-up or usable $0/month suppliers and fulfillment partners. Verify product cost, shipping, fees, MOQ, returns, integration options, and whether the free tier is actually usable for fulfillment. Prefer supplier-direct fulfillment and no prepaid inventory. For product candidates, gather the exact fields required by the Product Readiness Gate: provider identity, authorization state, image rights, provenance, customer total price, delivery window, return path, stock state, and durable evidence reference. DISCOVERED does not mean READY. Save only material candidates.",
     authority: "RECOMMEND",
     cadenceMinutes: 1440,
     budgetCents: 0,
     sourcePolicy: {
       preferOfficialSources: true,
+      preferLiveSupplierProductPages: true,
+      prioritizeSimpleLowReturnRiskProducts: true,
+      requireShippingDestinationCheck: true,
+      zeroShippingWithoutCalculatedRouteMeansUnknown: true,
+      dashInventoryMeansUnknown: true,
+      requireStockState: true,
+      requireReturnPath: true,
       rejectTrialsPresentedAsFree: true,
       requireCostBreakdown: true,
     },
@@ -158,15 +165,27 @@ export const WATCHTOWER_INTELLIGENCE_R2_JOB_TEMPLATES: WatchtowerJobTemplate[] =
     category: "affiliate",
     description: "Find approved referral programs, product feeds, creative rights, and commission economics.",
     instructions:
-      "Research brand and retailer affiliate programs suitable for Acre Era. Capture approval requirements, allowed channels, product-feed availability, permitted image/creative use, deep-link rules, disclosure requirements, commission basis, exclusions, cookie window, returns/cancellation treatment, payout timing, geographic limits, and official checkout hosts. Do not scrape or reuse product imagery without program rights. Referral recommendations must keep checkout with the partner and disclose Acre Era's commission relationship.",
+      "Research and rank affiliate programs suitable for Acre Era using the logged-in publisher directory and official merchant terms as the source of truth. Public network marketing pages are discovery hints only and must never be treated as proof that a merchant is available to this U.S. publisher account. For each real program capture exact program identity, region, joinability, approval requirement, conversion rate, approval rate, EPC or equivalent earnings metric, payment status, average payment time, product-feed availability, mobile optimization, allowed channels, permitted image/creative use, deep-link rules, disclosure requirements, commission basis, exclusions, cookie window, returns/cancellation treatment, geographic limits, and official checkout hosts. Score both commercial quality and Acre Era fit. Classify each program as DISCOVERED, JOIN_CANDIDATE, HOLD, or REJECT. Penalize wrong-region programs, misleading global-only availability, weak payment status, excessive payment delay, weak approval/conversion evidence, missing feed/deep-link capability, poor customer experience, or programs that add affiliate clutter without improving the shopping experience. Do not scrape or reuse product imagery without program rights. Referral recommendations must keep checkout with the partner and disclose Acre Era's commission relationship.",
     authority: "RECOMMEND",
     cadenceMinutes: 1440,
     budgetCents: 0,
     sourcePolicy: {
-      preferOfficialProgramTerms: true,
+      preferLoggedInPublisherDirectory: true,
+      publicNetworkBrandListsAreDiscoveryOnly: true,
+      requireExactProgramIdentity: true,
+      requireRegionFit: true,
+      requireJoinabilityEvidence: true,
+      requireConversionAndApprovalMetricsWhenAvailable: true,
+      requirePaymentStatusAndTimingWhenAvailable: true,
+      requireFeedAndDeepLinkEvidenceWhenAvailable: true,
       requireImageRightsEvidence: true,
       requireCheckoutHostAllowlist: true,
       requireCommissionEconomics: true,
+      requireCustomerExperienceFit: true,
+      requireAcreEraMerchandisingFit: true,
+      classifications: ["DISCOVERED", "JOIN_CANDIDATE", "HOLD", "REJECT"],
+      requireProductReadinessGateFields: true,
+      discoveredDoesNotMeanReady: true,
       noAutoEnrollment: true,
       noAutoPublish: true,
     },
@@ -221,7 +240,67 @@ export const WATCHTOWER_INTELLIGENCE_R2_JOB_TEMPLATES: WatchtowerJobTemplate[] =
   },
 ];
 
+export const WATCHTOWER_INTELLIGENCE_DELIVERY_R0_JOB_TEMPLATES: WatchtowerJobTemplate[] = [
+  {
+    slug: "acre-era-demand-learning-watch",
+    name: "Acre Era Demand Learning",
+    category: "demand",
+    description: "Combine internal customer behavior with external demand observations to improve product and Era selection.",
+    instructions:
+      "Observe requests, sell-through, repeat-purchase behavior, Customer Voice, search/trend evidence, and demand velocity. Preserve sample size, freshness, uncertainty, and evidence references. External popularity alone must not override Acre Era's own observed customer behavior. Recommend candidates only; never publish, buy, or change price.",
+    authority: "RECOMMEND",
+    cadenceMinutes: 1440,
+    budgetCents: 0,
+    sourcePolicy: {
+      preserveSampleSize: true,
+      preserveFreshness: true,
+      preferInternalObservedDemandOverHype: true,
+      noAutoPublish: true,
+      noAutoBuy: true,
+      noAutoPriceChange: true,
+    },
+  },
+  {
+    slug: "acre-era-delivery-reliability-watch",
+    name: "Acre Era Delivery Reliability",
+    category: "logistics",
+    description: "Learn supplier, carrier, service-level, and geography delivery performance from real outcomes.",
+    instructions:
+      "Observe handling time, carrier acceptance, transit duration, on-time rate, tracking gaps, loss, damage, destination region, and customer promise accuracy. Produce conservative delivery predictions and flag degrading routes. Never create shipments, change carriers, refund, reship, or contact customers automatically.",
+    authority: "RECOMMEND",
+    cadenceMinutes: 1440,
+    budgetCents: 0,
+    sourcePolicy: {
+      requireOutcomeEvidence: true,
+      segmentBySupplierCarrierGeography: true,
+      preferConservativePromises: true,
+      noAutoShipment: true,
+      noAutoRefund: true,
+      noAutoReship: true,
+    },
+  },
+  {
+    slug: "acre-era-producer-network-watch",
+    name: "Acre Era Producer Network",
+    category: "local",
+    description: "Discover farms, food hubs, cooperatives, distributors, and makers that could expand Acre Era supply.",
+    instructions:
+      "Discover producer prospects using official directories and reputable producer networks. Capture service area, product categories, seasonality, wholesale availability, lead time, fulfillment modes, cold-chain needs, national-shipping capability, and contact path. Discovery is not partnership approval. Never contact, enroll, represent, or publish a producer automatically.",
+    authority: "OBSERVE",
+    cadenceMinutes: 10080,
+    budgetCents: 0,
+    sourcePolicy: {
+      preferOfficialDirectories: true,
+      discoveryOnly: true,
+      noAutoContact: true,
+      noAutoEnrollment: true,
+      noAutoPublish: true,
+    },
+  },
+];
+
 export const WATCHTOWER_ALL_JOB_TEMPLATES: WatchtowerJobTemplate[] = [
   ...WATCHTOWER_JOB_TEMPLATES,
   ...WATCHTOWER_INTELLIGENCE_R2_JOB_TEMPLATES,
+  ...WATCHTOWER_INTELLIGENCE_DELIVERY_R0_JOB_TEMPLATES,
 ];

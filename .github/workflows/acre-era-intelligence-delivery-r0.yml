@@ -1,0 +1,141 @@
+name: Acre Era Intelligence Delivery R0
+
+on:
+  push:
+    branches:
+      - "feature/2026-10-04-acre-era-intelligence-delivery-r0"
+  pull_request:
+    branches:
+      - "feature/2026-10-04-acre-era-cinematic-renderer-r0"
+
+permissions:
+  contents: read
+
+jobs:
+  intelligence-delivery-r0:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: intelligence_delivery_ci
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d intelligence_delivery_ci"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 12
+
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/intelligence_delivery_ci
+      PGPASSWORD: postgres
+      NEXT_TELEMETRY_DISABLED: "1"
+
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: 22
+
+      - name: Install dependencies
+        run: npm install --ignore-scripts --no-audit --no-fund
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Intelligence + delivery tests
+        run: npm run test:intelligence-delivery
+
+      - name: Apply intelligence delivery migrations
+        run: |
+          psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f drizzle/0018_acre_era_intelligence_delivery_r0.sql
+          psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f drizzle/0019_producer_interest_inbox_r0.sql
+          psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f drizzle/0020_producer_conversation_notes_r0.sql
+
+      - name: Verify persistence invariants
+        run: |
+          set -euo pipefail
+
+          psql "$DATABASE_URL" -v ON_ERROR_STOP=1 <<'SQL'
+          INSERT INTO demand_observations
+            (subject_type, subject_key, internal_requests, evidence_ref, observed_at)
+          VALUES
+            ('PRODUCT', 'synthetic-grapes', 12, 'synthetic:ci:demand', now());
+
+          INSERT INTO delivery_observations
+            (carrier, service_level, origin_region, destination_region, handling_hours, transit_hours,
+             delivered_on_time, evidence_ref, observed_at)
+          VALUES
+            ('synthetic-carrier', 'scheduled-route', 'OKC-N', 'OKC-S', 4, 3, true, 'synthetic:ci:delivery', now());
+
+          INSERT INTO darwin_evaluations
+            (subject_type, subject_key, candidate_key, eligible, fitness_score, evidence_refs)
+          VALUES
+            ('PRODUCT', 'synthetic-grapes', 'route-a', true, 88, '["synthetic:ci:darwin"]'::json);
+
+          INSERT INTO local_producers
+            (name, service_areas, product_categories, fulfillment_modes)
+          VALUES
+            ('Synthetic Farm', '["Oklahoma City"]'::json, '["produce"]'::json, '["CUSTOMER_PICKUP"]'::json);
+
+          UPDATE local_producers
+          SET pilot_interest = 'YES', updated_at = now()
+          WHERE name = 'Synthetic Farm';
+
+          INSERT INTO producer_interest_submissions
+            (business_name, contact_name, email, location, product_categories, fulfillment_modes, pain_point)
+          VALUES
+            ('Synthetic Grower', 'Test Owner', 'grower@example.test', 'Oklahoma City, OK',
+             '["produce"]'::json, '["CUSTOMER_PICKUP"]'::json, 'Synthetic delivery challenge');
+
+          INSERT INTO producer_conversation_notes
+            (business_name, contact_name, contact_method, conversation_stage, answers, operator_summary, next_step, pilot_recommendation)
+          VALUES
+            ('Synthetic Grower', 'Test Owner', 'PHONE', 'DISCOVERY',
+             '{"products":"produce","delivery":"pickup"}'::json,
+             'Synthetic conversation note', 'Call Friday', 'PROMISING');
+          SQL
+
+          if psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -c             "UPDATE demand_observations SET internal_requests = 99 WHERE subject_key = 'synthetic-grapes';"; then
+            echo "append-only demand observation mutation unexpectedly succeeded"
+            exit 1
+          fi
+
+          if psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -c             "DELETE FROM delivery_observations WHERE carrier = 'synthetic-carrier';"; then
+            echo "append-only delivery observation deletion unexpectedly succeeded"
+            exit 1
+          fi
+
+          if psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -c             "UPDATE darwin_evaluations SET fitness_score = 1 WHERE candidate_key = 'route-a';"; then
+            echo "append-only Darwin evaluation mutation unexpectedly succeeded"
+            exit 1
+          fi
+
+          if psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -c             "UPDATE producer_interest_submissions SET status = 'APPROVED' WHERE email = 'grower@example.test';"; then
+            echo "append-only producer interest mutation unexpectedly succeeded"
+            exit 1
+          fi
+
+          test "$(psql "$DATABASE_URL" -Atc "SELECT pilot_interest FROM local_producers WHERE name='Synthetic Farm'")" = "YES"
+          if psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -c             "UPDATE producer_conversation_notes SET pilot_recommendation = 'NOT_A_FIT' WHERE business_name = 'Synthetic Grower';"; then
+            echo "append-only producer conversation mutation unexpectedly succeeded"
+            exit 1
+          fi
+
+          test "$(psql "$DATABASE_URL" -Atc "SELECT status FROM producer_interest_submissions WHERE email='grower@example.test'")" = "NEW"
+          test "$(psql "$DATABASE_URL" -Atc "SELECT pilot_recommendation FROM producer_conversation_notes WHERE business_name='Synthetic Grower'")" = "PROMISING"
+
+      - name: Existing route engine regression
+        run: npm run test:intent-routes
+
+      - name: Watchtower intelligence regression
+        run: npm run test:watchtower-signals
+
+      - name: Era Engine regression
+        run: npm run test:era-engine

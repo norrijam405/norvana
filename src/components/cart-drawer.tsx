@@ -26,13 +26,13 @@ export function CartDrawer() {
             animate={{ x: 0 }}
             exit={{ x: "100%" }}
             transition={{ type: "spring", damping: 30, stiffness: 300 }}
-            className="fixed right-0 top-0 h-full w-full max-w-md bg-surface z-50 shadow-2xl flex flex-col"
+            className="fixed right-0 top-0 z-50 flex h-dvh w-full max-w-md flex-col bg-surface shadow-2xl"
           >
-            <div className="flex items-center justify-between p-6 border-b border-border">
+            <div className="flex items-center justify-between border-b border-border p-4 sm:p-6">
               <h2 className="font-display text-lg font-semibold">Your Cart</h2>
               <button
                 onClick={() => setIsOpen(false)}
-                className="p-2 hover:bg-surface-hover rounded-lg transition-colors"
+                className="flex min-h-11 min-w-11 items-center justify-center rounded-lg p-2 transition-colors hover:bg-surface-hover"
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M6 18L18 6M6 6l12 12" />
@@ -41,7 +41,7 @@ export function CartDrawer() {
             </div>
 
             {!freeShipping && subtotal > 0 && (
-              <div className="px-6 py-3 bg-indigo-accent/5 border-b border-border">
+              <div className="border-b border-border bg-indigo-accent/5 px-4 py-3 sm:px-6">
                 <p className="text-sm text-muted">
                   Add <span className="font-semibold text-indigo-accent">${remaining.toFixed(2)}</span> more for free shipping!
                 </p>
@@ -54,7 +54,7 @@ export function CartDrawer() {
               </div>
             )}
 
-            <div className="flex-1 overflow-y-auto p-6 space-y-4">
+            <div className="flex-1 space-y-4 overflow-y-auto p-4 sm:p-6">
               {items.length === 0 ? (
                 <div className="text-center py-12">
                   <p className="text-muted text-sm">Your cart is empty</p>
@@ -77,7 +77,7 @@ export function CartDrawer() {
                       <div className="flex items-center gap-2 mt-2">
                         <button
                           onClick={() => updateQuantity(item.id, item.quantity - 1)}
-                          className="w-7 h-7 flex items-center justify-center border border-border rounded text-sm hover:bg-surface-hover"
+                          className="flex h-9 w-9 items-center justify-center rounded border border-border text-sm hover:bg-surface-hover"
                         >
                           −
                         </button>
@@ -102,7 +102,7 @@ export function CartDrawer() {
             </div>
 
             {items.length > 0 && (
-              <div className="p-6 border-t border-border space-y-4">
+              <div className="space-y-4 border-t border-border p-4 pb-[calc(1rem+env(safe-area-inset-bottom))] sm:p-6">
                 <div className="flex justify-between">
                   <span className="text-sm text-muted">Subtotal</span>
                   <span className="font-semibold">${subtotal.toFixed(2)}</span>

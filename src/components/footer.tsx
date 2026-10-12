@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
 
@@ -30,13 +31,15 @@ export function Footer() {
         <div className="grid gap-12 md:grid-cols-4">
           <div className="md:col-span-2">
             <div className="flex items-center gap-2 text-cream">
-              <span className="flex h-9 w-9 items-center justify-center rounded-full bg-wheat text-sm font-black text-soil">AE</span>
+              <span className="flex h-9 w-9 items-center justify-center overflow-hidden rounded-[0.7rem] bg-cream ring-1 ring-cream/10">
+                <Image src="/brand/acre-era-mark.svg" alt="" width={36} height={36} />
+              </span>
               <h3 className="font-display text-xl font-black tracking-tight">ACRE ERA</h3>
             </div>
             <p className="mt-4 max-w-md text-sm leading-6">
-              Groceries, local producers, useful goods, and curious finds—curated with visible reasons and clearer customer signal.
+              Fresh food, everyday goods, premium finds, and changing Eras — one shopping world built around what people actually want.
             </p>
-            <form onSubmit={handleSubscribe} className="mt-6 flex max-w-lg gap-2">
+            <form onSubmit={handleSubscribe} className="mt-6 flex max-w-lg flex-col gap-2 sm:flex-row">
               {submitted ? (
                 <p className="text-sm text-wheat">You’re on the list.</p>
               ) : (
@@ -45,11 +48,11 @@ export function Footer() {
                     type="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    placeholder="Email for new Eras + local drops"
+                    placeholder="Email for Era Drop + local updates"
                     className="min-w-0 flex-1 rounded-full border border-cream/15 bg-cream/[0.08] px-4 py-2.5 text-sm text-cream placeholder:text-cream/35 focus:outline-none focus:ring-2 focus:ring-wheat"
                     required
                   />
-                  <button type="submit" className="rounded-full bg-wheat px-5 py-2.5 text-sm font-semibold text-soil transition hover:bg-cream">
+                  <button type="submit" className="min-h-11 w-full rounded-full bg-wheat px-5 py-2.5 text-sm font-semibold text-soil transition hover:bg-cream sm:w-auto">
                     Join
                   </button>
                 </>
@@ -64,24 +67,27 @@ export function Footer() {
               <li><Link href="/shop" className="hover:text-cream">Goods</Link></li>
               <li><Link href="/partners" className="hover:text-cream">Partner Finds</Link></li>
               <li><Link href="/partners/archive" className="hover:text-cream">Partner Archive</Link></li>
-              <li><Link href="/#era-drop" className="hover:text-cream">Era Drops</Link></li>
+              <li><Link href="/era-drops" className="hover:text-cream">Era Drop</Link></li>
               <li><Link href="/archive" className="hover:text-cream">Archive</Link></li>
+              <li><Link href="/how-it-works" className="hover:text-cream">How Acre Era works</Link></li>
             </ul>
           </div>
 
           <div>
-            <h4 className="mb-4 text-xs font-semibold uppercase tracking-[0.2em] text-wheat">Acre Era</h4>
+            <h4 className="mb-4 text-xs font-semibold uppercase tracking-[0.2em] text-wheat">Grow with Acre Era</h4>
             <ul className="space-y-2 text-sm">
-              <li><Link href="/#market" className="hover:text-cream">Fresh + local</Link></li>
-              <li><Link href="/#market" className="hover:text-cream">Farm facts</Link></li>
-              <li><Link href="/admin" className="hover:text-cream">Watchtower admin</Link></li>
+              <li><Link href="/growers" className="hover:text-cream">For growers + producers</Link></li>
+              <li><Link href="/growers#pilot" className="hover:text-cream">Start a pilot</Link></li>
+              <li><Link href="/growers#interest" className="hover:text-cream">Producer interest</Link></li>
+              <li><Link href="/growers#delivery" className="hover:text-cream">How delivery works</Link></li>
+              <li><Link href="/market#farm-facts" className="hover:text-cream">Farm facts</Link></li>
             </ul>
           </div>
         </div>
 
         <div className="mt-14 flex flex-col gap-2 border-t border-cream/10 pt-7 text-xs text-cream/40 md:flex-row md:items-center md:justify-between">
-          <span>© {new Date().getFullYear()} Acre Era. Working public brand.</span>
-          <span>Internal repository codename remains Norvana during controlled migration.</span>
+          <span>© {new Date().getFullYear()} Acre Era.</span>
+          <span>Fresh living · everyday goods · premium finds · changing Eras.</span>
         </div>
       </div>
     </footer>
