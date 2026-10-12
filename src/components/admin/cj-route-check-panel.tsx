@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { SEEDED_SCOUT_PICKS } from "@/lib/watchtower/seeded-scout-picks";
 import { MerchandisingPlaceButton } from "@/components/admin/merchandising-place-button";
+import { CjProductLoader } from "@/components/admin/cj-product-loader";
 
 const ITEMS = SEEDED_SCOUT_PICKS;
 const STORAGE_KEY = "acre-era-cj-route-check-r1";
@@ -111,8 +112,8 @@ export function CjRouteCheckPanel() {
           <p className="text-xs font-semibold uppercase tracking-[0.18em] text-emerald-200">CJ route qualification</p>
           <h2 className="mt-2 font-display text-3xl font-black">Only these five need you.</h2>
           <p className="mt-3 max-w-3xl text-sm leading-6 text-white/50">
-            Open CJ while signed in, choose one exact variant, then enter the route facts below.
-            Watchtower will not treat a checkbox as qualification anymore.
+            Load current CJ data directly, choose one exact variant, then check the U.S. route.
+            Watchtower can now fill most route facts automatically; processing time stays manual unless CJ exposes a product-specific value.
           </p>
         </div>
         <div className="grid grid-cols-3 gap-2">
@@ -156,6 +157,11 @@ export function CjRouteCheckPanel() {
                 {result.state.replaceAll("_", " ")}
               </span>
             </div>
+
+            <CjProductLoader
+              sku={item.sku}
+              onRoutePatch={(patch) => update(item.sku, patch)}
+            />
 
             <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-6">
               <label className="xl:col-span-2">
