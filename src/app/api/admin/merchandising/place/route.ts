@@ -1,4 +1,4 @@
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db";
 import { eraProducts, eras, products } from "@/db/schema";
@@ -67,6 +67,11 @@ export async function POST(req: NextRequest) {
   const shippingCost = numberValue(body.shippingCost);
   const target = targetForLane(lane);
 
+  // Remote product identifiers must be scoped to an identified provider.
+  if ((supplierSku || sourceKey) && !sourceProviderSlug) {
+    return NextResponse.json({ error: "Provider identity is required for supplier SKU or source key placement." }, { status: 400 });
+  }
+
   if (!name) {
     return NextResponse.json({ error: "Product name is required." }, { status: 400 });
   }
@@ -94,13 +99,18 @@ export async function POST(req: NextRequest) {
   let existing: typeof products.$inferSelect | undefined;
   try {
     if (supplierSku) {
-      [existing] = await db.select().from(products).where(eq(products.supplierSku, supplierSku)).limit(1);
+      [existing] = await db.select().from(products).where(and(eq(products.supplierSku, supplierSku), eq(products.sourceProviderSlug, sourceProviderSlug!))).limit(1);
     } else if (sourceKey) {
-      [existing] = await db.select().from(products).where(eq(products.externalProductId, sourceKey)).limit(1);
+      [existing] = await db.select().from(products).where(and(eq(products.externalProductId, sourceKey), eq(products.sourceProviderSlug, sourceProviderSlug!))).limit(1);
     }
   } catch (error) {
     console.error("Placement lookup failed:", error);
     return NextResponse.json({ error: "Product catalog is not ready for placement." }, { status: 503 });
+  }
+
+  // Staging must never silently demote an already public product.
+  if (existing && existing.status !== "staged") {
+    return NextResponse.json({ error: "Existing non-staged product requires separate publication-aware review." }, { status: 409 });
   }
 
   let product: typeof products.$inferSelect;
