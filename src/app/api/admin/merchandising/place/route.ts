@@ -67,6 +67,12 @@ export async function POST(req: NextRequest) {
   const shippingCost = numberValue(body.shippingCost);
   const target = targetForLane(lane);
 
+  // Supplier economics must not be silently converted into an invalid zero-cost offer.
+  if ((body.productCost !== undefined && body.productCost !== null && (productCost === null || productCost < 0)) ||
+      (body.shippingCost !== undefined && body.shippingCost !== null && (shippingCost === null || shippingCost < 0))) {
+    return NextResponse.json({ error: "Product and shipping costs must be finite nonnegative numbers." }, { status: 400 });
+  }
+
   // Remote product identifiers must be scoped to an identified provider.
   if ((supplierSku || sourceKey) && !sourceProviderSlug) {
     return NextResponse.json({ error: "Provider identity is required for supplier SKU or source key placement." }, { status: 400 });
