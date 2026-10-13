@@ -34,3 +34,10 @@ test("staged product remains non-public and non-purchasable", () => {
 test("new product slugs include the vendor namespace, not just the product SKU", () => {
   assert.match(source, /\[sourceProviderSlug \|\| sourceType\.toLowerCase\(\), supplierSku \|\| sourceKey \|\| Date\.now\(\)\.toString\(\)\]\.join\("-"\)/);
 });
+
+
+test("negative or nonfinite supplier economics fail closed", () => {
+  assert.match(source, /productCost === null \|\| productCost < 0/);
+  assert.match(source, /shippingCost === null \|\| shippingCost < 0/);
+  assert.match(source, /Product and shipping costs must be finite nonnegative numbers/);
+});
