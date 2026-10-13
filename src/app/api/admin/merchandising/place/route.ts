@@ -135,7 +135,7 @@ export async function POST(req: NextRequest) {
       .returning();
     product = updated;
   } else {
-    const uniqueSuffix = (supplierSku || sourceKey || Date.now().toString()).toLowerCase().replace(/[^a-z0-9]+/g, "-");
+    const uniqueSuffix = [sourceProviderSlug || sourceType.toLowerCase(), supplierSku || sourceKey || Date.now().toString()].join("-").toLowerCase().replace(/[^a-z0-9]+/g, "-");
     const [created] = await db
       .insert(products)
       .values({
