@@ -29,3 +29,8 @@ test("staged product remains non-public and non-purchasable", () => {
   assert.match(source, /commerceModel: "PREVIEW_ONLY"/);
   assert.match(source, /price: 0/);
 });
+
+
+test("new product slugs include the vendor namespace, not just the product SKU", () => {
+  assert.match(source, /\[sourceProviderSlug \|\| sourceType\.toLowerCase\(\), supplierSku \|\| sourceKey \|\| Date\.now\(\)\.toString\(\)\]\.join\("-"\)/);
+});
