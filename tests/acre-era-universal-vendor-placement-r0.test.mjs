@@ -137,3 +137,8 @@ test("cross-Era conflict preflight rejects before staging mutates an existing pr
   assert.match(source, /currentAssignments\.some\(\(assignment\) => !requestedEra \|\| assignment\.eraId !== requestedEra\.id\)/);
   assert.match(source, /code: "ERA_PREFLIGHT_UNAVAILABLE"/);
 });
+
+test("malformed non-object JSON bodies fail validation instead of crashing", () => {
+  assert.match(source, /!parsedBody \|\| typeof parsedBody !== "object" \|\| Array\.isArray\(parsedBody\)/);
+  assert.match(source, /code: "INVALID_PLACEMENT_BODY"/);
+});
