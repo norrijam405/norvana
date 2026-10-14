@@ -90,3 +90,18 @@ test("supplied farm and wholesale qualification facts are retained as staging ev
   assert.match(source, /pickupStart: sourceType === "FARM"/);
   assert.match(source, /casePack: sourceType === "WHOLESALE"/);
 });
+
+test("blank or null economics cannot masquerade as a valid zero", () => {
+  assert.match(source, /typeof value === "string" && !value\.trim\(\)/);
+  assert.match(source, /body\.productCost !== undefined && \(productCost === null/);
+  assert.match(source, /body\.shippingCost !== undefined && \(shippingCost === null/);
+});
+
+test("farm pickup windows that have already expired fail closed", () => {
+  assert.match(source, /end <= Date\.now\(\)/);
+});
+
+test("explicit empty wholesale quantities cannot bypass validation", () => {
+  assert.match(source, /body\.casePack !== undefined && \(!Number\.isInteger\(casePack\)/);
+  assert.match(source, /body\.minimumOrder !== undefined && \(!Number\.isInteger\(minimumOrder\)/);
+});
