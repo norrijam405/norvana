@@ -123,3 +123,9 @@ test("era assignment insert conflicts never claim successful placement", () => {
   assert.match(source, /eraAssignment = assignment \?\? null;\s*if \(!eraAssignment\) assignmentPending = true;/);
   assert.match(source, /assignmentPending \? `STAGED_FOR_\$\{target\}_ERA_ASSIGNMENT_PENDING`/);
 });
+
+test("already-routed products cannot be silently assigned to another Era", () => {
+  assert.match(source, /else if \(existingAssignment\) \{[\s\S]*?assignmentPending = true;/);
+  assert.match(source, /if \(existingAssignment\?\.eraId === era\.id\)/);
+  assert.match(source, /if \(!eraAssignment\) assignmentPending = true/);
+});
