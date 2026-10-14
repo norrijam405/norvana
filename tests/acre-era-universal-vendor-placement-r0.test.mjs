@@ -129,3 +129,11 @@ test("already-routed products cannot be silently assigned to another Era", () =>
   assert.match(source, /if \(existingAssignment\?\.eraId === era\.id\)/);
   assert.match(source, /if \(!eraAssignment\) assignmentPending = true/);
 });
+
+test("cross-Era conflict preflight rejects before staging mutates an existing product", () => {
+  const preflight = source.indexOf('code: "CROSS_ERA_REVIEW_REQUIRED"');
+  const mutation = source.indexOf("let product: typeof products.$inferSelect;");
+  assert.ok(preflight > 0 && mutation > preflight);
+  assert.match(source, /currentAssignments\.some\(\(assignment\) => !requestedEra \|\| assignment\.eraId !== requestedEra\.id\)/);
+  assert.match(source, /code: "ERA_PREFLIGHT_UNAVAILABLE"/);
+});
