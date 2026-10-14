@@ -1,11 +1,8 @@
 name: Acre Era Universal Vendor Guard R0
+# Keep CI opt-in while qualification changes are batched.
+# Run manually for frozen candidate checkpoints rather than on every commit.
 on:
-  push:
-    branches:
-      - feature/2026-10-13-acre-era-universal-vendor-qualification-r0
-  pull_request:
-    branches:
-      - feature/2026-10-04-acre-era-intelligence-delivery-r0
+  workflow_dispatch:
 permissions:
   contents: read
 jobs:
