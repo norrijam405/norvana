@@ -11,6 +11,7 @@ function textValue(value: unknown, max = 255) {
 }
 
 function numberValue(value: unknown) {
+  if (value === null || value === undefined || (typeof value === "string" && !value.trim())) return null;
   const parsed = Number(value);
   return Number.isFinite(parsed) ? parsed : null;
 }
@@ -74,8 +75,8 @@ export async function POST(req: NextRequest) {
   const target = targetForLane(lane);
 
   // Supplier economics must not be silently converted into an invalid zero-cost offer.
-  if ((body.productCost !== undefined && body.productCost !== null && (productCost === null || productCost < 0)) ||
-      (body.shippingCost !== undefined && body.shippingCost !== null && (shippingCost === null || shippingCost < 0))) {
+  if ((body.productCost !== undefined && (productCost === null || productCost < 0)) ||
+      (body.shippingCost !== undefined && (shippingCost === null || shippingCost < 0))) {
     return NextResponse.json({ error: "Product and shipping costs must be finite nonnegative numbers." }, { status: 400 });
   }
 
@@ -99,8 +100,8 @@ export async function POST(req: NextRequest) {
   // Missing details stay unverified at staging; malformed supplied facts are rejected.
   const pickupStart = textValue(body.pickupStart, 40);
   const pickupEnd = textValue(body.pickupEnd, 40);
-  const casePack = body.casePack === undefined || body.casePack === null ? null : numberValue(body.casePack);
-  const minimumOrder = body.minimumOrder === undefined || body.minimumOrder === null ? null : numberValue(body.minimumOrder);
+  const casePack = body.casePack === undefined ? null : numberValue(body.casePack);
+  const minimumOrder = body.minimumOrder === undefined ? null : numberValue(body.minimumOrder);
 
   if (sourceType === "FARM") {
     if (target !== "MARKET") {
@@ -109,14 +110,14 @@ export async function POST(req: NextRequest) {
     if (pickupStart || pickupEnd) {
       const start = Date.parse(pickupStart);
       const end = Date.parse(pickupEnd);
-      if (!pickupStart || !pickupEnd || !Number.isFinite(start) || !Number.isFinite(end) || end <= start) {
+      if (!pickupStart || !pickupEnd || !Number.isFinite(start) || !Number.isFinite(end) || end <= start || end <= Date.now()) {
         return NextResponse.json({ error: "Farm pickup window must have a valid start and later end.", code: "FARM_PICKUP_WINDOW_INVALID" }, { status: 400 });
       }
     }
   }
   if (sourceType === "WHOLESALE") {
-    if ((casePack !== null && (!Number.isInteger(casePack) || casePack <= 0)) ||
-        (minimumOrder !== null && (!Number.isInteger(minimumOrder) || minimumOrder <= 0))) {
+    if ((body.casePack !== undefined && (!Number.isInteger(casePack) || casePack! <= 0)) ||
+        (body.minimumOrder !== undefined && (!Number.isInteger(minimumOrder) || minimumOrder! <= 0))) {
       return NextResponse.json({ error: "Wholesale case pack and minimum order must be positive integers.", code: "WHOLESALE_QUANTITY_INVALID" }, { status: 400 });
     }
   }
