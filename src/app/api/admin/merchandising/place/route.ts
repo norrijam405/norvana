@@ -120,6 +120,21 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Product catalog is not ready for placement." }, { status: 503 });
   }
 
+  // A vendor can provide both identifiers. They must resolve to the same record.
+  // Otherwise SKU-first lookup could overwrite another variant's external identity.
+  if (existing && sourceKey && existing.externalProductId && existing.externalProductId !== sourceKey) {
+    return NextResponse.json(
+      { error: "Supplier SKU and external product ID identify different records.", code: "VENDOR_IDENTITY_MISMATCH" },
+      { status: 409 }
+    );
+  }
+  if (existing && supplierSku && existing.supplierSku && existing.supplierSku !== supplierSku) {
+    return NextResponse.json(
+      { error: "Supplier SKU and external product ID identify different records.", code: "VENDOR_IDENTITY_MISMATCH" },
+      { status: 409 }
+    );
+  }
+
   // Staging must never silently demote an already public product.
   if (existing && existing.status !== "staged") {
     return NextResponse.json({ error: "Existing non-staged product requires separate publication-aware review." }, { status: 409 });
