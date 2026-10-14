@@ -63,3 +63,10 @@ test("unexpected staging persistence failures return controlled unavailable resp
   assert.match(source, /code: "PLACEMENT_PERSISTENCE_FAILED"/);
   assert.match(source, /Placement persistence failed:/);
 });
+
+test("contradictory supplier identifiers are rejected before product update", () => {
+  assert.match(source, /existing\.externalProductId !== sourceKey/);
+  assert.match(source, /existing\.supplierSku !== supplierSku/);
+  assert.match(source, /code: "VENDOR_IDENTITY_MISMATCH"/);
+  assert.ok(source.indexOf('code: "VENDOR_IDENTITY_MISMATCH"') < source.indexOf('if (existing && existing.status !== "staged")'));
+});
