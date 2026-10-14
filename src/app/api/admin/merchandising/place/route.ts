@@ -143,11 +143,22 @@ export async function POST(req: NextRequest) {
 
   let existing: typeof products.$inferSelect | undefined;
   try {
-    if (supplierSku) {
-      [existing] = await db.select().from(products).where(and(eq(products.supplierSku, supplierSku), eq(products.sourceProviderSlug, sourceProviderSlug!))).limit(1);
-    } else if (sourceKey) {
-      [existing] = await db.select().from(products).where(and(eq(products.externalProductId, sourceKey), eq(products.sourceProviderSlug, sourceProviderSlug!))).limit(1);
+    const [skuMatch] = supplierSku
+      ? await db.select().from(products)
+          .where(and(eq(products.supplierSku, supplierSku), eq(products.sourceProviderSlug, sourceProviderSlug!))).limit(1)
+      : [undefined];
+    const [externalMatch] = sourceKey
+      ? await db.select().from(products)
+          .where(and(eq(products.externalProductId, sourceKey), eq(products.sourceProviderSlug, sourceProviderSlug!))).limit(1)
+      : [undefined];
+
+    if (skuMatch && externalMatch && skuMatch.id !== externalMatch.id) {
+      return NextResponse.json(
+        { error: "Supplier SKU and external product ID belong to different catalog records.", code: "VENDOR_IDENTITY_MISMATCH" },
+        { status: 409 }
+      );
     }
+    existing = skuMatch ?? externalMatch;
   } catch (error) {
     console.error("Placement lookup failed:", error);
     return NextResponse.json({ error: "Product catalog is not ready for placement." }, { status: 503 });
