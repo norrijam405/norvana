@@ -41,3 +41,14 @@ test("negative or nonfinite supplier economics fail closed", () => {
   assert.match(source, /shippingCost === null \|\| shippingCost < 0/);
   assert.match(source, /Product and shipping costs must be finite nonnegative numbers/);
 });
+
+const identityMigration = readFileSync(new URL("../drizzle/0021_acre_era_provider_unique_identity_r0.sql", import.meta.url), "utf8");
+test("database rejects duplicate SKU within a provider while allowing separate providers", () => {
+  assert.match(identityMigration, /UNIQUE INDEX IF NOT EXISTS products_provider_supplier_sku_unique/);
+  assert.match(identityMigration, /\(source_provider_slug, supplier_sku\)/);
+  assert.match(identityMigration, /WHERE source_provider_slug IS NOT NULL AND supplier_sku IS NOT NULL/);
+});
+test("database rejects duplicate external product identity within a provider", () => {
+  assert.match(identityMigration, /UNIQUE INDEX IF NOT EXISTS products_provider_external_id_unique/);
+  assert.match(identityMigration, /\(source_provider_slug, external_product_id\)/);
+});
