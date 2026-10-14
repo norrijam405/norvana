@@ -105,3 +105,7 @@ test("explicit empty wholesale quantities cannot bypass validation", () => {
   assert.match(source, /body\.casePack !== undefined && \(!Number\.isInteger\(casePack\)/);
   assert.match(source, /body\.minimumOrder !== undefined && \(!Number\.isInteger\(minimumOrder\)/);
 });
+
+test("boolean vendor economics and quantities are not parsed as numeric one or zero", () => {
+  assert.match(source, /typeof value === "boolean"/);
+});
