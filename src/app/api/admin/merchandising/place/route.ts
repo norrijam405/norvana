@@ -11,7 +11,7 @@ function textValue(value: unknown, max = 255) {
 }
 
 function numberValue(value: unknown) {
-  if (value === null || value === undefined || (typeof value === "string" && !value.trim())) return null;
+  if (value === null || value === undefined || typeof value === "boolean" || (typeof value === "string" && !value.trim())) return null;
   const parsed = Number(value);
   return Number.isFinite(parsed) ? parsed : null;
 }
