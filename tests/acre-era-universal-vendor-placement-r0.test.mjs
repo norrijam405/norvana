@@ -52,3 +52,14 @@ test("database rejects duplicate external product identity within a provider", (
   assert.match(identityMigration, /UNIQUE INDEX IF NOT EXISTS products_provider_external_id_unique/);
   assert.match(identityMigration, /\(source_provider_slug, external_product_id\)/);
 });
+
+test("database unique violations return conflict rather than server failure", () => {
+  assert.match(source, /candidate\.code === "23505"/);
+  assert.match(source, /code: "VENDOR_PRODUCT_CONFLICT"/);
+  assert.match(source, /status: 409/);
+});
+
+test("unexpected staging persistence failures return controlled unavailable response", () => {
+  assert.match(source, /code: "PLACEMENT_PERSISTENCE_FAILED"/);
+  assert.match(source, /Placement persistence failed:/);
+});
