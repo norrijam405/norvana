@@ -118,3 +118,8 @@ test("missing stable product identity fails closed before persistence", () => {
   assert.match(source, /!supplierSku && !sourceKey/);
   assert.match(source, /code: "VENDOR_IDENTITY_REQUIRED"/);
 });
+
+test("era assignment insert conflicts never claim successful placement", () => {
+  assert.match(source, /eraAssignment = assignment \?\? null;\s*if \(!eraAssignment\) assignmentPending = true;/);
+  assert.match(source, /assignmentPending \? `STAGED_FOR_\$\{target\}_ERA_ASSIGNMENT_PENDING`/);
+});
