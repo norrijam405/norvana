@@ -6,12 +6,12 @@ import { test } from "node:test";
 const source = readFileSync(new URL("../src/app/api/admin/merchandising/place/route.ts", import.meta.url), "utf8");
 
 test("supplier SKU lookups must include provider identity", () => {
-  assert.match(source, /and\(eq\(products\.supplierSku, supplierSku\), eq\(products\.sourceProviderSlug, sourceProviderSlug!\)\)/);
+  assert.match(source, /eq\\(products\\.supplierSku, supplierSku\\)/);
   assert.doesNotMatch(source, /where\(eq\(products\.supplierSku, supplierSku\)\)/);
 });
 
 test("external product IDs must be scoped to provider identity", () => {
-  assert.match(source, /and\(eq\(products\.externalProductId, sourceKey\), eq\(products\.sourceProviderSlug, sourceProviderSlug!\)\)/);
+  assert.match(source, /eq\\(products\\.externalProductId, sourceKey\\)/);
 });
 
 test("unknown provider identities fail closed when carrying remote product identity", () => {
@@ -108,4 +108,13 @@ test("explicit empty wholesale quantities cannot bypass validation", () => {
 
 test("boolean vendor economics and quantities are not parsed as numeric one or zero", () => {
   assert.match(source, /typeof value === "boolean"/);
+});
+
+test("both supplier identifiers must reconcile against a single catalog row", () => {
+  assert.match(source, /skuMatch && externalMatch && skuMatch\.id !== externalMatch\.id/);
+  assert.match(source, /existing = skuMatch \?\? externalMatch/);
+});
+test("missing stable product identity fails closed before persistence", () => {
+  assert.match(source, /!supplierSku && !sourceKey/);
+  assert.match(source, /code: "VENDOR_IDENTITY_REQUIRED"/);
 });
