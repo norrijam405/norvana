@@ -15,6 +15,12 @@ function numberValue(value: unknown) {
   return Number.isFinite(parsed) ? parsed : null;
 }
 
+function isUniqueConflict(error: unknown): boolean {
+  if (!error || typeof error !== "object") return false;
+  const candidate = error as { code?: unknown; cause?: unknown };
+  return candidate.code === "23505" || (candidate.cause !== undefined && isUniqueConflict(candidate.cause));
+}
+
 function targetForLane(lane: string): PlacementTarget {
   const value = lane.toLowerCase();
   if (/(farm|produce|fresh|grocery|food|market|garden|wellness)/.test(value)) return "MARKET";
@@ -120,6 +126,7 @@ export async function POST(req: NextRequest) {
   }
 
   let product: typeof products.$inferSelect;
+  try {
   if (existing) {
     const [updated] = await db
       .update(products)
@@ -165,6 +172,13 @@ export async function POST(req: NextRequest) {
       })
       .returning();
     product = created;
+  }
+  } catch (error) {
+    if (isUniqueConflict(error)) {
+      return NextResponse.json({ error: "Supplier product identity already exists; refresh before retrying.", code: "VENDOR_PRODUCT_CONFLICT" }, { status: 409 });
+    }
+    console.error("Placement persistence failed:", error);
+    return NextResponse.json({ error: "Product could not be staged. Please retry after checking the catalog.", code: "PLACEMENT_PERSISTENCE_FAILED" }, { status: 503 });
   }
 
   let eraAssignment: { id: number; eraId: number; productId: number } | null = null;
