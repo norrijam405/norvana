@@ -191,6 +191,31 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Existing non-staged product requires separate publication-aware review." }, { status: 409 });
   }
 
+  // A cross-Era conflict must be detected BEFORE any staged product update.
+  // Otherwise a failed placement could still silently change product metadata.
+  if (existing) {
+    try {
+      const availableEras = await db.select({ id: eras.id, slug: eras.slug, name: eras.name }).from(eras);
+      const requestedEra = availableEras.find((row) => eraMatches(target, row));
+      const currentAssignments = await db
+        .select({ eraId: eraProducts.eraId })
+        .from(eraProducts)
+        .where(eq(eraProducts.productId, existing.id));
+      if (currentAssignments.some((assignment) => !requestedEra || assignment.eraId !== requestedEra.id)) {
+        return NextResponse.json(
+          { error: "Product already has an Era placement requiring separate review.", code: "CROSS_ERA_REVIEW_REQUIRED" },
+          { status: 409 }
+        );
+      }
+    } catch (error) {
+      console.error("Placement preflight failed:", error);
+      return NextResponse.json(
+        { error: "Existing Era placement could not be verified.", code: "ERA_PREFLIGHT_UNAVAILABLE" },
+        { status: 503 }
+      );
+    }
+  }
+
   let product: typeof products.$inferSelect;
   try {
   if (existing) {
