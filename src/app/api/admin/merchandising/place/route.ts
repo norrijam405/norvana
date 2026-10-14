@@ -264,6 +264,10 @@ export async function POST(req: NextRequest) {
 
       if (existingAssignment?.eraId === era.id) {
         eraAssignment = existingAssignment;
+      } else if (existingAssignment) {
+        // Never silently assign an already-routed product to a second Era.
+        // A separate explicit move/review workflow must resolve the existing assignment.
+        assignmentPending = true;
       } else {
         const [assignment] = await db
           .insert(eraProducts)
