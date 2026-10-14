@@ -95,6 +95,32 @@ export async function POST(req: NextRequest) {
     );
   }
 
+  // Bounded qualification of optional farm and wholesale facts.
+  // Missing details stay unverified at staging; malformed supplied facts are rejected.
+  const pickupStart = textValue(body.pickupStart, 40);
+  const pickupEnd = textValue(body.pickupEnd, 40);
+  const casePack = body.casePack === undefined || body.casePack === null ? null : numberValue(body.casePack);
+  const minimumOrder = body.minimumOrder === undefined || body.minimumOrder === null ? null : numberValue(body.minimumOrder);
+
+  if (sourceType === "FARM") {
+    if (target !== "MARKET") {
+      return NextResponse.json({ error: "Farm products must be staged in Market Era.", code: "FARM_ERA_MISMATCH" }, { status: 400 });
+    }
+    if (pickupStart || pickupEnd) {
+      const start = Date.parse(pickupStart);
+      const end = Date.parse(pickupEnd);
+      if (!pickupStart || !pickupEnd || !Number.isFinite(start) || !Number.isFinite(end) || end <= start) {
+        return NextResponse.json({ error: "Farm pickup window must have a valid start and later end.", code: "FARM_PICKUP_WINDOW_INVALID" }, { status: 400 });
+      }
+    }
+  }
+  if (sourceType === "WHOLESALE") {
+    if ((casePack !== null && (!Number.isInteger(casePack) || casePack <= 0)) ||
+        (minimumOrder !== null && (!Number.isInteger(minimumOrder) || minimumOrder <= 0))) {
+      return NextResponse.json({ error: "Wholesale case pack and minimum order must be positive integers.", code: "WHOLESALE_QUANTITY_INVALID" }, { status: 400 });
+    }
+  }
+
   const evidence = {
     authority: "MERCHANDISING_STAGE_ONLY_NO_PUBLICATION",
     placementTarget: target,
@@ -104,6 +130,12 @@ export async function POST(req: NextRequest) {
     producerId,
     supplierSku,
     shippingCost,
+    qualificationFacts: {
+      pickupStart: sourceType === "FARM" ? pickupStart || null : null,
+      pickupEnd: sourceType === "FARM" ? pickupEnd || null : null,
+      casePack: sourceType === "WHOLESALE" ? casePack : null,
+      minimumOrder: sourceType === "WHOLESALE" ? minimumOrder : null,
+    },
     routeEvidence: body.routeEvidence && typeof body.routeEvidence === "object" ? body.routeEvidence : {},
     stagedAt: new Date().toISOString(),
   };
