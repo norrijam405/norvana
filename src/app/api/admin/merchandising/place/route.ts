@@ -278,6 +278,7 @@ export async function POST(req: NextRequest) {
           .onConflictDoNothing()
           .returning({ id: eraProducts.id, eraId: eraProducts.eraId, productId: eraProducts.productId });
         eraAssignment = assignment ?? null;
+        if (!eraAssignment) assignmentPending = true;
       }
     }
   } catch {
