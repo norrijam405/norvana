@@ -85,6 +85,13 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Provider identity is required for supplier SKU or source key placement." }, { status: 400 });
   }
 
+  if (!supplierSku && !sourceKey) {
+    return NextResponse.json(
+      { error: "A supplier SKU or source product key is required for deterministic staging.", code: "VENDOR_IDENTITY_REQUIRED" },
+      { status: 400 }
+    );
+  }
+
   if (!name) {
     return NextResponse.json({ error: "Product name is required." }, { status: 400 });
   }
