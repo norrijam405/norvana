@@ -6,12 +6,12 @@ import { test } from "node:test";
 const source = readFileSync(new URL("../src/app/api/admin/merchandising/place/route.ts", import.meta.url), "utf8");
 
 test("supplier SKU lookups must include provider identity", () => {
-  assert.match(source, /eq\\(products\\.supplierSku, supplierSku\\)/);
+  assert.match(source, /eq\(products\.supplierSku, supplierSku\)/);
   assert.doesNotMatch(source, /where\(eq\(products\.supplierSku, supplierSku\)\)/);
 });
 
 test("external product IDs must be scoped to provider identity", () => {
-  assert.match(source, /eq\\(products\\.externalProductId, sourceKey\\)/);
+  assert.match(source, /eq\(products\.externalProductId, sourceKey\)/);
 });
 
 test("unknown provider identities fail closed when carrying remote product identity", () => {
