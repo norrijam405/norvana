@@ -70,3 +70,23 @@ test("contradictory supplier identifiers are rejected before product update", ()
   assert.match(source, /code: "VENDOR_IDENTITY_MISMATCH"/);
   assert.ok(source.indexOf('code: "VENDOR_IDENTITY_MISMATCH"') < source.indexOf('if (existing && existing.status !== "staged")'));
 });
+
+test("farms remain in Market Era and malformed pickup windows fail closed", () => {
+  assert.match(source, /sourceType === "FARM"/);
+  assert.match(source, /code: "FARM_ERA_MISMATCH"/);
+  assert.match(source, /end <= start/);
+  assert.match(source, /code: "FARM_PICKUP_WINDOW_INVALID"/);
+});
+
+test("wholesale quantities reject malformed or nonpositive values", () => {
+  assert.match(source, /sourceType === "WHOLESALE"/);
+  assert.match(source, /Number\.isInteger\(casePack\)/);
+  assert.match(source, /Number\.isInteger\(minimumOrder\)/);
+  assert.match(source, /code: "WHOLESALE_QUANTITY_INVALID"/);
+});
+
+test("supplied farm and wholesale qualification facts are retained as staging evidence", () => {
+  assert.match(source, /qualificationFacts:/);
+  assert.match(source, /pickupStart: sourceType === "FARM"/);
+  assert.match(source, /casePack: sourceType === "WHOLESALE"/);
+});
