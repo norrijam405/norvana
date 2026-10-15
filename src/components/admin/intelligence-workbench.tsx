@@ -251,6 +251,11 @@ export function IntelligenceWorkbench() {
         <p className="mt-2 text-sm leading-6 text-muted">
           Experiment with candidate economics and delivery assumptions. All default scores are illustrative operator inputs, not verified supplier facts. This cannot publish, order, refund, or create a shipment.
         </p>
+        <div className="mt-4 rounded-xl border border-border bg-bone p-3 text-xs leading-5 text-muted">
+          <p className="font-semibold text-obsidian">How to read these inputs</p>
+          <p>Price and expenses: dollars per unit. Requests and sample size: counts. Sell-through and repeat: percentages. Trend, voice, velocity, trust, and risks: manual 0–100 scores (higher risk scores mean more risk).</p>
+          <p className="mt-2">On-time and late samples are simulated delivery observations; handling and transit use days. These defaults are examples, not imported supplier or customer evidence.</p>
+        </div>
         <form onSubmit={evaluate} className="mt-5 grid grid-cols-2 gap-3">
           <input name="candidateKey" required placeholder="Candidate" className="col-span-2 rounded-xl border border-border bg-bone px-3 py-2 text-sm" />
           <input name="salePrice" type="number" step="0.01" required placeholder="Sale $" className="rounded-xl border border-border bg-bone px-3 py-2 text-sm" />
