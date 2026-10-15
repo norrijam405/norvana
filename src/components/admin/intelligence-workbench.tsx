@@ -15,6 +15,7 @@ export function IntelligenceWorkbench() {
   const [mediaCandidates, setMediaCandidates] = useState<JsonRecord[]>([]);
   const [darwinStatus, setDarwinStatus] = useState<string>("");
   const [darwinResult, setDarwinResult] = useState<JsonRecord | null>(null);
+  const [darwinSummary, setDarwinSummary] = useState<{ sale: number; expenses: number; deliveryOnTime: number | null; samples: number } | null>(null);
 
   async function submitProducer(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -90,6 +91,7 @@ export function IntelligenceWorkbench() {
     event.preventDefault();
     setDarwinStatus("Evaluating…");
     setDarwinResult(null);
+    setDarwinSummary(null);
     const form = new FormData(event.currentTarget);
     const onTime = Math.max(0, Math.floor(Number(form.get("onTimeCount") || 0)));
     const late = Math.max(0, Math.floor(Number(form.get("lateCount") || 0)));
@@ -152,6 +154,10 @@ export function IntelligenceWorkbench() {
 
     setDarwinStatus(payload.decision?.eligible ? "Eligible for further qualification." : "Rejected by R0 policy.");
     setDarwinResult(payload.decision ?? null);
+    const sale = dollarsToCents(String(form.get("salePrice") || "0"));
+    const expenses = ["productCost", "shipping", "paymentFee", "returnReserve"]
+      .reduce((total, key) => total + dollarsToCents(String(form.get(key) || "0")), 0);
+    setDarwinSummary({ sale, expenses, deliveryOnTime: onTime + late > 0 ? onTime / (onTime + late) : null, samples: onTime + late });
   }
 
   return (
@@ -243,7 +249,7 @@ export function IntelligenceWorkbench() {
         <p className="text-xs font-semibold uppercase tracking-[0.18em] text-indigo-accent">DARWIN</p>
         <h2 className="mt-2 font-display text-xl font-bold">Opportunity sandbox</h2>
         <p className="mt-2 text-sm leading-6 text-muted">
-          Internal decision support only. It cannot publish, order, refund, or create a shipment.
+          Experiment with candidate economics and delivery assumptions. All default scores are illustrative operator inputs, not verified supplier facts. This cannot publish, order, refund, or create a shipment.
         </p>
         <form onSubmit={evaluate} className="mt-5 grid grid-cols-2 gap-3">
           <input name="candidateKey" required placeholder="Candidate" className="col-span-2 rounded-xl border border-border bg-bone px-3 py-2 text-sm" />
@@ -270,10 +276,33 @@ export function IntelligenceWorkbench() {
           <button className="btn-primary col-span-2" type="submit">Evaluate candidate</button>
         </form>
         {darwinStatus ? <p className="mt-3 text-xs leading-5 text-muted">{darwinStatus}</p> : null}
-        {darwinResult ? (
-          <pre className="mt-3 max-h-64 overflow-auto rounded-2xl bg-obsidian p-4 text-[11px] text-white/80">
-            {JSON.stringify(darwinResult, null, 2)}
-          </pre>
+        {darwinResult && darwinSummary ? (
+          <div className="mt-4 space-y-3" aria-live="polite">
+            <p className="text-xs font-semibold uppercase tracking-wider text-indigo-accent">Operator scenario · unverified inputs</p>
+            <div className="grid grid-cols-2 gap-2">
+              <div className="rounded-xl border border-border bg-bone p-3">
+                <p className="text-xs text-muted">Estimated contribution / unit</p>
+                <p className="mt-1 text-lg font-bold">{new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format((darwinSummary.sale - darwinSummary.expenses) / 100)}</p>
+              </div>
+              <div className="rounded-xl border border-border bg-bone p-3">
+                <p className="text-xs text-muted">Estimated contribution margin</p>
+                <p className="mt-1 text-lg font-bold">{darwinSummary.sale > 0 ? ((darwinSummary.sale - darwinSummary.expenses) / darwinSummary.sale * 100).toFixed(1) + "%" : "N/A"}</p>
+              </div>
+              <div className="rounded-xl border border-border bg-bone p-3">
+                <p className="text-xs text-muted">Example on-time delivery</p>
+                <p className="mt-1 font-semibold">{darwinSummary.deliveryOnTime === null ? "No sample" : (darwinSummary.deliveryOnTime * 100).toFixed(0) + "%"}</p>
+              </div>
+              <div className="rounded-xl border border-border bg-bone p-3">
+                <p className="text-xs text-muted">Delivery observations</p>
+                <p className="mt-1 font-semibold">{darwinSummary.samples} simulated</p>
+              </div>
+            </div>
+            <p className="text-xs leading-5 text-muted">Contribution estimates subtract entered product cost, outbound shipping, payment fee, and return reserve only. They exclude taxes, marketing, overhead, and other unentered expenses. No supplier data has been independently verified.</p>
+            <details className="rounded-xl border border-border bg-bone p-3">
+              <summary className="cursor-pointer text-sm font-medium">Inspect Darwin decision details (JSON)</summary>
+              <pre className="mt-3 max-h-64 overflow-auto rounded-lg bg-obsidian p-3 text-[11px] text-white/80">{JSON.stringify(darwinResult, null, 2)}</pre>
+            </details>
+          </div>
         ) : null}
       </section>
     </div>
