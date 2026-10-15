@@ -21,3 +21,12 @@ test("delivery statistics are identified as simulated, not real fulfillment evid
   assert.match(source, /simulated/);
   assert.match(source, /not verified supplier facts/);
 });
+
+test("operator-provided sources do not silently become verified evidence", () => {
+  assert.match(source, /Evidence status: NOT VERIFIED/);
+  assert.match(source, /operator claim only/);
+  assert.match(source, /Evidence observation date/);
+  assert.match(source, /needs refresh/);
+  assert.match(source, /Future date — invalid for current evidence/);
+  assert.match(source, /not supplier authentication/);
+});
