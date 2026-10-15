@@ -1,0 +1,23 @@
+import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
+import { test } from "node:test";
+
+const source = readFileSync(new URL("../src/components/admin/intelligence-workbench.tsx", import.meta.url), "utf8");
+
+test("Darwin shows a human-readable operator scenario and keeps raw evidence inspectable", () => {
+  assert.match(source, /Operator scenario · unverified inputs/);
+  assert.match(source, /Estimated contribution \/ unit/);
+  assert.match(source, /Estimated contribution margin/);
+  assert.match(source, /Inspect Darwin decision details \(JSON\)/);
+});
+test("economics deduct entered product, delivery, payment, and return expenses", () => {
+  assert.match(source, /\["productCost", "shipping", "paymentFee", "returnReserve"\]/);
+  assert.match(source, /darwinSummary.sale - darwinSummary.expenses/);
+  assert.match(source, /exclude taxes, marketing, overhead/);
+});
+test("delivery statistics are identified as simulated, not real fulfillment evidence", () => {
+  assert.match(source, /deliveryOnTime: onTime \+ late > 0/);
+  assert.match(source, /Delivery observations/);
+  assert.match(source, /simulated/);
+  assert.match(source, /not verified supplier facts/);
+});
