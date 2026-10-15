@@ -1,8 +1,13 @@
 name: Acre Era Universal Vendor Guard R0
-# Keep CI opt-in while qualification changes are batched.
-# Run manually for frozen candidate checkpoints rather than on every commit.
+# Run once on this workflow-file revision, not on every product-code push.
+# Subsequent product changes need deliberate qualification and do not retrigger this workflow.
 on:
   workflow_dispatch:
+  push:
+    branches:
+      - feature/2026-10-13-acre-era-universal-vendor-qualification-r0
+    paths:
+      - .github/workflows/acre-era-universal-vendor-r0.yml
 permissions:
   contents: read
 jobs:
