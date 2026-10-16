@@ -35,7 +35,10 @@ test("evidence date parsing accepts ISO dates rather than literal slash characte
   assert.ok(source.includes(String.raw`/^\d{4}-\d{2}-\d{2}$/`));
   assert.ok(!source.includes(String.raw`/^\\d{4}-\\d{2}-\\d{2}$/`));
 });
-test("manual delivery simulation has finite observation limits", () => {
-  assert.match(source, /Math\.min\(500, Math\.floor\(Number\(form\.get\("onTimeCount"\)/);
-  assert.match(source, /Math\.min\(500, Math\.floor\(Number\(form\.get\("lateCount"\)/);
+test("manual delivery simulation bounds finite counts and rejects invalid timing", () => {
+  assert.match(source, /Number\.isFinite\(value\) \? Math\.max\(0, Math\.min\(500, Math\.floor\(value\)\)\) : 0/);
+  assert.match(source, /const onTime = boundedCount\("onTimeCount"\)/);
+  assert.match(source, /const late = boundedCount\("lateCount"\)/);
+  assert.match(source, /Number\.isFinite\(value\) && value >= 0/);
+  assert.match(source, /Handling and transit days must be finite, nonnegative numbers/);
 });
