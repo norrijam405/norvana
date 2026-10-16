@@ -93,10 +93,18 @@ export function IntelligenceWorkbench() {
     setDarwinResult(null);
     setDarwinSummary(null);
     const form = new FormData(event.currentTarget);
-    const onTime = Math.max(0, Math.min(500, Math.floor(Number(form.get("onTimeCount") || 0))));
-    const late = Math.max(0, Math.min(500, Math.floor(Number(form.get("lateCount") || 0))));
+    const boundedCount = (key: string) => {
+      const value = Number(form.get(key) || 0);
+      return Number.isFinite(value) ? Math.max(0, Math.min(500, Math.floor(value))) : 0;
+    };
+    const onTime = boundedCount("onTimeCount");
+    const late = boundedCount("lateCount");
     const handlingDays = Number(form.get("handlingDays") || 1);
     const transitDays = Number(form.get("transitDays") || 2);
+    if (![handlingDays, transitDays].every((value) => Number.isFinite(value) && value >= 0)) {
+      setDarwinStatus("Handling and transit days must be finite, nonnegative numbers.");
+      return;
+    }
 
     const observations = [
       ...Array.from({ length: onTime }, () => ({
