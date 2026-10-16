@@ -93,8 +93,8 @@ export function IntelligenceWorkbench() {
     setDarwinResult(null);
     setDarwinSummary(null);
     const form = new FormData(event.currentTarget);
-    const onTime = Math.max(0, Math.floor(Number(form.get("onTimeCount") || 0)));
-    const late = Math.max(0, Math.floor(Number(form.get("lateCount") || 0)));
+    const onTime = Math.max(0, Math.min(500, Math.floor(Number(form.get("onTimeCount") || 0))));
+    const late = Math.max(0, Math.min(500, Math.floor(Number(form.get("lateCount") || 0))));
     const handlingDays = Number(form.get("handlingDays") || 1);
     const transitDays = Number(form.get("transitDays") || 2);
 
@@ -115,7 +115,7 @@ export function IntelligenceWorkbench() {
     const candidateKey = String(form.get("candidateKey") || "manual-candidate");
     const evidenceNote = String(form.get("evidenceNote") || "").trim().slice(0, 240);
     const evidenceDate = String(form.get("evidenceDate") || "");
-    const evidenceTimestamp = /^\\d{4}-\\d{2}-\\d{2}$/.test(evidenceDate) ? Date.parse(evidenceDate + "T00:00:00Z") : NaN;
+    const evidenceTimestamp = /^\d{4}-\d{2}-\d{2}$/.test(evidenceDate) ? Date.parse(evidenceDate + "T00:00:00Z") : NaN;
     const evidenceAgeDays = Number.isFinite(evidenceTimestamp)
       ? Math.floor((Date.now() - evidenceTimestamp) / 86400000)
       : null;
