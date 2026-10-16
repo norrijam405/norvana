@@ -30,3 +30,12 @@ test("operator-provided sources do not silently become verified evidence", () =>
   assert.match(source, /Future date — invalid for current evidence/);
   assert.match(source, /not supplier authentication/);
 });
+
+test("evidence date parsing accepts ISO dates rather than literal slash characters", () => {
+  assert.ok(source.includes(String.raw`/^\d{4}-\d{2}-\d{2}$/`));
+  assert.ok(!source.includes(String.raw`/^\\d{4}-\\d{2}-\\d{2}$/`));
+});
+test("manual delivery simulation has finite observation limits", () => {
+  assert.match(source, /Math\.min\(500, Math\.floor\(Number\(form\.get\("onTimeCount"\)/);
+  assert.match(source, /Math\.min\(500, Math\.floor\(Number\(form\.get\("lateCount"\)/);
+});
