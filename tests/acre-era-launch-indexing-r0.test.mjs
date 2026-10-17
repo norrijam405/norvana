@@ -14,4 +14,6 @@ test("Public URLs use an explicit configured origin, not an unverified domain", 
   }
   assert.match(read("src/lib/public-site-url.ts"), /NORVANA_SITE_URL/);
   assert.match(read("src/lib/public-site-url.ts"), /VERCEL_ENV === "production"/);
+  assert.match(read("src/lib/public-site-url.ts"), /configuredPublicOrigin\(\) !== null/);
+  assert.match(read("src/lib/public-site-url.ts"), /url\.pathname !== "\/"/);
 });
