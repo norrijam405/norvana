@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { publicIndexingEnabled, publicSiteUrl } from "@/lib/public-site-url";
 import type { ReactNode } from "react";
 import "./globals.css";
 import { CartProvider } from "@/components/cart-context";
@@ -6,7 +7,8 @@ import { Navbar } from "@/components/navbar";
 import { CartDrawer } from "@/components/cart-drawer";
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://acreera.com"),
+  metadataBase: new URL(publicSiteUrl()),
+  robots: { index: publicIndexingEnabled(), follow: publicIndexingEnabled() },
   title: {
     default: "Acre Era — Fresh food, everyday goods, and premium finds",
     template: "%s | Acre Era",
@@ -18,7 +20,7 @@ export const metadata: Metadata = {
   openGraph: {
     type: "website",
     siteName: "Acre Era",
-    url: "https://acreera.com",
+    url: publicSiteUrl(),
     title: "Acre Era — Fresh food, everyday goods, and premium finds",
     description:
       "Fresh food, everyday goods, premium finds, and changing Eras in one connected shopping world.",
@@ -52,8 +54,8 @@ export default function RootLayout({ children }: { children: ReactNode }) {
               "@context": "https://schema.org",
               "@type": "Organization",
               name: "Acre Era",
-              url: "https://acreera.com",
-              logo: "https://acreera.com/brand/acre-era-social-avatar.svg",
+              url: publicSiteUrl(),
+              logo: publicSiteUrl() + "/brand/acre-era-social-avatar.svg",
               description:
                 "Fresh food, everyday goods, premium finds, and changing Eras in one connected shopping world.",
             }),
