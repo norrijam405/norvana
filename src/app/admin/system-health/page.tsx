@@ -96,8 +96,9 @@ export default async function SystemHealthPage() {
                 </div>
               ))}
             </div>
-            <Link href="/admin/advanced" className="mt-5 inline-flex text-sm font-semibold text-indigo-200 underline underline-offset-4">
-              Open legacy advanced controls →
+            <p className="mt-4 text-xs leading-5 text-white/45">Separate legacy diagnostic tools remain available for controlled runtime proof. They are not a second owner dashboard.</p>
+            <Link href="/admin/advanced" className="mt-3 inline-flex text-sm font-semibold text-indigo-200 underline underline-offset-4">
+              Open restricted diagnostics and self-tests →
             </Link>
           </div>
 
