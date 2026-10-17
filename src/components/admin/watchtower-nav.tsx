@@ -13,7 +13,7 @@ const ITEMS = [
   { href: "/admin/era-studio", label: "Era Studio" },
   { href: "/admin/notifications", label: "Alerts" },
   { href: "/admin/launch", label: "Launch" },
-  { href: "/admin/system-health", label: "Advanced" },
+  { href: "/admin/system-health", label: "System Health" },
 ];
 
 export function WatchtowerNav({ current }: { current?: string }) {

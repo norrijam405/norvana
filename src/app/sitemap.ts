@@ -1,8 +1,10 @@
 import type { MetadataRoute } from "next";
+import { publicIndexingEnabled, publicSiteUrl } from "@/lib/public-site-url";
 
-const BASE_URL = "https://acreera.com";
+
 
 export default function sitemap(): MetadataRoute.Sitemap {
+  if (!publicIndexingEnabled()) return [];
   const now = new Date();
   const routes = [
     { path: "", priority: 1, changeFrequency: "daily" as const },
@@ -16,7 +18,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
   ];
 
   return routes.map((route) => ({
-    url: BASE_URL + route.path,
+    url: publicSiteUrl() + route.path,
     lastModified: now,
     changeFrequency: route.changeFrequency,
     priority: route.priority,

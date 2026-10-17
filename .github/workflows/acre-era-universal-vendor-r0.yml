@@ -1,0 +1,26 @@
+name: Acre Era Universal Vendor Guard R0
+# Run once on this workflow-file revision, not on every product-code push.
+# Subsequent product changes need deliberate qualification and do not retrigger this workflow.
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - feature/2026-10-13-acre-era-universal-vendor-qualification-r0
+    paths:
+      - .github/workflows/acre-era-universal-vendor-r0.yml
+permissions:
+  contents: read
+jobs:
+  vendor-placement-guards:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '22'
+      - run: npm install --ignore-scripts --no-audit --no-fund
+      - run: npm run typecheck
+      - run: node --test tests/acre-era-universal-vendor-placement-r0.test.mjs tests/acre-era-darwin-readable-results-r0.test.mjs tests/acre-era-launch-indexing-r0.test.mjs
+      - run: npm run test:intent-routes
+      - run: npm run test:era-engine
