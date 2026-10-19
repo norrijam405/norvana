@@ -55,12 +55,6 @@ export function Navbar() {
         </div>
 
         <div className="flex items-center gap-2">
-          <Link
-            href="/admin"
-            className="hidden rounded-full border border-soil/10 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.12em] text-muted transition hover:border-soil/20 hover:bg-sage-wash hover:text-soil sm:inline-flex"
-          >
-            Admin
-          </Link>
           <button
             onClick={() => setIsOpen(true)}
             className="relative flex min-h-11 min-w-11 items-center justify-center rounded-full p-2.5 transition hover:bg-sage-wash"
@@ -114,14 +108,6 @@ export function Navbar() {
                   {link.label}
                 </Link>
               ))}
-              <div className="my-2 border-t border-soil/10" />
-              <Link
-                href="/admin"
-                onClick={() => setMobileOpen(false)}
-                className="flex min-h-11 items-center rounded-xl px-3 py-2.5 text-sm font-semibold text-soil/70 hover:bg-sage-wash hover:text-soil"
-              >
-                Admin / Watchtower
-              </Link>
             </div>
           </motion.div>
         ) : null}
