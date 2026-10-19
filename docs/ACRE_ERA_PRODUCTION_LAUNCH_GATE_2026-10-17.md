@@ -2,6 +2,11 @@
 
 Status: NOT APPROVED FOR LIVE CHECKOUT. This file is an audit checkpoint, not a proof of release readiness.
 
+## 2026-10-19 status update
+- Chrome warning moved from active blocker to monitoring at founder direction; no security controls disabled.
+- Staging deployment dpl_DJtKLrmo58nXBHm6NSyTtBW5vJUA is READY at exact commit 3c8ed4a2f93e9dabeb0309370b152afbeaca5de8.
+- Build success is not checkout or production qualification.
+
 ## Confirmed
 - Vercel deployment dpl_HMs4PZnWkXS8gM6zB59A11E5o3jh was READY for commit 07875a9f126a96a6265e8c73789522642ffdd9c3; it predates later navigation commits.
 - Draft PR #23 remains open; no merge approval recorded.
@@ -9,7 +14,7 @@ Status: NOT APPROVED FOR LIVE CHECKOUT. This file is an audit checkpoint, not a 
 - Owner reported Chrome warning 'password may be compromised' on a staging URL; TLS certificate being valid does not invalidate this warning.
 
 ## Launch blockers — close in order
-1. **Browser trust and credential safety**: investigate Chrome Safe Browsing classification for the exact staging host. Do not ask owner to bypass warning, enter credentials, or mark the site legitimate. Check authentication flows, external scripts, redirects, domain ownership, and whether the warning is host-specific. Credential rotation via independently verified account pages if reused.
+1. **Browser trust monitoring (nonblocking)**: founder reports the earlier Chrome warning was a one-time incident and authorizes removing it from launch blockers. Do not disable password/session security or bypass a *new* browser warning. Reopen investigation if reproduced on the final customer domain.
 2. **Public storefront reachability**: confirm intended customer domain and DNS/Vercel assignment; independently load the home, category, product, cart, shipping, returns, privacy, and contact pages from an unauthenticated browser and phone.
 3. **Product truth**: only genuine authorized catalog items, current price, usable images with rights, supplier/stock availability, and verified fulfillment terms. Don't represent seeded demos or staged goods as live.
 4. **Checkout**: test complete order lifecycle in Stripe TEST mode only: inventory validation, server-calculated totals, taxes/shipping disclosures, payment outcome webhook, duplicate webhook idempotency, refund and customer confirmation. No live charge without founder approval.
