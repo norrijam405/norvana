@@ -21,6 +21,6 @@ jobs:
           node-version: '22'
       - run: npm install --ignore-scripts --no-audit --no-fund
       - run: npm run typecheck
-      - run: node --test tests/acre-era-universal-vendor-placement-r0.test.mjs tests/acre-era-darwin-readable-results-r0.test.mjs tests/acre-era-launch-indexing-r0.test.mjs
+      - run: node --test tests/acre-era-universal-vendor-placement-r0.test.mjs tests/acre-era-darwin-readable-results-r0.test.mjs tests/acre-era-launch-indexing-r0.test.mjs tests/acre-era-checkout-preview-safety-r0.test.mjs
       - run: npm run test:intent-routes
       - run: npm run test:era-engine
