@@ -87,7 +87,7 @@ export function Footer() {
 
         <div className="mt-14 flex flex-col gap-2 border-t border-cream/10 pt-7 text-xs text-cream/40 md:flex-row md:items-center md:justify-between">
           <span>© {new Date().getFullYear()} Acre Era.</span>
-          <span>Fresh living · everyday goods · premium finds · changing Eras.</span>
+          <div className="flex items-center gap-5"><span>Fresh living · everyday goods · premium finds.</span><Link href="/admin/login" className="text-cream/35 underline-offset-4 transition hover:text-cream hover:underline" aria-label="Staff sign in">Staff sign in</Link></div>
         </div>
       </div>
     </footer>
