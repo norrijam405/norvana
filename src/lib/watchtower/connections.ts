@@ -122,6 +122,17 @@ export const WATCHTOWER_CONNECTIONS: ConnectionEntry[] = [
     notes: "Manual setup pending. CRM OAuth email access is not authorized (scope mismatch). contact@acreera.com for partnerships and support@acreera.com for customers; both are Zoho aliases of norrisjames@acreera.com. This entry does NOT verify a mail API connection. Draft/review first; send only after authorized mail integration and sender verification.",
   },
   {
+    slug: "hubspot",
+    name: "HubSpot CRM",
+    category: "COMMERCE",
+    purpose: "System of record for farm and supplier companies, contacts, qualification, and follow-up.",
+    officialUrl: "https://app.hubspot.com/",
+    developerUrl: "https://developers.hubspot.com/docs/api/overview",
+    envKeys: [],
+    authority: "RECOMMEND",
+    notes: "HubSpot is connected to ChatGPT, NOT to the Acre Era web runtime. Watchtower only has external CRM links at present. Full synchronization requires a server-side OAuth installation, scoped tokens, read-only initial rollout, ID mapping, reconciliation, and explicit authority for changes. Never expose tokens in the browser or silently send outreach.",
+  },
+  {
     slug: "resend",
     name: "Resend",
     category: "MESSAGING",
