@@ -39,6 +39,20 @@ export default async function ProducerConversationPage() {
           </p>
         </section>
 
+        <section className="mb-8 rounded-2xl border border-white/10 bg-white/[0.04] p-6">
+          <p className="text-xs font-semibold uppercase tracking-[.16em] text-indigo-200">Relationship CRM</p>
+          <h2 className="mt-2 text-2xl font-semibold">HubSpot is the source of truth for partner relationships</h2>
+          <p className="mt-3 max-w-3xl text-sm leading-6 text-white/60">
+            Keep prospect records, contact details, follow-up tasks, and relationship status in HubSpot.
+            The producer notebook remains a separate operator workspace until a scoped, server-side HubSpot OAuth connection is implemented.
+            This link does not sync data and Watchtower cannot send HubSpot emails yet.
+          </p>
+          <div className="mt-5 flex flex-wrap gap-3">
+            <a href="https://app-na2.hubspot.com/contacts/247749145/objects/0-2/views/all/list" target="_blank" rel="noopener noreferrer" className="rounded-xl bg-indigo-500 px-4 py-3 text-sm font-semibold hover:bg-indigo-400">Open partner companies in HubSpot ↗</a>
+            <a href="https://app-na2.hubspot.com/contacts/247749145/objects/0-1/views/all/list" target="_blank" rel="noopener noreferrer" className="rounded-xl border border-white/20 px-4 py-3 text-sm font-semibold hover:bg-white/10">Open contacts ↗</a>
+          </div>
+        </section>
+
         <ProducerConversationNotebook persistenceEnabled={persistenceEnabled} />
       </div>
     </main>
