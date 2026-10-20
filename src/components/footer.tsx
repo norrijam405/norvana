@@ -81,6 +81,8 @@ export function Footer() {
               <li><Link href="/growers#interest" className="hover:text-cream">Producer interest</Link></li>
               <li><Link href="/growers#delivery" className="hover:text-cream">How delivery works</Link></li>
               <li><Link href="/market#farm-facts" className="hover:text-cream">Farm facts</Link></li>
+              <li><a href="mailto:contact@acreera.com?subject=Acre%20Era%20partnership%20inquiry" className="hover:text-cream">Partnership inquiries</a></li>
+              <li><a href="mailto:support@acreera.com" className="hover:text-cream">Customer support</a></li>
             </ul>
           </div>
         </div>
