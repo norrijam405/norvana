@@ -111,6 +111,17 @@ export const WATCHTOWER_CONNECTIONS: ConnectionEntry[] = [
     notes: "Prefer GraphQL Admin API for new integrations. Store-specific access remains separately scoped.",
   },
   {
+    slug: "zoho-mail",
+    name: "Zoho Mail / CRM",
+    category: "MESSAGING",
+    purpose: "Acre Era business inbox and controlled outreach for farms, suppliers, and customer support.",
+    officialUrl: "https://mail.zoho.com/",
+    developerUrl: "https://www.zoho.com/mail/help/",
+    envKeys: [],
+    authority: "RECOMMEND",
+    notes: "Manual setup pending. CRM OAuth email access is not authorized (scope mismatch). contact@acreera.com for partnerships and support@acreera.com for customers; both are Zoho aliases of norrisjames@acreera.com. This entry does NOT verify a mail API connection. Draft/review first; send only after authorized mail integration and sender verification.",
+  },
+  {
     slug: "resend",
     name: "Resend",
     category: "MESSAGING",
