@@ -10,7 +10,8 @@ export default function ApplyForm() {
     if (state === "working") return;
     setState("working");
     const data = new FormData(event.currentTarget);
-    const payload = Object.fromEntries(data.entries());
+    const fields = Object.fromEntries(data.entries());
+    const payload = { ...fields, productCategories: [String(fields.category || ""), String(fields.products || "")].filter(Boolean), fulfillmentModes: [String(fields.fulfillment || "")].filter(Boolean), leadTimeNotes: fields.leadTime, painPoint: fields.partnershipFit, pilotInterest: "DISCUSS" };
     try {
       const response = await fetch("/api/producer-interest", {
         method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(payload),
