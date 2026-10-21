@@ -51,3 +51,8 @@
 
 ## Geographic growth activation (2026-10-21)
 - [Oklahoma border-state partner expansion plan](ACRE_ERA_BORDER_STATE_PARTNER_EXPANSION_R0_2026-10-21.md): Texas, Arkansas, Kansas, Missouri, Colorado, New Mexico; research lead sources, scalable outreach, safe phased national rollout. No outreach sent and no companies auto-added to CRM.
+
+## Producer intake and media operator upgrade (2026-10-21)
+- Public questionnaire at `/become-a-partner` collects business identity, region, product types, seasonality, fulfillment, and permission interest; submits to the existing rate-limited `/api/producer-interest` and stores review-only submissions. **NOT LIVE** until `PRODUCER_INTEREST_INTAKE_ENABLED=true`, abuse quota and Preview database readiness are verified. Do not share the URL with prospects until a test submission and operator review path both pass.
+- Protected Watchtower `/admin/producers` links the questionnaire and includes a browser-local video link/rights planner. **This is not an upload/storage/publishing feature**; next iteration needs server-side signed upload, owned storage, type/size scanning, usage rights, thumbnail/preview and approval gates, with explicit cost validation.
+- Successor: inspect actual code commits and run Preview build + server intake and operator review E2E before launch; privacy notice, anti-spam controls and contact routing need verification.
