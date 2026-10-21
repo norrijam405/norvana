@@ -1,5 +1,6 @@
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
+import { ProducerOutreachTemplates } from "@/components/admin/producer-outreach-templates";
 import { ProducerConversationNotebook } from "@/components/admin/producer-conversation-notebook";
 import { WatchtowerNav } from "@/components/admin/watchtower-nav";
 import {
@@ -53,6 +54,7 @@ export default async function ProducerConversationPage() {
           </div>
         </section>
 
+        <ProducerOutreachTemplates />
         <ProducerConversationNotebook persistenceEnabled={persistenceEnabled} />
       </div>
     </main>
