@@ -1,4 +1,5 @@
 import { cookies } from "next/headers";
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { desc } from "drizzle-orm";
 import { db } from "@/db";
@@ -104,7 +105,7 @@ export default async function OrdersPage({ searchParams }: { searchParams: Promi
                 <article key={order.id} className="rounded-2xl border border-white/10 bg-black/20 p-4">
                   <div className="flex items-start justify-between gap-4">
                     <div>
-                      <p className="font-semibold">{order.orderNumber}</p>
+                      <Link href={`/admin/orders/${order.id}`} className="font-semibold text-indigo-200 hover:underline">{order.orderNumber} ↗</Link>
                       <p className="mt-1 text-xs text-white/40">{order.customerName} · {order.status}</p>
                     </div>
                     <p className="font-display text-lg font-bold">{"$"}{Number(order.total || 0).toFixed(2)}</p>
