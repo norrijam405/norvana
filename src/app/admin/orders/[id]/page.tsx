@@ -23,11 +23,8 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
   let fulfillment: (typeof supplierOrders.$inferSelect)[] = [];
   try {
     [order] = await db.select().from(orders).where(eq(orders.id, orderId)).limit(1);
-    if (!order) notFound();
-    fulfillment = await db.select().from(supplierOrders).where(eq(supplierOrders.orderId, orderId));
+    if (order) fulfillment = await db.select().from(supplierOrders).where(eq(supplierOrders.orderId, orderId));
   } catch (error) {
-    // Do not turn a database failure into a false order-not-found result.
-    if (error && typeof error === "object" && "digest" in error && String(error.digest).startsWith("NEXT_HTTP_ERROR_FALLBACK;404")) throw error;
     console.error("Watchtower order detail failed to load", error);
     return <main className="min-h-screen bg-[#0d0f0c] text-white"><WatchtowerNav current="/admin/orders"/><div role="alert" className="mx-auto max-w-5xl p-8"><h1 className="text-2xl font-bold">Order data unavailable</h1><p className="mt-3 text-rose-200">Could not load this order. Check the database and retry; this does not mean the order is missing.</p><Link href="/admin/orders" className="mt-6 inline-block underline">Back to orders</Link></div></main>;
   }
