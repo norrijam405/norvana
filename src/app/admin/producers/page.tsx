@@ -1,5 +1,7 @@
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
+import { ProducerMediaPlanner } from "@/components/admin/producer-media-planner";
+import Link from "next/link";
 import { ProducerOutreachTemplates } from "@/components/admin/producer-outreach-templates";
 import { ProducerConversationNotebook } from "@/components/admin/producer-conversation-notebook";
 import { WatchtowerNav } from "@/components/admin/watchtower-nav";
@@ -54,6 +56,14 @@ export default async function ProducerConversationPage() {
           </div>
         </section>
 
+        <section className="mb-8 rounded-2xl border border-white/10 bg-white/[.04] p-6">
+          <p className="text-xs font-semibold uppercase tracking-widest text-indigo-200">Public business application</p>
+          <h2 className="mt-2 text-2xl font-bold">Let partners answer before the call</h2>
+          <p className="mt-3 text-sm leading-6 text-white/60">Share a questionnaire covering products, seasonality, fulfillment, partnership goals and media permission. Submissions use the existing protected intake API, only when the operator enables it. Applications are review-only, never auto-approved or published.</p>
+          <Link href="/become-a-partner" target="_blank" className="mt-4 inline-block rounded-xl bg-indigo-500 px-5 py-3 text-sm font-semibold hover:bg-indigo-400">Open partner application ↗</Link>
+          <p className="mt-3 text-xs text-amber-200">Activation prerequisite: PRODUCER_INTEREST_INTAKE_ENABLED=true plus configured anti-spam quota and database, on a verified Preview. Do not share the public link until a test submission is confirmed.</p>
+        </section>
+        <ProducerMediaPlanner />
         <ProducerOutreachTemplates />
         <ProducerConversationNotebook persistenceEnabled={persistenceEnabled} />
       </div>
