@@ -12,7 +12,7 @@ import { WatchtowerNav } from "@/components/admin/watchtower-nav";
 
 export const dynamic = "force-dynamic";
 
-export default async function OrdersPage() {
+export default async function OrdersPage({ searchParams }: { searchParams: Promise<{ q?: string; payment?: string }> }) {
   if (!adminSessionConfigured()) redirect("/admin");
   const cookieStore = await cookies();
   const session = await verifyCurrentAdminSessionToken(cookieStore.get(ADMIN_SESSION_COOKIE)?.value);
@@ -30,6 +30,19 @@ export default async function OrdersPage() {
     ordersLoadFailed = true;
     console.error("Watchtower orders database read failed", error);
   }
+
+  const params = await searchParams;
+  const query = typeof params.q === "string" ? params.q.trim().slice(0, 100).toLowerCase() : "";
+  const paymentFilter = ["all", "pending", "paid", "failed", "refunded"].includes(params.payment || "")
+    ? params.payment!
+    : "all";
+  const visibleOrders = customerOrders.filter((order) => {
+    const matchesSearch = !query ||
+      [order.orderNumber, order.customerName, order.customerEmail, order.status]
+        .some((value) => String(value || "").toLowerCase().includes(query));
+    const matchesPayment = paymentFilter === "all" || order.paymentStatus === paymentFilter;
+    return matchesSearch && matchesPayment;
+  });
 
   const open = customerOrders.filter((row) => !/delivered|complete|cancel/i.test(row.status)).length;
   const unpaid = customerOrders.filter((row) => row.paymentStatus !== "paid").length;
@@ -69,11 +82,25 @@ export default async function OrdersPage() {
           ))}
         </section>
 
+        <form method="GET" action="/admin/orders" className="mt-6 flex flex-wrap items-end gap-3 rounded-2xl border border-white/10 bg-white/[0.035] p-5">
+          <label className="min-w-[220px] flex-1 text-sm text-white/60">Find an order
+            <input type="search" name="q" defaultValue={typeof params.q === "string" ? params.q.slice(0, 100) : ""} placeholder="Order number, customer or email" maxLength={100} className="mt-2 w-full rounded-xl border border-white/15 bg-[#191b18] px-4 py-3 text-white placeholder:text-white/30" />
+          </label>
+          <label className="text-sm text-white/60">Payment
+            <select name="payment" defaultValue={paymentFilter} className="mt-2 block rounded-xl border border-white/15 bg-[#191b18] px-4 py-3 text-white">
+              <option value="all">All payments</option><option value="pending">Pending</option><option value="paid">Paid</option><option value="failed">Failed</option><option value="refunded">Refunded</option>
+            </select>
+          </label>
+          <button type="submit" className="rounded-xl bg-indigo-500 px-5 py-3 text-sm font-semibold hover:bg-indigo-400">Filter orders</button>
+          <a href="/admin/orders" className="rounded-xl border border-white/15 px-5 py-3 text-sm font-semibold text-white/70 hover:bg-white/10">Clear</a>
+          <p className="w-full text-xs text-white/40">Search covers the latest 250 records, not the entire order history. For full historical lookup, pagination is required.</p>
+        </form>
+
         <section className="mt-6 grid gap-5 xl:grid-cols-2">
           <div className="rounded-[2rem] border border-white/10 bg-white/[0.035] p-6">
             <p className="text-xs font-semibold uppercase tracking-[0.18em] text-indigo-200">Customer orders</p>
             <div className="mt-5 space-y-3">
-              {customerOrders.slice(0, 20).map((order) => (
+              {visibleOrders.slice(0, 50).map((order) => (
                 <article key={order.id} className="rounded-2xl border border-white/10 bg-black/20 p-4">
                   <div className="flex items-start justify-between gap-4">
                     <div>
@@ -85,7 +112,7 @@ export default async function OrdersPage() {
                   <p className="mt-3 text-xs text-white/40">{Array.isArray(order.items) ? order.items.length : 0} line item(s) · payment {order.paymentStatus}</p>
                 </article>
               ))}
-              {!ordersLoadFailed && customerOrders.length === 0 ? <p className="text-sm text-white/45">No customer orders available yet.</p> : null}
+              {!ordersLoadFailed && visibleOrders.length === 0 ? <p className="text-sm text-white/45">{customerOrders.length === 0 ? "No customer orders available yet." : "No matching orders in the most recent 250 records."}</p> : null}
             </div>
           </div>
 
