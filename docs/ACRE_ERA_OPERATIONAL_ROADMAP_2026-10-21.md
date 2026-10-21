@@ -48,3 +48,6 @@
 - [Start here](../ACRE_ERA_START_HERE.md)
 - [Live roadmap successor handoff](ACRE_ERA_SUCCESSOR_HANDOFF_2026-10-21.md)
 - [Draft PR #23](https://github.com/norrijam405/norvana/pull/23)
+
+## Geographic growth activation (2026-10-21)
+- [Oklahoma border-state partner expansion plan](ACRE_ERA_BORDER_STATE_PARTNER_EXPANSION_R0_2026-10-21.md): Texas, Arkansas, Kansas, Missouri, Colorado, New Mexico; research lead sources, scalable outreach, safe phased national rollout. No outreach sent and no companies auto-added to CRM.
