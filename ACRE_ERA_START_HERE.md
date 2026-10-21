@@ -7,6 +7,14 @@
 
 Do not ask the founder to reconstruct the product vision already preserved here.
 
+## Latest operational continuity (2026-10-21)
+
+**Read these before new work or a successor takeover:**
+- [Operational roadmap — priorities, differentiators, launch gates](docs/ACRE_ERA_OPERATIONAL_ROADMAP_2026-10-21.md)
+- [Successor handoff — verified CRM records, commits, boundaries, next actions](docs/ACRE_ERA_SUCCESSOR_HANDOFF_2026-10-21.md)
+
+These updates supplement (do not erase) the older north-star and technical contracts below. Draft PR #23 is not a Production release.
+
 ## North star
 
 Acre Era is not an infinite catalog and not a generic dropshipping store.
