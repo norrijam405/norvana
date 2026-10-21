@@ -20,12 +20,16 @@ export default async function OrdersPage() {
 
   let customerOrders: (typeof orders.$inferSelect)[] = [];
   let supplierRows: (typeof supplierOrders.$inferSelect)[] = [];
+  let ordersLoadFailed = false;
   try {
     [customerOrders, supplierRows] = await Promise.all([
       db.select().from(orders).orderBy(desc(orders.createdAt)).limit(250),
       db.select().from(supplierOrders).orderBy(desc(supplierOrders.createdAt)).limit(250),
     ]);
-  } catch {}
+  } catch (error) {
+    ordersLoadFailed = true;
+    console.error("Watchtower orders database read failed", error);
+  }
 
   const open = customerOrders.filter((row) => !/delivered|complete|cancel/i.test(row.status)).length;
   const unpaid = customerOrders.filter((row) => row.paymentStatus !== "paid").length;
@@ -44,12 +48,19 @@ export default async function OrdersPage() {
           </p>
         </section>
 
+        {ordersLoadFailed ? (
+          <section role="alert" className="mt-6 rounded-2xl border border-rose-400/40 bg-rose-950/30 p-5 text-sm text-rose-100">
+            Order data could not be loaded. The counters below are unavailable, not confirmed zero.
+            Check the database connection and server logs before acting on order or fulfillment status.
+          </section>
+        ) : null}
+
         <section className="mt-6 grid gap-4 md:grid-cols-4">
           {[
-            ["Open customer orders", String(open)],
-            ["Unpaid / unresolved", String(unpaid)],
-            ["Supplier issues", String(supplierIssues)],
-            ["Supplier shipped", String(shipped)],
+            ["Open customer orders", ordersLoadFailed ? "—" : String(open)],
+            ["Unpaid / unresolved", ordersLoadFailed ? "—" : String(unpaid)],
+            ["Supplier issues", ordersLoadFailed ? "—" : String(supplierIssues)],
+            ["Supplier shipped", ordersLoadFailed ? "—" : String(shipped)],
           ].map(([label, value]) => (
             <article key={label} className="rounded-2xl border border-white/10 bg-white/[0.035] p-5">
               <p className="text-[10px] uppercase tracking-[0.18em] text-white/35">{label}</p>
@@ -74,7 +85,7 @@ export default async function OrdersPage() {
                   <p className="mt-3 text-xs text-white/40">{Array.isArray(order.items) ? order.items.length : 0} line item(s) · payment {order.paymentStatus}</p>
                 </article>
               ))}
-              {customerOrders.length === 0 ? <p className="text-sm text-white/45">No customer orders available yet.</p> : null}
+              {!ordersLoadFailed && customerOrders.length === 0 ? <p className="text-sm text-white/45">No customer orders available yet.</p> : null}
             </div>
           </div>
 
@@ -96,7 +107,7 @@ export default async function OrdersPage() {
                   {row.errorMessage ? <p className="mt-2 text-xs text-rose-200">{row.errorMessage}</p> : null}
                 </article>
               ))}
-              {supplierRows.length === 0 ? <p className="text-sm text-white/45">No supplier fulfillment records available yet.</p> : null}
+              {!ordersLoadFailed && supplierRows.length === 0 ? <p className="text-sm text-white/45">No supplier fulfillment records available yet.</p> : null}
             </div>
           </div>
         </section>
