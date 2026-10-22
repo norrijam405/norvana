@@ -61,6 +61,7 @@ export default async function ProducerConversationPage() {
           <h2 className="mt-2 text-2xl font-bold">Let partners answer before the call</h2>
           <p className="mt-3 text-sm leading-6 text-white/60">Share a questionnaire covering products, seasonality, fulfillment, partnership goals and media permission. Submissions use the existing protected intake API, only when the operator enables it. Applications are review-only, never auto-approved or published.</p>
           <Link href="/become-a-partner" target="_blank" className="mt-4 inline-block rounded-xl bg-indigo-500 px-5 py-3 text-sm font-semibold hover:bg-indigo-400">Open partner application ↗</Link>
+          <Link href="/admin/producers/applications" className="ml-3 inline-block rounded-xl border border-white/20 px-5 py-3 text-sm font-semibold hover:bg-white/10">Review applications →</Link>
           <p className="mt-3 text-xs text-amber-200">Activation prerequisite: PRODUCER_INTEREST_INTAKE_ENABLED=true plus configured anti-spam quota and database, on a verified Preview. Do not share the public link until a test submission is confirmed.</p>
         </section>
         <ProducerMediaPlanner />
