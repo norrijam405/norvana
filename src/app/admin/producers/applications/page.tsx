@@ -2,9 +2,9 @@ import { ApplicationReviewControls } from "@/components/admin/application-review
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import Link from "next/link";
-import { desc } from "drizzle-orm";
+import { desc, inArray } from "drizzle-orm";
 import { db } from "@/db";
-import { producerInterestSubmissions } from "@/db/schema";
+import { producerInterestSubmissions, producerConversationNotes } from "@/db/schema";
 import { ADMIN_SESSION_COOKIE,adminSessionConfigured,verifyCurrentAdminSessionToken } from "@/lib/admin-session";
 import { WatchtowerNav } from "@/components/admin/watchtower-nav";
 
@@ -18,7 +18,11 @@ export default async function ProducerApplicationsPage({searchParams}: {searchPa
   const statusFilter=typeof params.status==="string"?params.status.trim().toUpperCase().slice(0,40):"ALL";
   let records:(typeof producerInterestSubmissions.$inferSelect)[]=[];
   let loadFailed=false;
-  try {records=await db.select().from(producerInterestSubmissions).orderBy(desc(producerInterestSubmissions.createdAt)).limit(100);}
+  let history:(typeof producerConversationNotes.$inferSelect)[]=[];
+  try {
+    records=await db.select().from(producerInterestSubmissions).orderBy(desc(producerInterestSubmissions.createdAt)).limit(100);
+    if(records.length) history=await db.select().from(producerConversationNotes).where(inArray(producerConversationNotes.interestSubmissionId, records.map(r=>r.id))).orderBy(desc(producerConversationNotes.createdAt)).limit(500);
+  }
   catch(e){loadFailed=true;console.error("Producer applications loading failed",e);}
   const visible=records.filter(row=>(!q||[row.businessName,row.contactName,row.email,row.location,...row.productCategories].some(v=>String(v||"").toLowerCase().includes(q)))&&(statusFilter==="ALL"||row.status.toUpperCase()===statusFilter));
   const statuses=Array.from(new Set(records.map(row=>row.status.toUpperCase()))).sort();
@@ -51,6 +55,7 @@ export default async function ProducerApplicationsPage({searchParams}: {searchPa
           <div><dt className="text-white/40">Media discussion</dt><dd className="mt-1">{row.mediaInterest}</dd></div>
         </dl>
         <ApplicationReviewControls id={row.id} status={row.status}/>
+        <details className="mt-4 rounded-xl border border-white/10 p-4"><summary className="cursor-pointer text-sm font-semibold text-indigo-200">Review history ({history.filter(h=>h.interestSubmissionId===row.id && h.conversationStage==="APPLICATION_REVIEW").length})</summary><div className="mt-3 space-y-3">{history.filter(h=>h.interestSubmissionId===row.id && h.conversationStage==="APPLICATION_REVIEW").map(h=><div key={h.id} className="rounded-lg bg-black/25 p-3 text-sm"><p className="text-xs text-white/50">{h.createdAt.toLocaleString("en-US")} · {String(h.answers.fromStatus||"Unknown")} → {String(h.answers.toStatus||"Unknown")}</p><p className="mt-2 whitespace-pre-wrap">{h.operatorSummary}</p></div>)}{!history.some(h=>h.interestSubmissionId===row.id && h.conversationStage==="APPLICATION_REVIEW")?<p className="text-sm text-white/50">No decision history recorded in the loaded set.</p>:null}{history.length>=500?<p className="text-xs text-amber-200">History capped at 500 recent notes; older events may not be displayed.</p>:null}</div></details>
       </article>)}{visible.length===0?<p className="rounded-xl border border-white/10 p-6 text-white/60">{records.length===0?"No applications have been saved yet.":"No matching applications within the newest 100 records."}</p>:null}</div></>}
       <p className="mt-6 text-xs text-amber-200">Handle submitted contact details privately. Never copy them to public tickets or GitHub. No automated approvals, vendor onboarding, or outreach from this page.</p>
     </div>
