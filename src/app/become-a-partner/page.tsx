@@ -11,7 +11,7 @@ export default function ApplyForm() {
     setState("working");
     const data = new FormData(event.currentTarget);
     const fields = Object.fromEntries(data.entries());
-    const payload = { ...fields, productCategories: [String(fields.category || ""), String(fields.products || "")].filter(Boolean), fulfillmentModes: [String(fields.fulfillment || "")].filter(Boolean), leadTimeNotes: fields.leadTime, painPoint: fields.partnershipFit, pilotInterest: "DISCUSS" };
+    const payload = { ...fields, productCategories: [String(fields.category || "")].filter(Boolean), capacityNotes: String(fields.products || "").slice(0,1500), fulfillmentModes: [String(fields.fulfillment || "")].filter(Boolean), leadTimeNotes: fields.leadTime, painPoint: fields.partnershipFit, pilotInterest: "DISCUSS" };
     try {
       const response = await fetch("/api/producer-interest", {
         method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(payload),
@@ -44,7 +44,7 @@ export default function ApplyForm() {
           <label className="text-sm font-medium">Business type<select name="category" className={field}><option value="FARM">Farm / grower</option><option value="RANCH">Ranch / livestock</option><option value="BUTCHER">Butcher / meat processor</option><option value="FOOD_HUB">Food hub / distributor</option><option value="SPECIALTY">Bakery / honey / specialty food</option><option value="MAKER">Maker / independent store</option></select></label>
           <label className="text-sm font-medium">Sell direct, wholesale, or both?<select name="salesModel" className={field}><option value="BOTH">Both</option><option value="RETAIL">Retail</option><option value="WHOLESALE">Wholesale</option><option value="UNKNOWN">Let's discuss</option></select></label>
         </div>
-        <label className="block text-sm font-medium">What products do you offer? *<textarea required name="products" rows={3} maxLength={2000} className={field}/></label>
+        <label className="block text-sm font-medium">What products do you offer? *<textarea required name="products" rows={3} maxLength={1500} className={field}/></label>
         <label className="block text-sm font-medium">What's seasonal or changes during the year?<textarea name="seasonality" rows={2} maxLength={2000} className={field}/></label>
         <label className="block text-sm font-medium">How do you fulfill orders? (pickup, local delivery, shipping)<textarea name="fulfillment" rows={2} maxLength={2000} className={field}/></label>
         <label className="block text-sm font-medium">Typical order preparation time or minimums<textarea name="leadTime" rows={2} maxLength={2000} className={field}/></label>
