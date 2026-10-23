@@ -1,9 +1,10 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 const TRANSITIONS:Record<string,string[]>={NEW:["REVIEWING","NEEDS_INFO","DECLINED","PAUSED"],REVIEWING:["NEEDS_INFO","QUALIFIED","DECLINED","PAUSED"],NEEDS_INFO:["REVIEWING","DECLINED","PAUSED"],QUALIFIED:["REVIEWING","PAUSED"],DECLINED:["REVIEWING"],PAUSED:["REVIEWING","DECLINED"]};
 export function ApplicationReviewControls({id,status}:{id:number;status:string}) {
  const router=useRouter();const choices=TRANSITIONS[status]||[];const [next,setNext]=useState(choices[0]||"");const [note,setNote]=useState("");const [pending,setPending]=useState(false);const [message,setMessage]=useState("");
+ useEffect(()=>{setNext((current)=>choices.includes(current)?current:(choices[0]||""));},[status]);
  async function save(){if(pending)return;setPending(true);setMessage("");try{
  const r=await fetch("/api/admin/producer-applications/"+id+"/review",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({status:next,note})});
  const body=await r.json().catch(()=>({}));if(!r.ok){setMessage(body.error||"Could not update review");return;}
