@@ -49,7 +49,7 @@ export default async function ProducerApplicationsPage({searchParams}: {searchPa
           <div><dt className="text-white/40">Fulfillment</dt><dd className="mt-1">{row.fulfillmentModes.join(", ")||"Not provided"}</dd></div>
           <div><dt className="text-white/40">Seasonality</dt><dd className="mt-1 whitespace-pre-wrap">{row.seasonality||"Not provided"}</dd></div>
           <div><dt className="text-white/40">Lead time</dt><dd className="mt-1 whitespace-pre-wrap">{row.leadTimeNotes||"Not provided"}</dd></div>
-          <div><dt className="text-white/40">Capacity</dt><dd className="mt-1 whitespace-pre-wrap">{row.capacityNotes||"Not provided"}</dd></div>
+          <div><dt className="text-white/40">Product details / capacity notes</dt><dd className="mt-1 whitespace-pre-wrap">{row.capacityNotes||"Not provided"}</dd></div>
           <div><dt className="text-white/40">Partnership goals</dt><dd className="mt-1 whitespace-pre-wrap">{row.painPoint||"Not provided"}</dd></div>
           <div><dt className="text-white/40">Pilot interest</dt><dd className="mt-1">{row.pilotInterest}</dd></div>
           <div><dt className="text-white/40">Media discussion</dt><dd className="mt-1">{row.mediaInterest}</dd></div>
