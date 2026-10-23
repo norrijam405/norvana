@@ -1,3 +1,4 @@
+import { ApplicationReviewControls } from "@/components/admin/application-review-controls";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import Link from "next/link";
@@ -26,7 +27,7 @@ export default async function ProducerApplicationsPage({searchParams}: {searchPa
     <div className="mx-auto max-w-6xl px-4 py-8">
       <Link href="/admin/producers" className="text-sm text-indigo-200 hover:underline">← Farms & Producers</Link>
       <h1 className="mt-4 text-4xl font-bold">Producer applications</h1>
-      <p className="mt-3 text-sm text-white/60">Read-only intake review. Submitting an application never makes someone an approved vendor. Newest 100 applications displayed. HubSpot synchronization is not active.</p>
+      <p className="mt-3 text-sm text-white/60">Private intake review with explicit audited status decisions. Submitting an application never makes someone an approved vendor. Newest 100 applications displayed. HubSpot synchronization is not active.</p>
       <form method="GET" action="/admin/producers/applications" className="mt-6 flex flex-wrap items-end gap-3 rounded-2xl border border-white/10 bg-white/[.035] p-4">
         <label className="min-w-[240px] flex-1 text-xs text-white/70">Search applications<input type="search" name="q" maxLength={100} defaultValue={typeof params.q==="string"?params.q.slice(0,100):""} placeholder="Farm, contact, product or state" className="mt-2 w-full rounded-xl border border-white/15 bg-[#191b18] p-3 text-sm text-white"/></label>
         <label className="text-xs text-white/70">Status<select name="status" defaultValue={statusFilter} className="mt-2 block rounded-xl border border-white/15 bg-[#191b18] p-3 text-sm text-white"><option value="ALL">All statuses</option>{statuses.map(s=><option key={s} value={s}>{s}</option>)}</select></label>
@@ -49,6 +50,7 @@ export default async function ProducerApplicationsPage({searchParams}: {searchPa
           <div><dt className="text-white/40">Pilot interest</dt><dd className="mt-1">{row.pilotInterest}</dd></div>
           <div><dt className="text-white/40">Media discussion</dt><dd className="mt-1">{row.mediaInterest}</dd></div>
         </dl>
+        <ApplicationReviewControls id={row.id} status={row.status}/>
       </article>)}{visible.length===0?<p className="rounded-xl border border-white/10 p-6 text-white/60">{records.length===0?"No applications have been saved yet.":"No matching applications within the newest 100 records."}</p>:null}</div></>}
       <p className="mt-6 text-xs text-amber-200">Handle submitted contact details privately. Never copy them to public tickets or GitHub. No automated approvals, vendor onboarding, or outreach from this page.</p>
     </div>
