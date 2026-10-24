@@ -25,6 +25,8 @@ export default async function ProducerConversationPage() {
   const persistenceEnabled =
     process.env.PRODUCER_CONVERSATION_PERSISTENCE_ENABLED === "true";
 
+  const intakeEnabled = process.env.PRODUCER_INTEREST_INTAKE_ENABLED === "true";
+
   return (
     <main className="min-h-screen bg-[#0d0f0c] text-white">
       <WatchtowerNav current="/admin/producers" />
@@ -63,6 +65,21 @@ export default async function ProducerConversationPage() {
           <Link href="/become-a-partner" target="_blank" className="mt-4 inline-block rounded-xl bg-indigo-500 px-5 py-3 text-sm font-semibold hover:bg-indigo-400">Open partner application ↗</Link>
           <Link href="/admin/producers/applications" className="ml-3 inline-block rounded-xl border border-white/20 px-5 py-3 text-sm font-semibold hover:bg-white/10">Review applications →</Link>
           <p className="mt-3 text-xs text-amber-200">Activation prerequisite: PRODUCER_INTEREST_INTAKE_ENABLED=true plus configured anti-spam quota and database, on a verified Preview. Do not share the public link until a test submission is confirmed.</p>
+        </section>
+        <section className="mb-8 rounded-2xl border border-white/10 bg-white/[.04] p-6">
+          <p className="text-xs font-semibold uppercase tracking-widest text-indigo-200">Operator launch checks</p>
+          <h2 className="mt-2 text-xl font-semibold">Supplier intake readiness</h2>
+          <div className="mt-4 grid gap-3 sm:grid-cols-2">
+            <div className="rounded-xl border border-white/10 bg-black/20 p-4">
+              <p className="text-xs text-white/50">Public application submissions</p>
+              <p className={intakeEnabled ? "mt-1 font-semibold text-emerald-200" : "mt-1 font-semibold text-amber-200"}>{intakeEnabled ? "Feature flag enabled — test still required" : "Disabled — do not distribute the link"}</p>
+            </div>
+            <div className="rounded-xl border border-white/10 bg-black/20 p-4">
+              <p className="text-xs text-white/50">Server-backed conversation notes</p>
+              <p className={persistenceEnabled ? "mt-1 font-semibold text-emerald-200" : "mt-1 font-semibold text-amber-200"}>{persistenceEnabled ? "Feature flag enabled — test still required" : "Browser drafts only"}</p>
+            </div>
+          </div>
+          <p className="mt-3 text-xs leading-5 text-white/45">These flags do not confirm database health, abuse protection, deployment readiness or successful submissions. Always prove a test submission and owner review on the exact deployed commit before outreach.</p>
         </section>
         <ProducerMediaPlanner />
         <ProducerOutreachTemplates />
