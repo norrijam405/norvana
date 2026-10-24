@@ -1,6 +1,8 @@
 import type { MetadataRoute } from "next";
+import { publicIndexingEnabled, publicSiteUrl } from "@/lib/public-site-url";
 
 export default function robots(): MetadataRoute.Robots {
+  if (!publicIndexingEnabled()) return { rules: [{ userAgent: "*", disallow: "/" }] };
   return {
     rules: [
       {
@@ -9,7 +11,7 @@ export default function robots(): MetadataRoute.Robots {
         disallow: ["/admin/", "/watchtower"],
       },
     ],
-    sitemap: "https://acreera.com/sitemap.xml",
-    host: "https://acreera.com",
+    sitemap: publicSiteUrl() + "/sitemap.xml",
+    host: publicSiteUrl(),
   };
 }

@@ -37,7 +37,7 @@ export function ArchiveClient({ eras }: { eras: ArchiveEra[] }) {
               Past worlds stay worth revisiting.
             </h1>
             <p className="mt-5 max-w-2xl text-base leading-7 text-cream/70">
-              The Archive keeps past Acre Eras understandable as they were presented at the time. It is a history of what we featured, not a graveyard of old placeholder collections.
+              The Archive preserves completed Eras as historical collections. Past products are not promises of current price, stock, or checkout availability.
             </p>
           </div>
         </section>

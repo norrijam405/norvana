@@ -1,135 +1,60 @@
 import Link from "next/link";
 import { Footer } from "@/components/footer";
-import { HOME_PREVIEW_PRODUCTS } from "@/lib/acre-era/preview-products";
 import { AcreEraHomeJourney } from "@/components/acre-era/acre-era-home-journey";
+
+const departments = [
+  { number: "01", name: "Everyday goods", detail: "Home, personal care, pets and useful essentials.", href: "/shop", action: "Explore goods", tone: "bg-[#ebe7de]" },
+  { number: "02", name: "Market & makers", detail: "Discover producers and the people behind the products.", href: "/market", action: "Explore market", tone: "bg-[#e4e9df]" },
+  { number: "03", name: "Selected finds", detail: "Discover distinctive brands and partner collections.", href: "/partners", action: "Explore finds", tone: "bg-[#e6e0db]" },
+];
 
 export function BetweenErasHome() {
   return (
     <>
       <main className="bg-bone text-soil">
-        <AcreEraHomeJourney showPreviewProducts={process.env.VERCEL_ENV === "preview"} />
-
+        <AcreEraHomeJourney showPreviewProducts={false} />
         <section className="border-b border-soil/10 bg-cream">
-          <div className="mx-auto grid max-w-7xl gap-5 px-4 py-8 sm:px-6 md:grid-cols-[.72fr_1.28fr] md:items-center lg:px-8">
-            <p className="text-xs font-semibold uppercase tracking-[0.22em] text-leaf">What Acre Era is</p>
-            <p className="max-w-4xl font-display text-2xl font-bold leading-tight tracking-[-0.025em] md:text-3xl">
-              One place for fresh food, everyday goods, premium finds, and changing Eras — built so the store can move with real life instead of forcing every shopper into one lane.
-            </p>
+          <div className="mx-auto flex max-w-7xl flex-col gap-4 px-5 py-8 sm:px-8 md:flex-row md:items-center md:justify-between">
+            <div>
+              <p className="text-[11px] font-semibold uppercase tracking-[.2em] text-leaf">The Acre Era edit</p>
+              <p className="mt-1 font-display text-xl font-semibold tracking-tight md:text-2xl">Useful things. Good discoveries. One considered place.</p>
+            </div>
+            <Link href="/shop" className="inline-flex min-h-11 items-center justify-center rounded-full border border-soil/25 px-6 text-sm font-semibold transition hover:bg-soil hover:text-cream">Browse the shop →</Link>
           </div>
         </section>
-
-        {process.env.VERCEL_ENV === "preview" ? (
-          <section className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8 lg:py-16">
-            <div className="flex flex-col gap-5 md:flex-row md:items-end md:justify-between">
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.22em] text-leaf">Shop Acre Era</p>
-                <h2 className="mt-3 max-w-3xl font-display text-4xl font-black tracking-[-0.035em] md:text-5xl">
-                  From the grocery run to the night out.
-                </h2>
-                <p className="mt-4 max-w-2xl text-sm leading-7 text-muted">
-                  The shelf can move from produce and pet care to beauty, tech, sneakers, and premium pieces without making you feel like you left the store.
-                </p>
-              </div>
-              <Link href="/shop" className="btn-secondary">See the full Preview Shelf</Link>
-            </div>
-
-            <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {HOME_PREVIEW_PRODUCTS.slice(0, 4).map((product) => (
-                <article key={product.id} className="overflow-hidden rounded-[1.6rem] border border-soil/10 bg-cream shadow-sm">
-                  <div className={"flex aspect-[4/3] items-center justify-center bg-gradient-to-br " + product.accent}>
-                    <div className="text-center text-cream">
-                      <div className="text-6xl">{product.icon}</div>
-                      <div className="mt-4 rounded-full border border-white/20 bg-black/15 px-3 py-1 text-[9px] font-semibold uppercase tracking-[0.14em]">
-                        Preview concept
-                      </div>
-                    </div>
-                  </div>
-                  <div className="p-5">
-                    <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-leaf">
-                      {product.niche.replace("-", " ")}
-                    </p>
-                    <h3 className="mt-2 font-display text-xl font-bold">{product.name}</h3>
-                    <p className="mt-2 text-sm leading-6 text-muted">{product.description}</p>
-                    <div className="mt-4 flex items-center justify-between">
-                      <span className="font-display text-lg font-bold">${product.price.toFixed(2)}</span>
-                      <span className="text-[10px] font-semibold uppercase tracking-[0.12em] text-muted">Not for sale</span>
-                    </div>
-                  </div>
-                </article>
-              ))}
-            </div>
-          </section>
-        ) : null}
-
-        <section className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8 lg:py-16">
-          <div className="grid gap-6 lg:grid-cols-[.82fr_1.18fr] lg:items-end">
+        <section className="mx-auto max-w-7xl px-5 py-16 sm:px-8 lg:py-24">
+          <div className="flex flex-col justify-between gap-6 md:flex-row md:items-end">
             <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.22em] text-leaf">More ways to shop one world</p>
-              <h2 className="mt-3 font-display text-4xl font-black tracking-[-0.035em] md:text-5xl">
-                Acre Era can go wider without pretending every item comes from the same shelf.
-              </h2>
+              <p className="text-xs font-semibold uppercase tracking-[.2em] text-leaf">Explore the store</p>
+              <h2 className="mt-3 max-w-2xl font-display text-4xl font-semibold leading-[1.08] tracking-[-.04em] sm:text-5xl">Find your next good thing.</h2>
             </div>
-            <p className="max-w-2xl text-sm leading-7 text-muted lg:justify-self-end">
-              Some products come directly through Acre Era, some come from local producers, and some are carefully selected from trusted retail and brand partners. We keep the buying path clear so you always know who owns checkout, shipping, returns, and warranty.
-            </p>
+            <p className="max-w-sm text-sm leading-7 text-muted">Browse by what matters to you today. Availability and purchase options are shown on each product listing.</p>
           </div>
-
-          <div className="mt-8 grid gap-4 md:grid-cols-3">
-            {[
-              {
-                eyebrow: "Goods Era",
-                title: "Acre Era goods",
-                copy: "Useful everyday products, electronics, home, pets, beauty, family, style, and more as real supply is qualified.",
-                href: "/shop",
-                cta: "Browse Goods Era",
-              },
-              {
-                eyebrow: "Market Era",
-                title: "Local + food",
-                copy: "Farms, makers, butchers, bakers, wineries, and the people behind what lands on the table.",
-                href: "/market",
-                cta: "Enter Market Era",
-              },
-              {
-                eyebrow: "Finds Era",
-                title: "Trusted partner finds",
-                copy: "Name-brand, premium, hard-to-find, and specialty products we can recommend without pretending Acre Era warehouses them.",
-                href: "/partners",
-                cta: "Explore Finds Era",
-              },
-            ].map((lane) => (
-              <Link
-                key={lane.title}
-                href={lane.href}
-                className="group rounded-[1.7rem] border border-soil/10 bg-cream p-6 transition hover:-translate-y-1 hover:border-leaf/25 hover:shadow-sm"
-              >
-                <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-leaf">{lane.eyebrow}</p>
-                <h3 className="mt-3 font-display text-2xl font-bold">{lane.title}</h3>
-                <p className="mt-3 text-sm leading-6 text-muted">{lane.copy}</p>
-                <span className="mt-6 inline-flex text-sm font-semibold text-soil group-hover:text-leaf">{lane.cta} →</span>
+          <div className="mt-10 grid gap-4 md:grid-cols-3">
+            {departments.map((department) => (
+              <Link href={department.href} key={department.number} className={department.tone + " group flex min-h-[18rem] flex-col justify-between rounded-[1.6rem] border border-soil/10 p-7 transition duration-300 hover:-translate-y-1 hover:shadow-lg sm:p-8"}>
+                <div className="flex items-start justify-between">
+                  <span className="font-mono text-xs text-soil/45">{department.number} / 03</span>
+                  <span aria-hidden="true" className="text-2xl text-soil/50 transition group-hover:translate-x-1">↗</span>
+                </div>
+                <div>
+                  <h3 className="font-display text-3xl font-semibold tracking-[-.035em]">{department.name}</h3>
+                  <p className="mt-3 max-w-xs text-sm leading-6 text-soil/65">{department.detail}</p>
+                  <span className="mt-6 inline-block border-b border-soil/40 pb-1 text-sm font-semibold">{department.action}</span>
+                </div>
               </Link>
             ))}
           </div>
         </section>
-
-        <section className="mx-auto max-w-7xl px-4 pb-14 pt-4 sm:px-6 lg:px-8 lg:pb-20">
-          <div className="grid gap-4 overflow-hidden rounded-[2rem] bg-soil p-6 text-cream md:grid-cols-[1.2fr_.8fr] md:p-8">
+        <section className="bg-[#20281f] text-cream">
+          <div className="mx-auto grid max-w-7xl gap-8 px-5 py-16 sm:px-8 md:grid-cols-[1.15fr_.85fr] md:items-end lg:py-20">
             <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.22em] text-wheat">What&apos;s happening now</p>
-              <h2 className="mt-3 font-display text-3xl font-black tracking-[-0.03em] md:text-4xl">
-                See the current Era, local spotlights, what shoppers are asking for, and what Acre Era is paying attention to.
-              </h2>
-              <p className="mt-4 max-w-2xl text-sm leading-7 text-cream/68">
-                Company updates, local stories, shopper ideas, community moments, and what is moving right now all land here.
-              </p>
+              <p className="text-xs font-semibold uppercase tracking-[.2em] text-wheat">A different way to discover</p>
+              <h2 className="mt-4 max-w-2xl font-display text-4xl font-semibold leading-[1.08] tracking-[-.035em] sm:text-5xl">A little more intentional. A lot less clutter.</h2>
             </div>
-            <div className="flex flex-col justify-end gap-3">
-              <Link href="/era-drops" className="btn-primary !bg-wheat !text-soil text-center">
-                Open Era Drop
-              </Link>
-              <Link href="/market" className="btn-ghost-light text-center">
-                Enter Market Era
-              </Link>
+            <div>
+              <p className="text-sm leading-7 text-cream/70">We're building a store where products earn their place. See what is available, who handles your order and where checkout happens before you decide.</p>
+              <Link href="/how-it-works" className="mt-6 inline-flex min-h-11 items-center border-b border-wheat pb-1 text-sm font-semibold text-wheat">How Acre Era works →</Link>
             </div>
           </div>
         </section>

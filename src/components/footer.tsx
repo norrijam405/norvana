@@ -81,13 +81,15 @@ export function Footer() {
               <li><Link href="/growers#interest" className="hover:text-cream">Producer interest</Link></li>
               <li><Link href="/growers#delivery" className="hover:text-cream">How delivery works</Link></li>
               <li><Link href="/market#farm-facts" className="hover:text-cream">Farm facts</Link></li>
+              <li><a href="mailto:contact@acreera.com?subject=Acre%20Era%20partnership%20inquiry" className="hover:text-cream">Partnership inquiries</a></li>
+              <li><a href="mailto:support@acreera.com" className="hover:text-cream">Customer support</a></li>
             </ul>
           </div>
         </div>
 
         <div className="mt-14 flex flex-col gap-2 border-t border-cream/10 pt-7 text-xs text-cream/40 md:flex-row md:items-center md:justify-between">
           <span>© {new Date().getFullYear()} Acre Era.</span>
-          <span>Fresh living · everyday goods · premium finds · changing Eras.</span>
+          <div className="flex items-center gap-5"><span>Fresh living · everyday goods · premium finds.</span><Link href="/admin/login" className="text-cream/35 underline-offset-4 transition hover:text-cream hover:underline" aria-label="Staff sign in">Staff sign in</Link></div>
         </div>
       </div>
     </footer>

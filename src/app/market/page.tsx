@@ -3,7 +3,6 @@ import Link from "next/link";
 import { desc, inArray } from "drizzle-orm";
 import { db } from "@/db";
 import { marketRequests, products } from "@/db/schema";
-import { FarmLifeStory } from "@/components/acre-era/farm-life-story";
 import { JourneyHero } from "@/components/acre-era/journey-hero";
 import { Footer } from "@/components/footer";
 
@@ -21,21 +20,6 @@ export const metadata: Metadata = {
 export const dynamic = "force-dynamic";
 
 const MARKET_NICHES = ["grocery", "food", "garden", "wellness"];
-
-const PRODUCT_EMOJIS: Record<string, string> = {
-  grocery: "🥕",
-  food: "🍎",
-  garden: "🌿",
-  wellness: "🌾",
-};
-
-const PREVIEW_FARM_MEDIA =
-  process.env.VERCEL_ENV === "preview"
-    ? {
-        videoUrl: "https://cdn.pixabay.com/video/2022/09/04/130226-746395325_medium.mp4",
-        posterUrl: "https://cdn.pixabay.com/video/2022/09/04/130226-746395325_medium.jpg",
-      }
-    : { videoUrl: null, posterUrl: null };
 
 export default async function MarketPage() {
   let marketProducts: typeof products.$inferSelect[] = [];
@@ -88,36 +72,10 @@ export default async function MarketPage() {
         />
 
         <div className="mx-auto max-w-7xl space-y-10 px-4 py-12 sm:px-6 lg:px-8">
-          <FarmLifeStory
-            videoUrl={PREVIEW_FARM_MEDIA.videoUrl}
-            posterUrl={PREVIEW_FARM_MEDIA.posterUrl}
-          />
-
-          <section className="rounded-[2rem] border border-soil/10 bg-cream p-6 md:p-8">
-            <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.22em] text-leaf">Behind the shelf</p>
-                <h2 className="mt-2 font-display text-3xl font-bold md:text-4xl">Food has people behind it.</h2>
-              </div>
-              <p className="max-w-xl text-sm leading-6 text-muted">
-                Market can give small operators a little room to be seen without turning the page into a documentary.
-              </p>
-            </div>
-
-            <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-              {[
-                ["🌾", "Growers", "Weather, harvest timing, labor, seasonality, and the daily work behind what looks simple on a shelf."],
-                ["🥩", "Butchers + meat shops", "Cuts, sourcing, cold-chain handling, prep, and the people keeping local meat moving safely."],
-                ["🍇", "Wineries + vineyards", "Land, seasons, fermentation, hospitality, and the small businesses built around place."],
-                ["🥖", "Bakers + makers", "Early mornings, small batches, neighborhood demand, and the craft behind everyday food."],
-              ].map(([icon, title, copy]) => (
-                <article key={title} className="rounded-2xl bg-bone p-5">
-                  <div className="text-3xl">{icon}</div>
-                  <h3 className="mt-3 font-display text-xl font-bold">{title}</h3>
-                  <p className="mt-3 text-sm leading-6 text-muted">{copy}</p>
-                </article>
-              ))}
-            </div>
+          <section className="grid gap-4 rounded-[1.5rem] border border-soil/10 bg-cream p-6 md:grid-cols-3 md:p-8">
+            <div><p className="text-xs font-semibold uppercase tracking-wider text-leaf">01 · Discover</p><h2 className="mt-2 text-xl font-semibold">Browse what is in season</h2><p className="mt-2 text-sm leading-6 text-muted">Listings appear when a producer and their products are confirmed.</p></div>
+            <div><p className="text-xs font-semibold uppercase tracking-wider text-leaf">02 · Choose</p><h2 className="mt-2 text-xl font-semibold">See who grows it</h2><p className="mt-2 text-sm leading-6 text-muted">Check the producer, price, service area and fulfillment method.</p></div>
+            <div><p className="text-xs font-semibold uppercase tracking-wider text-leaf">03 · Receive</p><h2 className="mt-2 text-xl font-semibold">Know how you get it</h2><p className="mt-2 text-sm leading-6 text-muted">Pickup and delivery options must be confirmed before checkout.</p></div>
           </section>
 
           <section id="market-shelf">
@@ -141,7 +99,7 @@ export default async function MarketPage() {
                   >
                     <div className="relative flex aspect-square items-center justify-center overflow-hidden rounded-[1.1rem] bg-sage-wash text-6xl">
                       <div className="absolute inset-0 acre-contours opacity-25" />
-                      <span className="relative">{PRODUCT_EMOJIS[product.niche] || "🧺"}</span>
+                      {product.images?.[0] ? <img src={product.images[0]} alt={product.name} loading="lazy" className="absolute inset-0 h-full w-full object-cover" /> : <span className="relative text-xs font-semibold uppercase tracking-wider text-soil/40">Photo pending verification</span>}
                     </div>
                     <p className="mt-4 text-xs font-semibold uppercase tracking-[0.15em] text-leaf">
                       {product.niche}

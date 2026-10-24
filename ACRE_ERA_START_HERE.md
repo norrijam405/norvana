@@ -7,6 +7,18 @@
 
 Do not ask the founder to reconstruct the product vision already preserved here.
 
+## Partner intake assembly — 2026-10-23
+
+- [Current pre-test partner pipeline handoff](docs/ACRE_ERA_PARTNER_PIPELINE_PRETEST_HANDOFF_2026-10-23.md). Treat coding, CI, Preview testing, and launch as distinct evidence gates. This work is NOT approved for public farm outreach.
+
+## Latest operational continuity (2026-10-21)
+
+**Read these before new work or a successor takeover:**
+- [Operational roadmap — priorities, differentiators, launch gates](docs/ACRE_ERA_OPERATIONAL_ROADMAP_2026-10-21.md)
+- [Successor handoff — verified CRM records, commits, boundaries, next actions](docs/ACRE_ERA_SUCCESSOR_HANDOFF_2026-10-21.md)
+
+These updates supplement (do not erase) the older north-star and technical contracts below. Draft PR #23 is not a Production release.
+
 ## North star
 
 Acre Era is not an infinite catalog and not a generic dropshipping store.
