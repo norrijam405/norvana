@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { eq } from "drizzle-orm";
+import { desc, eq } from "drizzle-orm";
 import { db } from "@/db";
 import { producerInterestSubmissions, producerConversationNotes } from "@/db/schema";
 import { requireCurrentRecoveryAdmin } from "@/lib/admin-guard";
@@ -28,16 +28,16 @@ export async function POST(req:NextRequest,{params}:{params:Promise<{id:string}>
     const result=await db.transaction(async tx=>{
       const [application]=await tx.select().from(producerInterestSubmissions).where(eq(producerInterestSubmissions.id,Number(id))).for("update").limit(1);
       if(!application)return {code:404,error:"Application not found"};
-      const from=application.status as State;
+      const [latestReview]=await tx.select().from(producerConversationNotes).where(eq(producerConversationNotes.interestSubmissionId,Number(id))).orderBy(desc(producerConversationNotes.createdAt),desc(producerConversationNotes.id)).limit(1);
+      const from=(latestReview?.conversationStage==="APPLICATION_REVIEW" && typeof latestReview.answers.toStatus==="string" ? latestReview.answers.toStatus : application.status) as State;
       if(!STATES.includes(from)||!TRANSITIONS[from].includes(target as State))return {code:409,error:"Invalid transition from "+from+" to "+target};
-      const [updated]=await tx.update(producerInterestSubmissions).set({status:target}).where(eq(producerInterestSubmissions.id,Number(id))).returning({id:producerInterestSubmissions.id,status:producerInterestSubmissions.status});
       await tx.insert(producerConversationNotes).values({
         interestSubmissionId:Number(id), businessName:application.businessName, contactName:application.contactName,
         contactMethod:"INTERNAL",conversationStage:"APPLICATION_REVIEW",
         answers:{fromStatus:from,toStatus:target},operatorSummary:note,nextStep:note,
         pilotRecommendation:"UNDECIDED",evidenceRefs:[],actor:"owner"
       });
-      return {code:200,id:updated.id,status:updated.status,previousStatus:from,recorded:true};
+      return {code:200,id:application.id,status:target,previousStatus:from,recorded:true,appendOnly:true};
     });
     if("error" in result)return NextResponse.json({error:result.error},{status:result.code});
     return NextResponse.json(result,{headers:{"cache-control":"no-store"}});
