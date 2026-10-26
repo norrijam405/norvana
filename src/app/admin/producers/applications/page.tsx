@@ -21,11 +21,12 @@ export default async function ProducerApplicationsPage({searchParams}: {searchPa
   let history:(typeof producerConversationNotes.$inferSelect)[]=[];
   try {
     records=await db.select().from(producerInterestSubmissions).orderBy(desc(producerInterestSubmissions.createdAt)).limit(100);
-    if(records.length) history=await db.select().from(producerConversationNotes).where(inArray(producerConversationNotes.interestSubmissionId, records.map(r=>r.id))).orderBy(desc(producerConversationNotes.createdAt)).limit(500);
+    if(records.length) history=await db.select().from(producerConversationNotes).where(inArray(producerConversationNotes.interestSubmissionId, records.map(r=>r.id))).orderBy(desc(producerConversationNotes.createdAt),desc(producerConversationNotes.id)).limit(500);
   }
   catch(e){loadFailed=true;console.error("Producer applications loading failed",e);}
-  const visible=records.filter(row=>(!q||[row.businessName,row.contactName,row.email,row.location,...row.productCategories].some(v=>String(v||"").toLowerCase().includes(q)))&&(statusFilter==="ALL"||row.status.toUpperCase()===statusFilter));
-  const statuses=Array.from(new Set(records.map(row=>row.status.toUpperCase()))).sort();
+  const reviewStatus=(id:number, original:string)=>{const event=history.find(h=>h.interestSubmissionId===id && h.conversationStage==="APPLICATION_REVIEW" && typeof h.answers.toStatus==="string");return event?String(event.answers.toStatus):original;};
+  const visible=records.filter(row=>(!q||[row.businessName,row.contactName,row.email,row.location,...row.productCategories].some(v=>String(v||"").toLowerCase().includes(q)))&&(statusFilter==="ALL"||reviewStatus(row.id,row.status).toUpperCase()===statusFilter));
+  const statuses=Array.from(new Set(records.map(row=>reviewStatus(row.id,row.status).toUpperCase()))).sort();
   return <main className="min-h-screen bg-[#0d0f0c] pb-20 text-white">
     <WatchtowerNav current="/admin/producers"/>
     <div className="mx-auto max-w-6xl px-4 py-8">
@@ -40,7 +41,7 @@ export default async function ProducerApplicationsPage({searchParams}: {searchPa
       </form>
       {loadFailed?<div role="alert" className="mt-6 rounded-xl border border-rose-400/40 bg-rose-950/30 p-5">Database unavailable. Application count and records cannot be confirmed. No records were modified.</div>:
       <><p className="mt-6 text-sm text-indigo-200">{visible.length} matching application(s) from the newest {records.length} (up to 100)</p><div className="mt-4 space-y-4">{visible.map(row=><article key={row.id} className="rounded-2xl border border-white/10 bg-white/[.04] p-6">
-        <div className="flex flex-wrap justify-between gap-2"><h2 className="text-xl font-semibold">{row.businessName}</h2><span className="rounded-lg border border-white/20 px-3 py-1 text-xs">{row.status}</span></div>
+        <div className="flex flex-wrap justify-between gap-2"><h2 className="text-xl font-semibold">{row.businessName}</h2><span className="rounded-lg border border-white/20 px-3 py-1 text-xs">{reviewStatus(row.id,row.status)}</span></div>
         <p className="mt-2 text-sm text-white/65">{row.location} · {row.salesModel} · Applied {row.createdAt.toLocaleDateString("en-US")}</p>
         <p className="mt-2 break-all text-sm text-white/80">{row.contactName} · {row.email}{row.phone?" · "+row.phone:""}</p>
         {row.website?<p className="mt-2 break-all text-xs text-indigo-200">Website supplied: {row.website}</p>:null}
@@ -54,7 +55,7 @@ export default async function ProducerApplicationsPage({searchParams}: {searchPa
           <div><dt className="text-white/40">Pilot interest</dt><dd className="mt-1">{row.pilotInterest}</dd></div>
           <div><dt className="text-white/40">Media discussion</dt><dd className="mt-1">{row.mediaInterest}</dd></div>
         </dl>
-        <ApplicationReviewControls id={row.id} status={row.status}/>
+        <ApplicationReviewControls id={row.id} status={reviewStatus(row.id,row.status)}/>
         <details className="mt-4 rounded-xl border border-white/10 p-4"><summary className="cursor-pointer text-sm font-semibold text-indigo-200">Review history ({history.filter(h=>h.interestSubmissionId===row.id && h.conversationStage==="APPLICATION_REVIEW").length})</summary><div className="mt-3 space-y-3">{history.filter(h=>h.interestSubmissionId===row.id && h.conversationStage==="APPLICATION_REVIEW").map(h=><div key={h.id} className="rounded-lg bg-black/25 p-3 text-sm"><p className="text-xs text-white/50">{h.createdAt.toLocaleString("en-US")} · {String(h.answers.fromStatus||"Unknown")} → {String(h.answers.toStatus||"Unknown")}</p><p className="mt-2 whitespace-pre-wrap">{h.operatorSummary}</p></div>)}{!history.some(h=>h.interestSubmissionId===row.id && h.conversationStage==="APPLICATION_REVIEW")?<p className="text-sm text-white/50">No decision history recorded in the loaded set.</p>:null}{history.length>=500?<p className="text-xs text-amber-200">History capped at 500 recent notes; older events may not be displayed.</p>:null}</div></details>
       </article>)}{visible.length===0?<p className="rounded-xl border border-white/10 p-6 text-white/60">{records.length===0?"No applications have been saved yet.":"No matching applications within the newest 100 records."}</p>:null}</div></>}
       <p className="mt-6 text-xs text-amber-200">Handle submitted contact details privately. Never copy them to public tickets or GitHub. No automated approvals, vendor onboarding, or outreach from this page.</p>
