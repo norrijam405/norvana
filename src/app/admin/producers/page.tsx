@@ -1,6 +1,7 @@
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { ProducerMediaPlanner } from "@/components/admin/producer-media-planner";
+import { FeaturedProducerPlanner } from "@/components/admin/featured-producer-planner";
 import Link from "next/link";
 import { ProducerOutreachTemplates } from "@/components/admin/producer-outreach-templates";
 import { ProducerConversationNotebook } from "@/components/admin/producer-conversation-notebook";
@@ -81,6 +82,7 @@ export default async function ProducerConversationPage() {
           </div>
           <p className="mt-3 text-xs leading-5 text-white/45">These flags do not confirm database health, abuse protection, deployment readiness or successful submissions. Always prove a test submission and owner review on the exact deployed commit before outreach.</p>
         </section>
+        <FeaturedProducerPlanner />
         <ProducerMediaPlanner />
         <ProducerOutreachTemplates />
         <ProducerConversationNotebook persistenceEnabled={persistenceEnabled} />
