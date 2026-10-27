@@ -19,3 +19,10 @@ Founder wants to include locally owned wineries and craft breweries. This is a f
 - https://www.okc.gov/Infrastructure-Development/Business-Licensing/Alcoholic-Beverage-License
 
 Privacy: keep founder's residential location, permits and tax IDs out of source control.
+## Founder model clarification — 2026-10-27
+- Intended near-term model is a **paid producer-discovery / editorial advertising listing**, not Acre Era selling, fulfilling, delivering or collecting customer payments for alcohol.
+- Potential commercial model: clearly identified sponsored profile and modest flat advertising/listing fee paid by a participating, authorized business for exposure—not a commission per alcohol sale, not an order referral, and not paid placement inside another licensee's retail system. **Even flat-fee alcohol ads need legal/regulator review**, including producer-to-retailer tied-house restrictions and placement rules; do not solicit or charge alcohol suppliers until cleared.
+- Request explicit producer approval of photography, interview, trademarks, quotes and sponsor disclosure. Any links to alcohol purchase/order pages await regulatory review.
+- Ask Oklahoma ABLE for a written determination covering this specific platform: whether Norris James Data LLC needs any license to sell advertising space for licensed wineries/breweries, whether producer-paid listings or retailer-paid listings raise inducement/tied-house issues, and whether external links, rankings, geo-targeting or affiliate compensation change the answer.
+- Keep 21+ audience-sensitive design and truthful paid-ad disclosure in mind; no false claim of endorsement. For now, build editorial-only data models and drafts with zero publication or billing.
+- Under no circumstances activate alcohol checkout, transaction commissions or delivery without a separately licensed and vetted business model.
