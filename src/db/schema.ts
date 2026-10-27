@@ -883,3 +883,18 @@ export const adminAuthThrottle = pgTable("admin_auth_throttle", {
   blockedUntil: timestamp("blocked_until"),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
+
+
+/** Owner-only sponsorship proposals. No public publication or billing is implied. */
+export const featuredProducerProposals = pgTable("featured_producer_proposals", {
+  id: serial("id").primaryKey(),
+  businessName: varchar("business_name", {length:160}).notNull(),
+  region: varchar("region", {length:160}).notNull(),
+  category: varchar("category", {length:40}).notNull(),
+  story: text("story").notNull().default(""),
+  contactEmail: varchar("contact_email", {length:320}),
+  mediaRights: varchar("media_rights", {length:40}).notNull().default("UNVERIFIED"),
+  sponsorship: varchar("sponsorship", {length:40}).notNull().default("EDITORIAL_UNPAID"),
+  status: varchar("status", {length:40}).notNull().default("DRAFT"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
