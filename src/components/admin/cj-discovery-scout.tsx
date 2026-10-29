@@ -7,9 +7,9 @@ export function CjDiscoveryScout(){
  const [message,setMessage]=useState("");
  const [checking,setChecking]=useState<string|null>(null);
  const [checks,setChecks]=useState<Record<string,any>>({});
- async function qualify(sku:string){
+ async function qualify(sku:string,vid?:string){
   setChecking(sku);
-  try{const res=await fetch("/api/admin/cj/qualify",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({sku})});const body=await res.json();setChecks(prev=>({...prev,[sku]:body}));}catch{setChecks(prev=>({...prev,[sku]:{error:"Unable to reach CJ qualification service."}}));}finally{setChecking(null);}
+  try{const res=await fetch("/api/admin/cj/qualify",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({sku,vid})});const body=await res.json();setChecks(prev=>({...prev,[sku]:body}));}catch{setChecks(prev=>({...prev,[sku]:{error:"Unable to reach CJ qualification service."}}));}finally{setChecking(null);}
  }
  async function scout(){
   if(busy)return;setBusy(true);setMessage("");
@@ -39,7 +39,7 @@ export function CjDiscoveryScout(){
       <p className="font-semibold">{checks[x.sku].state||"UNAVAILABLE"}</p>
       <p>{checks[x.sku].error||checks[x.sku].reason}</p>
       {checks[x.sku].baseLandedCost!==null&&checks[x.sku].baseLandedCost!==undefined?<p>Product: ${checks[x.sku].productCost?.toFixed(2)} · Freight: ${checks[x.sku].shippingCost?.toFixed(2)} · Combined: <strong>${checks[x.sku].baseLandedCost.toFixed(2)}</strong> · Transit: {checks[x.sku].transitDays?.min??"?"}–{checks[x.sku].transitDays?.max??"?"} days</p>:null}
-      {checks[x.sku].variantOptions?.length?<p>Select an exact variant in the existing route checker before proceeding.</p>:null}
+      {checks[x.sku].variantOptions?.length?<div className="mt-2 flex flex-wrap items-center gap-2"><select aria-label={`Select variant for ${x.name}`} id={`cj-variant-${x.sku}`} defaultValue="" className="min-h-10 max-w-full flex-1 rounded-lg border border-white/20 bg-[#20221e] p-2 text-xs text-white"><option value="" disabled>Choose exact variant</option>{checks[x.sku].variantOptions.map((v:{vid:string;name:string})=><option key={v.vid} value={v.vid}>{v.name}</option>)}</select><button type="button" disabled={checking!==null} className="rounded-lg bg-indigo-500 px-4 py-2 text-xs font-semibold text-white disabled:opacity-50" onClick={()=>{const selected=document.getElementById(`cj-variant-${x.sku}`) as HTMLSelectElement|null;if(selected?.value)void qualify(x.sku,selected.value);}}>Check selected variant</button></div>:null}
       {checks[x.sku].priceExamples?.length?<p>At $14.99: ${checks[x.sku].priceExamples.find((p:any)=>p.price===14.99)?.grossBeforeFees?.toFixed(2)} before fees, taxes, returns, and advertising.</p>:null}
       <p>No approval, import, listing, purchase, or fulfillment was performed.</p>
     </div>:null}
