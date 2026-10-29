@@ -5,6 +5,12 @@ export function CjDiscoveryScout(){
  const [busy,setBusy]=useState(false);
  const [data,setData]=useState<{candidates:Candidate[];searched:string[];errors:string[];disclaimer:string}|null>(null);
  const [message,setMessage]=useState("");
+ const [checking,setChecking]=useState<string|null>(null);
+ const [checks,setChecks]=useState<Record<string,any>>({});
+ async function qualify(sku:string){
+  setChecking(sku);
+  try{const res=await fetch("/api/admin/cj/qualify",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({sku})});const body=await res.json();setChecks(prev=>({...prev,[sku]:body}));}catch{setChecks(prev=>({...prev,[sku]:{error:"Unable to reach CJ qualification service."}}));}finally{setChecking(null);}
+ }
  async function scout(){
   if(busy)return;setBusy(true);setMessage("");
   try{
@@ -28,6 +34,15 @@ export function CjDiscoveryScout(){
     <div className="flex flex-wrap items-start justify-between gap-3"><div><p className="font-semibold">{x.name}</p><p className="mt-1 text-xs text-white/50">{x.sku} · {x.keyword}</p></div><span className="rounded-md border border-amber-300/20 px-2 py-1 text-xs text-amber-100">NEEDS ROUTE CHECK</span></div>
     <p className="mt-2 text-sm">CJ listed price: <strong>${x.sourcePrice.toFixed(2)}</strong> · CJ verified inventory reported: {x.verifiedUnits>0?x.verifiedUnits+" units":"Not reported; check exact variant"}</p>
     <p className="mt-1 text-xs text-white/50">Processing estimate: {x.processingDays||"Not supplied"} · Shipping and exact variant unverified</p>
+    <button type="button" disabled={checking!==null} onClick={()=>qualify(x.sku)} className="mt-3 rounded-lg border border-indigo-300/30 bg-indigo-500/20 px-4 py-2 text-xs font-semibold text-indigo-100 disabled:opacity-50">{checking===x.sku?"Checking CJ…":"Check product + shipping"}</button>
+    {checks[x.sku]?<div role="status" className="mt-3 rounded-lg border border-white/10 bg-black/30 p-3 text-xs leading-6 text-white/80">
+      <p className="font-semibold">{checks[x.sku].state||"UNAVAILABLE"}</p>
+      <p>{checks[x.sku].error||checks[x.sku].reason}</p>
+      {checks[x.sku].baseLandedCost!==null&&checks[x.sku].baseLandedCost!==undefined?<p>Product: ${checks[x.sku].productCost?.toFixed(2)} · Freight: ${checks[x.sku].shippingCost?.toFixed(2)} · Combined: <strong>${checks[x.sku].baseLandedCost.toFixed(2)}</strong> · Transit: {checks[x.sku].transitDays?.min??"?"}–{checks[x.sku].transitDays?.max??"?"} days</p>:null}
+      {checks[x.sku].variantOptions?.length?<p>Select an exact variant in the existing route checker before proceeding.</p>:null}
+      {checks[x.sku].priceExamples?.length?<p>At $14.99: ${checks[x.sku].priceExamples.find((p:any)=>p.price===14.99)?.grossBeforeFees?.toFixed(2)} before fees, taxes, returns, and advertising.</p>:null}
+      <p>No approval, import, listing, purchase, or fulfillment was performed.</p>
+    </div>:null}
    </article>)}
    <p className="text-xs leading-5 text-amber-100">{data.disclaimer}</p>
   </div>:null}
