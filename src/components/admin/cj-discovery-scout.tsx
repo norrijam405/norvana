@@ -26,7 +26,7 @@ export function CjDiscoveryScout(){
    {data.candidates.length===0?<p className="rounded-lg border border-white/10 p-4 text-sm text-white/60">No verified-inventory candidates returned. This does not mean CJ has no products.</p>:null}
    {data.candidates.map(x=><article key={x.sku} className="rounded-xl border border-white/10 bg-black/20 p-4">
     <div className="flex flex-wrap items-start justify-between gap-3"><div><p className="font-semibold">{x.name}</p><p className="mt-1 text-xs text-white/50">{x.sku} · {x.keyword}</p></div><span className="rounded-md border border-amber-300/20 px-2 py-1 text-xs text-amber-100">NEEDS ROUTE CHECK</span></div>
-    <p className="mt-2 text-sm">CJ listed price: <strong>${x.sourcePrice.toFixed(2)}</strong> · Verified inventory signal: {x.verifiedUnits} units</p>
+    <p className="mt-2 text-sm">CJ listed price: <strong>${x.sourcePrice.toFixed(2)}</strong> · CJ verified inventory reported: {x.verifiedUnits>0?x.verifiedUnits+" units":"Not reported; check exact variant"}</p>
     <p className="mt-1 text-xs text-white/50">Processing estimate: {x.processingDays||"Not supplied"} · Shipping and exact variant unverified</p>
    </article>)}
    <p className="text-xs leading-5 text-amber-100">{data.disclaimer}</p>
