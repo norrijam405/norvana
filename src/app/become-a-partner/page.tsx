@@ -18,7 +18,7 @@ export default function ApplyForm() {
       });
       const result = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(typeof result.error === "string" ? result.error : "Submission unavailable.");
-      setMessage("Thank you. Your application has been received for review. This does not create a supplier agreement.");
+      setMessage(`Thank you. Your application was received${typeof result.submissionId === "number" ? ` (reference #${result.submissionId})` : ""}. We will review your information. This does not create a supplier agreement.`);
       setState("success");
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Could not submit. Please retry later.");
