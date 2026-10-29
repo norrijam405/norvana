@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { useCart } from "@/components/cart-context";
 import { FREE_SHIPPING_THRESHOLD } from "@/lib/constants";
 import { Footer } from "@/components/footer";
@@ -9,8 +9,7 @@ import { Suspense } from "react";
 import Link from "next/link";
 
 function CheckoutContent() {
-  const { items, subtotal, clearCart } = useCart();
-  const router = useRouter();
+  const { items, subtotal } = useCart();
   const searchParams = useSearchParams();
   const [loading, setLoading] = useState(false);
   const cancelled = searchParams.get("cancelled");
@@ -54,18 +53,27 @@ function CheckoutContent() {
         }),
       });
 
-      const data = await response.json();
-
-      if (data.sessionUrl) {
-        // Redirect to Stripe checkout
-        clearCart();
-        window.location.href = data.sessionUrl;
-      } else if (data.fallback) {
-        // No Stripe configured, direct order
-        clearCart();
-        router.push(`/confirmation?order=${data.orderNumber}`);
+      const data = await response.json().catch(() => null);
+      if (!response.ok) {
+        const code = typeof data?.code === "string" ? data.code : "";
+        if (code === "NORVANA_PAYMENT_NOT_CONFIGURED" || code === "PREVIEW_LIVE_PAYMENT_BLOCKED") {
+          setError("Secure checkout is not enabled in this preview. No payment was taken. Your cart is saved.");
+        } else if (response.status === 409) {
+          setError("An item in your cart is no longer available. Please review your cart before trying again.");
+        } else {
+          setError(typeof data?.error === "string" ? data.error : "Checkout is temporarily unavailable. Your cart is saved.");
+        }
+      } else if (typeof data?.sessionUrl === "string") {
+        const checkoutUrl = new URL(data.sessionUrl);
+        if (checkoutUrl.protocol !== "https:" ||
+            !(checkoutUrl.hostname === "checkout.stripe.com" || checkoutUrl.hostname.endsWith(".checkout.stripe.com"))) {
+          setError("The payment provider returned an unexpected checkout address. Your cart is saved.");
+        } else {
+          // Preserve the cart until the payment is confirmed, rather than discarding it before redirect.
+          window.location.assign(checkoutUrl.toString());
+        }
       } else {
-        setError("Failed to create checkout session");
+        setError("Checkout could not be started. No payment was taken. Your cart is saved.");
       }
     } catch {
       setError("Something went wrong. Please try again.");

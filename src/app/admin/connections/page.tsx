@@ -68,6 +68,26 @@ export default async function ConnectionsPage() {
           </div>
         </section>
 
+        <section className="mt-8 rounded-[1.6rem] border border-amber-300/15 bg-amber-300/[0.04] p-6 md:p-8">
+          <p className="text-xs font-semibold uppercase tracking-[.16em] text-amber-200">Business email · setup needed</p>
+          <h2 className="mt-2 text-2xl font-semibold">Connect Acre Era outreach through Zoho</h2>
+          <p className="mt-3 max-w-3xl text-sm leading-7 text-white/65">
+            Your Zoho Mail account receives contact@acreera.com and support@acreera.com aliases at norrisjames@acreera.com.
+            The separate Zoho CRM connector currently reports an OAuth scope mismatch for email access.
+            This page is an operator setup guide, not a live mail connection or send control.
+          </p>
+          <div className="mt-5 grid gap-3 md:grid-cols-3">
+            <div className="rounded-xl bg-black/25 p-4"><p className="font-semibold">1. Verify send-as</p><p className="mt-2 text-xs leading-6 text-white/60">In Zoho Mail, confirm contact@acreera.com can be selected as the From address. Send yourself a test.</p></div>
+            <div className="rounded-xl bg-black/25 p-4"><p className="font-semibold">2. Authorize safely</p><p className="mt-2 text-xs leading-6 text-white/60">Configure a supported OAuth mail connection. Never paste passwords, access tokens, or app passwords into Watchtower.</p></div>
+            <div className="rounded-xl bg-black/25 p-4"><p className="font-semibold">3. Review before send</p><p className="mt-2 text-xs leading-6 text-white/60">Prepare farm messages in Farms + Producers. Keep sending disabled until sender identity and delivery are verified.</p></div>
+          </div>
+          <div className="mt-5 flex flex-wrap gap-3">
+            <a href="https://mail.zoho.com/" target="_blank" rel="noreferrer" className="rounded-xl bg-amber-200 px-4 py-2.5 text-sm font-semibold text-[#161815]">Open Zoho Mail</a>
+            <a href="https://www.zoho.com/mail/help/" target="_blank" rel="noreferrer" className="rounded-xl border border-white/20 px-4 py-2.5 text-sm font-semibold">Zoho Mail setup guide</a>
+            <a href="/admin/producers" className="rounded-xl border border-white/20 px-4 py-2.5 text-sm font-semibold">Farms + Producers</a>
+          </div>
+        </section>
+
         <section className="mt-8 grid gap-4 lg:grid-cols-2">
           {rows.map((row) => (
             <article key={row.slug} className="rounded-[1.6rem] border border-white/10 bg-white/[0.035] p-6">

@@ -111,27 +111,15 @@ export function ShopClient({ products }: { products: Product[] }) {
           <div className="mb-10 rounded-[2rem] border border-soil/10 bg-cream p-7 md:p-10">
             <p className="text-xs font-semibold uppercase tracking-[0.22em] text-leaf">Acre Era Goods</p>
             <h1 className="mt-3 max-w-4xl font-display text-4xl font-black tracking-[-0.04em] md:text-6xl">
-              Everyday needs, useful finds, and the stuff worth coming back for.
+              Considered goods for everyday living.
             </h1>
             <p className="mt-4 max-w-3xl text-base leading-7 text-muted">
-              Household basics, family, pets, beauty, home, market, style, phones, gaming, electronics and more. The shelf grows from qualified supply and real demand — not filler inventory or products we cannot actually source.
+              Explore practical essentials and distinctive finds. Product availability and purchase terms should be confirmed before checkout.
             </p>
-            <div className="mt-6 grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-8">
-              {[
-                ["🧺", "Everyday"],
-                ["👨‍👩‍👧‍👦", "Family"],
-                ["🐾", "Pets"],
-                ["✨", "Beauty"],
-                ["🏡", "Home"],
-                ["🥕", "Market"],
-                ["👟", "Style"],
-                ["🎧", "Tech"],
-              ].map(([icon, label]) => (
-                <div key={label} className="rounded-xl border border-soil/10 bg-bone px-3 py-3">
-                  <span className="text-xl">{icon}</span>
-                  <span className="mt-1 block text-xs font-semibold text-soil">{label}</span>
-                </div>
-              ))}
+            <div className="mt-7 flex flex-wrap items-center gap-3 text-xs font-medium uppercase tracking-[.12em] text-soil/60">
+              <span className="border-r border-soil/20 pr-3">Curated goods</span>
+              <span className="border-r border-soil/20 pr-3">Clear product details</span>
+              <span>Availability before checkout</span>
             </div>
           </div>
 

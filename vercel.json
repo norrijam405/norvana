@@ -4,7 +4,12 @@
     "iad1"
   ],
   "git": {
-    "deploymentEnabled": false
+    "deploymentEnabled": {
+      "main": false,
+      "master": false,
+      "*": false,
+      "feature/2026-10-13-acre-era-universal-vendor-qualification-r0": true
+    }
   },
   "env": {
     "NEXT_TELEMETRY_DISABLED": "1"

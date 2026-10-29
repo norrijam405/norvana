@@ -24,6 +24,12 @@ function getSiteUrl() {
 
 export async function POST(req: NextRequest) {
   try {
+    if (process.env.VERCEL_ENV !== "production" && process.env.STRIPE_SECRET_KEY?.startsWith("sk_live_")) {
+      return NextResponse.json(
+        { error: "Live Stripe keys are not permitted in staging checkout.", code: "PREVIEW_LIVE_PAYMENT_BLOCKED" },
+        { status: 503 }
+      );
+    }
     if (!isStripeConfigured() || !stripe) {
       return NextResponse.json(
         {
@@ -43,6 +49,9 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json();
+    if (!body || typeof body !== "object" || Array.isArray(body)) {
+      return NextResponse.json({ error: "Invalid checkout request." }, { status: 400 });
+    }
     const customerName = String(body.customerName || "").trim();
     const customerEmail = String(body.customerEmail || "").trim().toLowerCase();
     const shippingAddress = String(body.shippingAddress || "").trim();
@@ -57,7 +66,9 @@ export async function POST(req: NextRequest) {
     }
 
     const items: CheckoutItemInput[] = rawItems.map((item: unknown) => {
-      const candidate = item as Partial<CheckoutItemInput>;
+      const candidate = item && typeof item === "object" && !Array.isArray(item)
+        ? item as Partial<CheckoutItemInput>
+        : {};
       return {
         productId: Number(candidate.productId),
         quantity: Number(candidate.quantity),

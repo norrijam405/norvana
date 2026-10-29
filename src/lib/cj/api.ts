@@ -197,3 +197,17 @@ export function parseAging(value?: string | null) {
   if (!matches.length) return { min: null, max: null };
   return { min: matches[0], max: matches[matches.length - 1] };
 }
+
+export type CjSearchItem = {
+  id?: string; nameEn?: string; sku?: string; sellPrice?: string; nowPrice?: string;
+  warehouseInventoryNum?: number; totalVerifiedInventory?: number; deliveryCycle?: string;
+  productType?: string; bigImage?: string; categoryId?: string;
+};
+/** CJ V2 catalog keyword search only. No order or product publication. */
+export async function searchCjCatalog(keyword: string) {
+  const value=keyword.trim().slice(0,60);
+  if(!/^[a-zA-Z0-9 -]{3,60}$/.test(value))throw new Error("Invalid CJ search term.");
+  const q=new URLSearchParams({page:"1",size:"8",keyWord:value,verifiedWarehouse:"1"});
+  const payload=await cjAuthed<{content?:Array<{productList?:CjSearchItem[]}>}>(`/product/listV2?${q.toString()}`);
+  return (payload.data?.content||[]).flatMap(x=>Array.isArray(x.productList)?x.productList:[]).slice(0,8);
+}

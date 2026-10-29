@@ -57,6 +57,11 @@ export async function POST(req: NextRequest) {
     );
   }
 
+  // Public form honeypot: reject bot submissions without writing contact data.
+  if (typeof parsed.body.homepage === "string" && parsed.body.homepage.trim()) {
+    return NextResponse.json({ accepted: true, message: "Thank you." }, { status: 202 });
+  }
+
   const businessName = clean(parsed.body.businessName, 255);
   const contactName = clean(parsed.body.contactName, 255);
   const email = clean(parsed.body.email, 320).toLowerCase();
