@@ -25,6 +25,7 @@ export default async function SuppliersPage() {
   let supplierRows: (typeof suppliers.$inferSelect)[] = [];
   let supplierProductRows: (typeof supplierProducts.$inferSelect)[] = [];
   let catalog: (typeof products.$inferSelect)[] = [];
+  let supplierDataAvailable = false;
 
   try {
     [supplierRows, supplierProductRows, catalog] = await Promise.all([
@@ -32,7 +33,10 @@ export default async function SuppliersPage() {
       db.select().from(supplierProducts).orderBy(desc(supplierProducts.createdAt)).limit(500),
       db.select().from(products).orderBy(desc(products.createdAt)).limit(500),
     ]);
-  } catch {}
+    supplierDataAvailable = true;
+  } catch (error) {
+    console.error("Supplier dashboard read failed:", error);
+  }
 
   const active = supplierRows.filter((row) => row.isActive).length;
   const apiSuppliers = supplierRows.filter((row) => row.type === "api").length;
@@ -50,6 +54,12 @@ export default async function SuppliersPage() {
             Keep farms, wholesale suppliers, brands, dropship partners, and catalog sources in one place. Connection does not equal approval, and active does not mean auto-fulfill.
           </p>
         </section>
+
+        {!supplierDataAvailable ? (
+          <div role="alert" className="mt-6 rounded-xl border border-amber-300/30 bg-amber-300/[0.07] p-5 text-sm text-amber-100">
+            <strong>Supplier data unavailable.</strong> The dashboard could not read its database tables. Counts below are not verified and must not be treated as zero inventory. Check database connection and migrations in System Health.
+          </div>
+        ) : null}
 
         <section className="mt-6 grid gap-4 md:grid-cols-4">
           {[
