@@ -7,7 +7,16 @@ export function CjDiscoveryScout(){
  const [message,setMessage]=useState("");
  const [checking,setChecking]=useState<string|null>(null);
  const [checks,setChecks]=useState<Record<string,any>>({});
- const [receipts,setReceipts]=useState<Record<string,{checkedAt:string;sku:string;vid:string|null;httpStatus:number|null;state:string}>>({});
+ const [receipts,setReceipts]=useState<Record<string,{checkedAt:string;sku:string;vid:string|null;httpStatus:number|null;state:string;reason:string;stock:number|null;productCost:number|null;shippingCost:number|null;landedCost:number|null}>>({});
+ function receiptFor(sku:string,vid:string|null,httpStatus:number|null,body:any,state:string){
+  const safeNumber=(value:unknown)=>typeof value==="number"&&Number.isFinite(value)?value:null;
+  return {checkedAt:new Date().toISOString(),sku,vid,httpStatus,state,reason:String(body?.reason||body?.error||"No reason provided.").slice(0,300),stock:safeNumber(body?.stock),productCost:safeNumber(body?.productCost),shippingCost:safeNumber(body?.shippingCost),landedCost:safeNumber(body?.baseLandedCost)};
+ }
+ function exportReceipt(sku:string){
+  const receipt=receipts[sku];if(!receipt)return;
+  const blob=new Blob([JSON.stringify({schemaVersion:"acre-era-cj-check-r1",source:"/api/admin/cj/qualify",storage:"USER_EXPORTED_NOT_SERVER_VERIFIED",...receipt},null,2)],{type:"application/json"});
+  const url=URL.createObjectURL(blob);const link=document.createElement("a");link.href=url;link.download=`acre-era-cj-${sku.replace(/[^a-zA-Z0-9_-]/g,"_")}-receipt.json`;link.click();URL.revokeObjectURL(url);
+ }
  async function qualify(sku:string,vid?:string){
   setChecking(sku);
   let httpStatus:number|null=null;
@@ -17,10 +26,10 @@ export function CjDiscoveryScout(){
    const body=await res.json().catch(()=>({error:"CJ returned an unreadable response."}));
    const state=res.ok?(typeof body.state==="string"?body.state:"UNKNOWN"):"FAILED";
    setChecks(prev=>({...prev,[sku]:res.ok?body:{...body,state:"FAILED",error:body.error||`CJ check failed (HTTP ${res.status}).`}}));
-   setReceipts(prev=>({...prev,[sku]:{checkedAt:new Date().toISOString(),sku,vid:vid||null,httpStatus,state}}));
+   setReceipts(prev=>({...prev,[sku]:receiptFor(sku,vid||null,httpStatus,body,state)}));
   }catch{
    setChecks(prev=>({...prev,[sku]:{state:"FAILED",error:"Unable to reach CJ qualification service."}}));
-   setReceipts(prev=>({...prev,[sku]:{checkedAt:new Date().toISOString(),sku,vid:vid||null,httpStatus,state:"FAILED"}}));
+   setReceipts(prev=>({...prev,[sku]:receiptFor(sku,vid||null,httpStatus,{error:"Network unavailable."},"FAILED")}));
   }finally{setChecking(null);}
  }
  async function scout(){
@@ -49,7 +58,7 @@ export function CjDiscoveryScout(){
     <button type="button" disabled={checking!==null} onClick={()=>qualify(x.sku)} className="mt-3 rounded-lg border border-indigo-300/30 bg-indigo-500/20 px-4 py-2 text-xs font-semibold text-indigo-100 disabled:opacity-50">{checking===x.sku?"Checking CJ…":"Check product + shipping"}</button>
     {checks[x.sku]?<div role="status" className="mt-3 rounded-lg border border-white/10 bg-black/30 p-3 text-xs leading-6 text-white/80">
       <p className="font-semibold">{checks[x.sku].state||"UNAVAILABLE"}</p>
-      {receipts[x.sku]?<div className="mt-1 rounded-md border border-white/10 bg-white/[0.035] p-2 text-[11px] text-white/60"><p className="font-semibold text-white/80">CJ check receipt · {receipts[x.sku].state}</p><p>Checked UTC: {receipts[x.sku].checkedAt}</p><p>SKU: {receipts[x.sku].sku} · Variant: {receipts[x.sku].vid||"Not selected"} · HTTP: {receipts[x.sku].httpStatus??"Network unavailable"}</p><p>Session-only observation; not proof of publication, inventory reservation, or an independently stored receipt.</p></div>:null}
+      {receipts[x.sku]?<div className="mt-1 rounded-md border border-white/10 bg-white/[0.035] p-2 text-[11px] text-white/60"><p className="font-semibold text-white/80">CJ check receipt · {receipts[x.sku].state}</p><p>Checked UTC: {receipts[x.sku].checkedAt}</p><p>SKU: {receipts[x.sku].sku} · Variant: {receipts[x.sku].vid||"Not selected"} · HTTP: {receipts[x.sku].httpStatus??"Network unavailable"}</p><p>Local observation; not independently verified or server-persisted. Download to retain a copy.</p><button type="button" onClick={()=>exportReceipt(x.sku)} className="mt-2 rounded-lg border border-white/20 px-3 py-1 font-semibold text-white/80">Download JSON receipt</button></div>:null}
       <p>{checks[x.sku].error||checks[x.sku].reason}</p>
       {checks[x.sku].baseLandedCost!==null&&checks[x.sku].baseLandedCost!==undefined?<p>Product: ${checks[x.sku].productCost?.toFixed(2)} · Freight: ${checks[x.sku].shippingCost?.toFixed(2)} · Combined: <strong>${checks[x.sku].baseLandedCost.toFixed(2)}</strong> · Transit: {checks[x.sku].transitDays?.min??"?"}–{checks[x.sku].transitDays?.max??"?"} days</p>:null}
       {checks[x.sku].variantOptions?.length?<div className="mt-2 flex flex-wrap items-center gap-2"><select aria-label={`Select variant for ${x.name}`} id={`cj-variant-${x.sku}`} defaultValue="" className="min-h-10 max-w-full flex-1 rounded-lg border border-white/20 bg-[#20221e] p-2 text-xs text-white"><option value="" disabled>Choose exact variant</option>{checks[x.sku].variantOptions.map((v:{vid:string;name:string})=><option key={v.vid} value={v.vid}>{v.name}</option>)}</select><button type="button" disabled={checking!==null} className="rounded-lg bg-indigo-500 px-4 py-2 text-xs font-semibold text-white disabled:opacity-50" onClick={()=>{const selected=document.getElementById(`cj-variant-${x.sku}`) as HTMLSelectElement|null;if(selected?.value)void qualify(x.sku,selected.value);}}>Check selected variant</button></div>:null}
