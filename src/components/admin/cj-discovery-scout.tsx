@@ -7,9 +7,21 @@ export function CjDiscoveryScout(){
  const [message,setMessage]=useState("");
  const [checking,setChecking]=useState<string|null>(null);
  const [checks,setChecks]=useState<Record<string,any>>({});
+ const [receipts,setReceipts]=useState<Record<string,{checkedAt:string;sku:string;vid:string|null;httpStatus:number|null;state:string}>>({});
  async function qualify(sku:string,vid?:string){
   setChecking(sku);
-  try{const res=await fetch("/api/admin/cj/qualify",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({sku,vid})});const body=await res.json();setChecks(prev=>({...prev,[sku]:body}));}catch{setChecks(prev=>({...prev,[sku]:{error:"Unable to reach CJ qualification service."}}));}finally{setChecking(null);}
+  let httpStatus:number|null=null;
+  try{
+   const res=await fetch("/api/admin/cj/qualify",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({sku,vid})});
+   httpStatus=res.status;
+   const body=await res.json().catch(()=>({error:"CJ returned an unreadable response."}));
+   const state=res.ok?(typeof body.state==="string"?body.state:"UNKNOWN"):"FAILED";
+   setChecks(prev=>({...prev,[sku]:res.ok?body:{...body,state:"FAILED",error:body.error||`CJ check failed (HTTP ${res.status}).`}}));
+   setReceipts(prev=>({...prev,[sku]:{checkedAt:new Date().toISOString(),sku,vid:vid||null,httpStatus,state}}));
+  }catch{
+   setChecks(prev=>({...prev,[sku]:{state:"FAILED",error:"Unable to reach CJ qualification service."}}));
+   setReceipts(prev=>({...prev,[sku]:{checkedAt:new Date().toISOString(),sku,vid:vid||null,httpStatus,state:"FAILED"}}));
+  }finally{setChecking(null);}
  }
  async function scout(){
   if(busy)return;setBusy(true);setMessage("");
@@ -37,6 +49,7 @@ export function CjDiscoveryScout(){
     <button type="button" disabled={checking!==null} onClick={()=>qualify(x.sku)} className="mt-3 rounded-lg border border-indigo-300/30 bg-indigo-500/20 px-4 py-2 text-xs font-semibold text-indigo-100 disabled:opacity-50">{checking===x.sku?"Checking CJ…":"Check product + shipping"}</button>
     {checks[x.sku]?<div role="status" className="mt-3 rounded-lg border border-white/10 bg-black/30 p-3 text-xs leading-6 text-white/80">
       <p className="font-semibold">{checks[x.sku].state||"UNAVAILABLE"}</p>
+      {receipts[x.sku]?<div className="mt-1 rounded-md border border-white/10 bg-white/[0.035] p-2 text-[11px] text-white/60"><p className="font-semibold text-white/80">CJ check receipt · {receipts[x.sku].state}</p><p>Checked UTC: {receipts[x.sku].checkedAt}</p><p>SKU: {receipts[x.sku].sku} · Variant: {receipts[x.sku].vid||"Not selected"} · HTTP: {receipts[x.sku].httpStatus??"Network unavailable"}</p><p>Session-only observation; not proof of publication, inventory reservation, or an independently stored receipt.</p></div>:null}
       <p>{checks[x.sku].error||checks[x.sku].reason}</p>
       {checks[x.sku].baseLandedCost!==null&&checks[x.sku].baseLandedCost!==undefined?<p>Product: ${checks[x.sku].productCost?.toFixed(2)} · Freight: ${checks[x.sku].shippingCost?.toFixed(2)} · Combined: <strong>${checks[x.sku].baseLandedCost.toFixed(2)}</strong> · Transit: {checks[x.sku].transitDays?.min??"?"}–{checks[x.sku].transitDays?.max??"?"} days</p>:null}
       {checks[x.sku].variantOptions?.length?<div className="mt-2 flex flex-wrap items-center gap-2"><select aria-label={`Select variant for ${x.name}`} id={`cj-variant-${x.sku}`} defaultValue="" className="min-h-10 max-w-full flex-1 rounded-lg border border-white/20 bg-[#20221e] p-2 text-xs text-white"><option value="" disabled>Choose exact variant</option>{checks[x.sku].variantOptions.map((v:{vid:string;name:string})=><option key={v.vid} value={v.vid}>{v.name}</option>)}</select><button type="button" disabled={checking!==null} className="rounded-lg bg-indigo-500 px-4 py-2 text-xs font-semibold text-white disabled:opacity-50" onClick={()=>{const selected=document.getElementById(`cj-variant-${x.sku}`) as HTMLSelectElement|null;if(selected?.value)void qualify(x.sku,selected.value);}}>Check selected variant</button></div>:null}
