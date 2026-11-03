@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
-import { and, asc, desc, eq } from "drizzle-orm";
+import { and, asc, desc, eq, sql } from "drizzle-orm";
 import { db } from "@/db";
 import { watchJobs, watchRuns } from "@/db/schema";
 import {
@@ -32,6 +32,25 @@ export default async function SystemHealthPage() {
     ]);
     initialized = true;
   } catch {}
+
+  // Read-only schema probe. Report table presence without exposing connection details.
+  const schemaTables = ["eras", "watch_jobs", "action_receipts", "suppliers"] as const;
+  let schemaAvailability: Record<string, boolean> | null = null;
+  try {
+    const probe = await db.execute(sql`SELECT
+      to_regclass('public.eras') IS NOT NULL AS eras,
+      to_regclass('public.watch_jobs') IS NOT NULL AS watch_jobs,
+      to_regclass('public.action_receipts') IS NOT NULL AS action_receipts,
+      to_regclass('public.suppliers') IS NOT NULL AS suppliers`);
+    const first = probe.rows[0] as Record<string, unknown> | undefined;
+    if (first) {
+      schemaAvailability = Object.fromEntries(
+        schemaTables.map((name) => [name, first[name] === true])
+      );
+    }
+  } catch (error) {
+    console.error("Read-only Watchtower schema check failed:", error);
+  }
 
   const runtimeId = currentWatchtowerRuntimeId();
   let controlProof = false;
@@ -79,6 +98,29 @@ export default async function SystemHealthPage() {
               <p className="mt-2 font-display text-xl font-bold">{value}</p>
             </article>
           ))}
+        </section>
+
+        <section className="mt-6 rounded-[2rem] border border-white/10 bg-white/[0.035] p-6" aria-labelledby="database-readiness-title">
+          <h2 id="database-readiness-title" className="text-xl font-bold">Database readiness · read-only</h2>
+          <p className="mt-2 text-sm text-white/55">This checks table availability in the database bound to this deployment. It never creates, changes, or deletes tables.</p>
+          <div className="mt-4 grid gap-2 sm:grid-cols-2">
+            {schemaTables.map((tableName) => (
+              <div key={tableName} className="flex items-center justify-between rounded-xl bg-black/20 p-3 text-sm">
+                <code>{tableName}</code>
+                <span className={schemaAvailability?.[tableName] === true ? "text-emerald-200" : "text-amber-200"}>
+                  {schemaAvailability === null ? "UNKNOWN" : schemaAvailability[tableName] ? "PRESENT" : "MISSING"}
+                </span>
+              </div>
+            ))}
+          </div>
+          {schemaAvailability === null || Object.values(schemaAvailability).some((present) => !present) ? (
+            <div className="mt-4 rounded-xl border border-amber-300/20 bg-amber-300/[0.06] p-4 text-sm text-amber-100">
+              <p className="font-semibold">Engineering attention required — no owner database action requested.</p>
+              <p className="mt-2">Confirm that this Preview branch uses the intended Acre Era database configuration and approved schema migrations. Do not paste passwords, click Initialize repeatedly, or create another Watchtower.</p>
+            </div>
+          ) : (
+            <p className="mt-4 text-sm text-emerald-200">Required tables are present. Application read/write tests and receipt readback are still required.</p>
+          )}
         </section>
 
         <section className="mt-6 grid gap-5 lg:grid-cols-[.8fr_1.2fr]">
