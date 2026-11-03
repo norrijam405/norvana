@@ -3,6 +3,7 @@ import { useState } from "react";
 type Candidate={sku:string;name:string;sourcePrice:number;verifiedUnits:number;processingDays:string|null;keyword:string;state:string};
 export function CjDiscoveryScout(){
  const [busy,setBusy]=useState(false);
+ const [readback,setReadback]=useState<Record<string,{status:"PASS"|"FAIL";message:string}>>({});
  const [data,setData]=useState<{candidates:Candidate[];searched:string[];errors:string[];disclaimer:string}|null>(null);
  const [message,setMessage]=useState("");
  const [checking,setChecking]=useState<string|null>(null);
@@ -17,7 +18,20 @@ export function CjDiscoveryScout(){
   const blob=new Blob([JSON.stringify({schemaVersion:"acre-era-cj-check-r1",source:"/api/admin/cj/qualify",storage:"USER_EXPORTED_NOT_SERVER_VERIFIED",...receipt},null,2)],{type:"application/json"});
   const url=URL.createObjectURL(blob);const link=document.createElement("a");link.href=url;link.download=`acre-era-cj-${sku.replace(/[^a-zA-Z0-9_-]/g,"_")}-receipt.json`;link.click();URL.revokeObjectURL(url);
  }
+ async function verifyReadback(sku:string){
+  const receipt=receipts[sku];
+  if(!receipt?.receiptId)return;
+  try{
+   const response=await fetch(`/api/admin/cj/receipts/${receipt.receiptId}`,{cache:"no-store"});
+   const body=await response.json().catch(()=>({}));
+   const matches=response.ok&&body.id===receipt.receiptId&&body.subjectId===sku&&body.status===receipt.state&&body.actionType==="CJ_VARIANT_QUALIFICATION";
+   setReadback(prev=>({...prev,[sku]:{status:matches?"PASS":"FAIL",message:matches?"Receipt retrieved from server with matching ID, SKU and state. Independent verification still pending.":"Receipt readback did not match the current observation."}}));
+  }catch{
+   setReadback(prev=>({...prev,[sku]:{status:"FAIL",message:"Could not retrieve the stored receipt."}}));
+  }
+ }
  async function qualify(sku:string,vid?:string){
+  setReadback(prev=>{const next={...prev};delete next[sku];return next;});
   setChecking(sku);
   let httpStatus:number|null=null;
   try{
@@ -58,7 +72,7 @@ export function CjDiscoveryScout(){
     <button type="button" disabled={checking!==null} onClick={()=>qualify(x.sku)} className="mt-3 rounded-lg border border-indigo-300/30 bg-indigo-500/20 px-4 py-2 text-xs font-semibold text-indigo-100 disabled:opacity-50">{checking===x.sku?"Checking CJ…":"Check product + shipping"}</button>
     {checks[x.sku]?<div role="status" className="mt-3 rounded-lg border border-white/10 bg-black/30 p-3 text-xs leading-6 text-white/80">
       <p className="font-semibold">{checks[x.sku].state||"UNAVAILABLE"}</p>
-      {receipts[x.sku]?<div className="mt-1 rounded-md border border-white/10 bg-white/[0.035] p-2 text-[11px] text-white/60"><p className="font-semibold text-white/80">CJ check receipt · {receipts[x.sku].state}</p><p>Checked UTC: {receipts[x.sku].checkedAt}</p><p>SKU: {receipts[x.sku].sku} · Variant: {receipts[x.sku].vid||"Not selected"} · HTTP: {receipts[x.sku].httpStatus??"Network unavailable"}</p><p>{receipts[x.sku].receiptPersisted?"Server receipt recorded; still not independently verified.":"Server receipt unavailable; save this browser observation if needed."}</p>{receipts[x.sku].receiptId?<a className="mt-1 inline-block underline text-indigo-200" href={`/api/admin/cj/receipts/${receipts[x.sku].receiptId}`} target="_blank" rel="noreferrer">Read back server receipt #{receipts[x.sku].receiptId}</a>:null}<button type="button" onClick={()=>exportReceipt(x.sku)} className="mt-2 rounded-lg border border-white/20 px-3 py-1 font-semibold text-white/80">Download JSON receipt</button></div>:null}
+      {receipts[x.sku]?<div className="mt-1 rounded-md border border-white/10 bg-white/[0.035] p-2 text-[11px] text-white/60"><p className="font-semibold text-white/80">CJ check receipt · {receipts[x.sku].state}</p><p>Checked UTC: {receipts[x.sku].checkedAt}</p><p>SKU: {receipts[x.sku].sku} · Variant: {receipts[x.sku].vid||"Not selected"} · HTTP: {receipts[x.sku].httpStatus??"Network unavailable"}</p><p>{receipts[x.sku].receiptPersisted?"Server receipt recorded; still not independently verified.":"Server receipt unavailable; save this browser observation if needed."}</p>{receipts[x.sku].receiptId?<a className="mt-1 inline-block underline text-indigo-200" href={`/api/admin/cj/receipts/${receipts[x.sku].receiptId}`} target="_blank" rel="noreferrer">Open receipt #{receipts[x.sku].receiptId}</a>:null}{receipts[x.sku].receiptId?<button type="button" className="ml-2 underline text-indigo-200" onClick={()=>void verifyReadback(x.sku)}>Verify readback</button>:null}{readback[x.sku]?<p className={readback[x.sku].status==="PASS"?"text-emerald-200":"text-rose-200"}>{readback[x.sku].status}: {readback[x.sku].message}</p>:null}<button type="button" onClick={()=>exportReceipt(x.sku)} className="mt-2 rounded-lg border border-white/20 px-3 py-1 font-semibold text-white/80">Download JSON receipt</button></div>:null}
       <p>{checks[x.sku].error||checks[x.sku].reason}</p>
       {checks[x.sku].baseLandedCost!==null&&checks[x.sku].baseLandedCost!==undefined?<p>Product: ${checks[x.sku].productCost?.toFixed(2)} · Freight: ${checks[x.sku].shippingCost?.toFixed(2)} · Combined: <strong>${checks[x.sku].baseLandedCost.toFixed(2)}</strong> · Transit: {checks[x.sku].transitDays?.min??"?"}–{checks[x.sku].transitDays?.max??"?"} days</p>:null}
       {checks[x.sku].variantOptions?.length?<div className="mt-2 flex flex-wrap items-center gap-2"><select aria-label={`Select variant for ${x.name}`} id={`cj-variant-${x.sku}`} defaultValue="" className="min-h-10 max-w-full flex-1 rounded-lg border border-white/20 bg-[#20221e] p-2 text-xs text-white"><option value="" disabled>Choose exact variant</option>{checks[x.sku].variantOptions.map((v:{vid:string;name:string})=><option key={v.vid} value={v.vid}>{v.name}</option>)}</select><button type="button" disabled={checking!==null} className="rounded-lg bg-indigo-500 px-4 py-2 text-xs font-semibold text-white disabled:opacity-50" onClick={()=>{const selected=document.getElementById(`cj-variant-${x.sku}`) as HTMLSelectElement|null;if(selected?.value)void qualify(x.sku,selected.value);}}>Check selected variant</button></div>:null}
