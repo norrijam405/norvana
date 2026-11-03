@@ -55,7 +55,7 @@ export function CjDiscoveryScout(){
    setData(body);
   }catch(e){setMessage(e instanceof Error?e.message:"CJ scout unavailable.");}finally{setBusy(false);}
  }
- return <section className="mt-6 rounded-[2rem] border border-white/10 bg-white/[0.035] p-6">
+ return <section id="cj-scout" className="mt-6 rounded-[2rem] border border-white/10 bg-white/[0.035] p-6">
   <div className="flex flex-wrap items-center justify-between gap-3">
    <div><p className="text-xs font-bold uppercase tracking-widest text-indigo-200">New product discovery · CJ</p><h2 className="mt-2 text-2xl font-bold">Scout fresh product candidates</h2><p className="mt-2 max-w-2xl text-sm text-white/60">Search three curated categories in CJ's live catalog. Results are candidates only, not a product listing or a freight quote.</p></div>
    <button type="button" onClick={scout} disabled={busy} className="rounded-xl bg-indigo-500 px-5 py-3 font-bold text-white disabled:opacity-50">{busy?"Searching CJ…":"Run CJ Scout"}</button>
