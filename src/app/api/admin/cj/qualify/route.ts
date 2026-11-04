@@ -1,4 +1,5 @@
 import { db } from "@/db";
+import { sql } from "drizzle-orm";
 import { actionReceipts } from "@/db/schema";
 import { NextRequest,NextResponse } from "next/server";
 import { requireCurrentRecoveryAdmin } from "@/lib/admin-guard";
@@ -19,6 +20,17 @@ export async function POST(req:NextRequest){
  const gate=await requireCurrentRecoveryAdmin(req);if(gate)return gate;
  let sku="";let vid="";try{const body=await req.json();sku=String(body.sku||"").trim();vid=String(body.vid||"").trim();}catch{return NextResponse.json({error:"Invalid request."},{status:400});}
  if(!/^[\w. -]{5,100}$/.test(sku))return NextResponse.json({error:"Invalid product SKU."},{status:400});
+ // The existing Watchtower receipt table must be available before any external CJ call.
+ // No migrations or writes occur in this preflight.
+ try {
+  const probe=await db.execute(sql`SELECT to_regclass('public.action_receipts') IS NOT NULL AS ready`);
+  if(probe.rows[0]?.ready!==true) {
+   return NextResponse.json({state:"BLOCKED",code:"WATCHTOWER_RECEIPTS_TABLE_MISSING",error:"This Preview database is missing the existing Watchtower receipt table. Open System Health and have engineering reconcile the database/migrations. No CJ request was sent.",receiptPersisted:false},{status:503,headers:{"cache-control":"no-store"}});
+  }
+ } catch(error) {
+  console.error("CJ receipt preflight failed:",error);
+  return NextResponse.json({state:"BLOCKED",code:"WATCHTOWER_RECEIPTS_PREFLIGHT_FAILED",error:"Cannot verify Watchtower receipt storage. No CJ request was sent.",receiptPersisted:false},{status:503,headers:{"cache-control":"no-store"}});
+ }
  try {
   const found=await loadCjProductBySku(sku);
   if(vid && !/^[a-zA-Z0-9_-]{5,100}$/.test(vid))return NextResponse.json({error:"Invalid CJ variant ID."},{status:400});
