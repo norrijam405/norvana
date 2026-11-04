@@ -14,12 +14,14 @@ async function respondWithReceipt(payload:Record<string,unknown>,status=200){
   }).returning({id:actionReceipts.id});
   receiptId=saved?.id??null;
  }catch(error){console.error("CJ observation receipt persistence failed:",error);}
- return NextResponse.json({...payload,receiptId,receiptPersisted:receiptId!==null,receiptVerification:"SERVER_OBSERVED_NOT_INDEPENDENTLY_VERIFIED"},{status,headers:{"cache-control":"no-store"}});
+ if(receiptId===null)return NextResponse.json({state:"BLOCKED",code:"CJ_RECEIPT_PERSISTENCE_FAILED",error:"CJ check completed but its audit receipt could not be saved. Treat the result as unverified; no approval or publication is permitted.",receiptPersisted:false},{status:503,headers:{"cache-control":"no-store"}});
+ return NextResponse.json({...payload,receiptId,receiptPersisted:true,receiptVerification:"SERVER_OBSERVED_NOT_INDEPENDENTLY_VERIFIED"},{status,headers:{"cache-control":"no-store"}});
 }
 export async function POST(req:NextRequest){
  const gate=await requireCurrentRecoveryAdmin(req);if(gate)return gate;
  let sku="";let vid="";try{const body=await req.json();sku=String(body.sku||"").trim();vid=String(body.vid||"").trim();}catch{return NextResponse.json({error:"Invalid request."},{status:400});}
  if(!/^[\w. -]{5,100}$/.test(sku))return NextResponse.json({error:"Invalid product SKU."},{status:400});
+ if(vid && !/^[a-zA-Z0-9_-]{5,100}$/.test(vid))return NextResponse.json({error:"Invalid CJ variant ID."},{status:400});
  // The existing Watchtower receipt table must be available before any external CJ call.
  // No migrations or writes occur in this preflight.
  try {
@@ -33,7 +35,6 @@ export async function POST(req:NextRequest){
  }
  try {
   const found=await loadCjProductBySku(sku);
-  if(vid && !/^[a-zA-Z0-9_-]{5,100}$/.test(vid))return NextResponse.json({error:"Invalid CJ variant ID."},{status:400});
   const exact=vid?found.variants.find(v=>v.vid===vid):found.variants.find(v=>v.variantSku===sku);
   const options=found.variants.slice(0,30).map(v=>({vid:v.vid,name:v.variantNameEn||v.variantSku||v.vid}));
   if(!exact)return respondWithReceipt({state:"HOLD",reason:vid?"Selected variant does not belong to this CJ product.":"CJ product found. Select a specific variant below to calculate shipping.",sku,variantOptions:options});
