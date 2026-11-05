@@ -24,7 +24,8 @@ export function CjDiscoveryScout(){
   try{
    const response=await fetch(`/api/admin/cj/receipts/${receipt.receiptId}`,{cache:"no-store"});
    const body=await response.json().catch(()=>({}));
-   const matches=response.ok&&body.id===receipt.receiptId&&body.subjectId===sku&&body.status===receipt.state&&body.actionType==="CJ_VARIANT_QUALIFICATION";
+   const details=body.details&&typeof body.details==="object"?body.details:{};
+   const matches=response.ok&&body.id===receipt.receiptId&&body.subjectId===sku&&body.status===receipt.state&&body.actionType==="CJ_VARIANT_QUALIFICATION"&&details.sku===sku&&(receipt.vid?details.variant?.id===receipt.vid:true);
    setReadback(prev=>({...prev,[sku]:{status:matches?"PASS":"FAIL",message:matches?"Receipt retrieved from server with matching ID, SKU and state. Independent verification still pending.":"Receipt readback did not match the current observation."}}));
   }catch{
    setReadback(prev=>({...prev,[sku]:{status:"FAIL",message:"Could not retrieve the stored receipt."}}));
@@ -38,8 +39,8 @@ export function CjDiscoveryScout(){
    const res=await fetch("/api/admin/cj/qualify",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({sku,vid})});
    httpStatus=res.status;
    const body=await res.json().catch(()=>({error:"CJ returned an unreadable response."}));
-   const state=res.ok?(typeof body.state==="string"?body.state:"UNKNOWN"):"FAILED";
-   setChecks(prev=>({...prev,[sku]:res.ok?body:{...body,state:"FAILED",error:body.error||`CJ check failed (HTTP ${res.status}).`}}));
+   const state=typeof body.state==="string" && ["BLOCKED","HOLD","NEEDS_PROCESSING_AND_APPROVAL"].includes(body.state)?body.state:(res.ok?"UNKNOWN":"FAILED");
+   setChecks(prev=>({...prev,[sku]:res.ok?body:{...body,state,error:body.error||`CJ check failed (HTTP ${res.status}).`}}));
    setReceipts(prev=>({...prev,[sku]:receiptFor(sku,vid||null,httpStatus,body,state)}));
   }catch{
    setChecks(prev=>({...prev,[sku]:{state:"FAILED",error:"Unable to reach CJ qualification service."}}));
