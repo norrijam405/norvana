@@ -52,6 +52,18 @@ export default async function SystemHealthPage() {
     console.error("Read-only Watchtower schema check failed:", error);
   }
 
+  // The presence of a table does not establish that its expected columns exist.
+  let receiptColumnsReady: boolean | null = null;
+  try {
+    const columns = await db.execute(sql`SELECT column_name FROM information_schema.columns
+      WHERE table_schema = 'public' AND table_name = 'action_receipts'`);
+    const available = new Set(columns.rows.map((row) => String(row.column_name)));
+    receiptColumnsReady = ["id","action_type","authority_class","subject_type","subject_id","status","actor","details","created_at"]
+      .every((name) => available.has(name));
+  } catch (error) {
+    console.error("Read-only CJ receipt column check failed:", error);
+  }
+
   const runtimeId = currentWatchtowerRuntimeId();
   let controlProof = false;
   let workerProof = false;
@@ -113,7 +125,13 @@ export default async function SystemHealthPage() {
               </div>
             ))}
           </div>
-          {schemaAvailability === null || Object.values(schemaAvailability).some((present) => !present) ? (
+          <div className="mt-3 flex items-center justify-between rounded-xl bg-black/20 p-3 text-sm">
+            <span>Receipt table column compatibility</span>
+            <span className={receiptColumnsReady === true ? "text-emerald-200" : "text-amber-200"}>
+              {receiptColumnsReady === null ? "UNKNOWN" : receiptColumnsReady ? "COMPATIBLE" : "MISSING COLUMNS"}
+            </span>
+          </div>
+          {schemaAvailability === null || Object.values(schemaAvailability).some((present) => !present) || receiptColumnsReady !== true ? (
             <div className="mt-4 rounded-xl border border-amber-300/20 bg-amber-300/[0.06] p-4 text-sm text-amber-100">
               <p className="font-semibold">Engineering attention required — no owner database action requested.</p>
               <p className="mt-2">Confirm that this Preview branch uses the intended Acre Era database configuration and approved schema migrations. Do not paste passwords, click Initialize repeatedly, or create another Watchtower.</p>
