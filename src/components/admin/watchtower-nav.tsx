@@ -5,7 +5,7 @@ const ITEMS = [
   { href: "/admin/armed-mode", label: "Armed Mode" },
   { href: "/admin/money", label: "Money" },
   { href: "/admin/orders", label: "Orders + Delivery" },
-  { href: "/admin/suppliers", label: "Brands + Suppliers" },
+  { href: "/admin/suppliers", label: "Scouts + Suppliers" },
   { href: "/admin/connections", label: "Connections" },
   { href: "/admin/affiliates", label: "Partner Hub" },
   { href: "/admin/credentials", label: "Credentials" },
@@ -22,6 +22,7 @@ export function WatchtowerNav({ current }: { current?: string }) {
     { href: "/admin/orders", label: "Orders", icon: "□" },
     { href: "/admin/money", label: "Money", icon: "$" },
     { href: "/admin/producers", label: "Farms", icon: "♧" },
+    { href: "/admin/suppliers", label: "Scouts", icon: "◎" },
     { href: "/admin/notifications", label: "Alerts", icon: "●" },
   ];
 
@@ -50,7 +51,7 @@ export function WatchtowerNav({ current }: { current?: string }) {
       </nav>
 
       <nav className="fixed inset-x-0 bottom-0 z-50 border-t border-white/10 bg-[#0d0f0c]/95 px-2 pb-[max(.5rem,env(safe-area-inset-bottom))] pt-2 backdrop-blur-xl md:hidden">
-        <div className="mx-auto grid max-w-lg grid-cols-5 gap-1">
+        <div className="mx-auto grid max-w-xl grid-cols-6 gap-1">
           {mobileItems.map((item) => {
             const active = current === item.href;
             return (

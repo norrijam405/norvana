@@ -25,6 +25,7 @@ export default async function SuppliersPage() {
   let supplierRows: (typeof suppliers.$inferSelect)[] = [];
   let supplierProductRows: (typeof supplierProducts.$inferSelect)[] = [];
   let catalog: (typeof products.$inferSelect)[] = [];
+  let supplierDataAvailable = false;
 
   try {
     [supplierRows, supplierProductRows, catalog] = await Promise.all([
@@ -32,7 +33,10 @@ export default async function SuppliersPage() {
       db.select().from(supplierProducts).orderBy(desc(supplierProducts.createdAt)).limit(500),
       db.select().from(products).orderBy(desc(products.createdAt)).limit(500),
     ]);
-  } catch {}
+    supplierDataAvailable = true;
+  } catch (error) {
+    console.error("Supplier dashboard read failed:", error);
+  }
 
   const active = supplierRows.filter((row) => row.isActive).length;
   const apiSuppliers = supplierRows.filter((row) => row.type === "api").length;
@@ -51,12 +55,23 @@ export default async function SuppliersPage() {
           </p>
         </section>
 
+        {!supplierDataAvailable ? (
+          <div role="alert" className="mt-6 rounded-xl border border-amber-300/30 bg-amber-300/[0.07] p-5 text-sm text-amber-100">
+            <strong>Supplier data unavailable.</strong> The dashboard could not read its database tables. Counts below are not verified and must not be treated as zero inventory. Check database connection and migrations in System Health.
+          </div>
+        ) : null}
+
+        <nav aria-label="Supplier quick links" className="mt-5 flex flex-wrap gap-2">
+          <a href="#cj-scout" className="rounded-xl bg-indigo-500 px-4 py-3 text-sm font-semibold text-white">Find products · CJ Scout</a>
+          <a href="#cj-route-check" className="rounded-xl border border-white/15 px-4 py-3 text-sm font-semibold text-white/80">Check routes</a>
+          <a href="#supplier-roster" className="rounded-xl border border-white/15 px-4 py-3 text-sm font-semibold text-white/80">Supplier roster</a>
+        </nav>
         <section className="mt-6 grid gap-4 md:grid-cols-4">
           {[
-            ["Suppliers", String(supplierRows.length)],
-            ["Active", String(active)],
-            ["API suppliers", String(apiSuppliers)],
-            ["Auto-fulfill enabled", String(autoFulfill)],
+            ["Suppliers", supplierDataAvailable ? String(supplierRows.length) : "—"],
+            ["Active", supplierDataAvailable ? String(active) : "—"],
+            ["API suppliers", supplierDataAvailable ? String(apiSuppliers) : "—"],
+            ["Auto-fulfill enabled", supplierDataAvailable ? String(autoFulfill) : "—"],
           ].map(([label, value]) => (
             <article key={label} className="rounded-2xl border border-white/10 bg-white/[0.035] p-5">
               <p className="text-[10px] uppercase tracking-[0.18em] text-white/35">{label}</p>
@@ -131,9 +146,9 @@ export default async function SuppliersPage() {
 
         <CjConnectionHealth />
         <CjDiscoveryScout />
-        <CjRouteCheckPanel />
+        <div id="cj-route-check"><CjRouteCheckPanel /></div>
 
-        <section className="mt-6 grid gap-5 xl:grid-cols-[1.1fr_.9fr]">
+        <section id="supplier-roster" className="mt-6 grid gap-5 xl:grid-cols-[1.1fr_.9fr]">
           <div className="rounded-[2rem] border border-white/10 bg-white/[0.035] p-6">
             <p className="text-xs font-semibold uppercase tracking-[0.18em] text-indigo-200">Supplier roster</p>
             <div className="mt-5 space-y-3">
@@ -158,7 +173,7 @@ export default async function SuppliersPage() {
                   <p className="mt-3 text-xs text-white/45">{supplier.url || "No supplier website saved"}</p>
                 </article>
               ))}
-              {supplierRows.length === 0 ? <p className="text-sm text-white/45">No suppliers available yet.</p> : null}
+              {supplierRows.length === 0 && supplierDataAvailable ? <p className="text-sm text-white/45">No suppliers available yet.</p> : null}
             </div>
           </div>
 
@@ -168,19 +183,19 @@ export default async function SuppliersPage() {
               <div className="mt-5 grid grid-cols-2 gap-3">
                 <div className="rounded-2xl bg-black/20 p-4">
                   <p className="text-[10px] uppercase tracking-[0.16em] text-white/35">Supplier products</p>
-                  <p className="mt-2 font-display text-3xl font-bold">{supplierProductRows.length}</p>
+                  <p className="mt-2 font-display text-3xl font-bold">{supplierDataAvailable ? supplierProductRows.length : "—"}</p>
                 </div>
                 <div className="rounded-2xl bg-black/20 p-4">
                   <p className="text-[10px] uppercase tracking-[0.16em] text-white/35">Imported</p>
-                  <p className="mt-2 font-display text-3xl font-bold">{imported}</p>
+                  <p className="mt-2 font-display text-3xl font-bold">{supplierDataAvailable ? imported : "—"}</p>
                 </div>
                 <div className="rounded-2xl bg-black/20 p-4">
                   <p className="text-[10px] uppercase tracking-[0.16em] text-white/35">Acre Era catalog</p>
-                  <p className="mt-2 font-display text-3xl font-bold">{catalog.length}</p>
+                  <p className="mt-2 font-display text-3xl font-bold">{supplierDataAvailable ? catalog.length : "—"}</p>
                 </div>
                 <div className="rounded-2xl bg-black/20 p-4">
                   <p className="text-[10px] uppercase tracking-[0.16em] text-white/35">Unverified products</p>
-                  <p className="mt-2 font-display text-3xl font-bold">{catalog.filter((row) => row.authorizationState === "UNVERIFIED").length}</p>
+                  <p className="mt-2 font-display text-3xl font-bold">{supplierDataAvailable ? catalog.filter((row) => row.authorizationState === "UNVERIFIED").length : "—"}</p>
                 </div>
               </div>
             </article>

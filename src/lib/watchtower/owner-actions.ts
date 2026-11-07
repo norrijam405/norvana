@@ -38,9 +38,9 @@ export function buildOwnerActions(input: {
       id: "watchtower-init",
       priority: "NOW",
       title: "Initialize Watchtower",
-      detail: "The control tables are not available to this deployment yet.",
-      href: "/admin",
-      actionLabel: "Open Watchtower",
+      detail: "Watchtower cannot read its control tables. This is an engineering issue, not a task for you to initialize manually. Check System Health for deployment proof and database availability.",
+      href: "/admin/system-health",
+      actionLabel: "View System Health",
     });
   }
 
@@ -50,7 +50,7 @@ export function buildOwnerActions(input: {
       priority: "NOW",
       title: input.unresolvedCandidates + " candidate" + (input.unresolvedCandidates === 1 ? "" : "s") + " waiting for review",
       detail: "Scout found items that still need an owner decision.",
-      href: "/admin",
+      href: "/admin/cockpit",
       actionLabel: "Review candidates",
     });
   }
@@ -100,7 +100,7 @@ export function buildOwnerActions(input: {
       priority: "INFO",
       title: "All watchers are paused",
       detail: "Nothing is running in the background unless you deliberately enable a watcher.",
-      href: "/admin",
+      href: "/admin/system-health",
       actionLabel: "Review watchers",
     });
   }
