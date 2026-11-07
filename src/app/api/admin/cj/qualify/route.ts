@@ -1,5 +1,5 @@
 import { db } from "@/db";
-import { sql } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 import { actionReceipts } from "@/db/schema";
 import { NextRequest,NextResponse } from "next/server";
 import { requireCurrentRecoveryAdmin } from "@/lib/admin-guard";
@@ -13,9 +13,17 @@ async function respondWithReceipt(payload:Record<string,unknown>,status=200){
    details:{schemaVersion:"acre-era-cj-check-v1",checkedAt:new Date().toISOString(),sku:payload.sku||null,variant:payload.variant||null,stock:payload.stock??null,productCost:payload.productCost??null,shippingCost:payload.shippingCost??null,baseLandedCost:payload.baseLandedCost??null,transitDays:payload.transitDays??null,reason:payload.reason||payload.error||null,approved:false,published:false,ordered:false},
   }).returning({id:actionReceipts.id});
   receiptId=saved?.id??null;
- }catch(error){console.error("CJ observation receipt persistence failed:",error);}
- if(receiptId===null)return NextResponse.json({state:"BLOCKED",code:"CJ_RECEIPT_PERSISTENCE_FAILED",error:"CJ check completed but its audit receipt could not be saved. Treat the result as unverified; no approval or publication is permitted.",receiptPersisted:false},{status:503,headers:{"cache-control":"no-store"}});
- return NextResponse.json({...payload,receiptId,receiptPersisted:true,receiptVerification:"SERVER_OBSERVED_NOT_INDEPENDENTLY_VERIFIED"},{status,headers:{"cache-control":"no-store"}});
+  if (receiptId!==null) {
+   // A successful insert response is not a verified readback. Check durable row identity and payload.
+   const [stored]=await db.select({id:actionReceipts.id,subjectId:actionReceipts.subjectId,status:actionReceipts.status,details:actionReceipts.details})
+    .from(actionReceipts).where(and(eq(actionReceipts.id,receiptId),eq(actionReceipts.actionType,"CJ_VARIANT_QUALIFICATION"))).limit(1);
+   if (!stored||stored.subjectId!==String(payload.sku||"unknown")||stored.status!==String(payload.state||"UNKNOWN").slice(0,30)||stored.details?.sku!==(payload.sku||null)) {
+    receiptId=null;
+   }
+  }
+ }catch(error){console.error("CJ observation receipt write/readback failed:",error);receiptId=null;}
+ if(receiptId===null)return NextResponse.json({state:"BLOCKED",code:"CJ_RECEIPT_PERSISTENCE_FAILED",error:"CJ check completed but its audit receipt could not be saved and read back consistently. Treat the result as unverified; no approval or publication is permitted.",receiptPersisted:false},{status:503,headers:{"cache-control":"no-store"}});
+ return NextResponse.json({...payload,receiptId,receiptPersisted:true,receiptVerification:"SERVER_READBACK_MATCHED_NOT_INDEPENDENTLY_VERIFIED"},{status,headers:{"cache-control":"no-store"}});
 }
 export async function POST(req:NextRequest){
  const gate=await requireCurrentRecoveryAdmin(req);if(gate)return gate;
