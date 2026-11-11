@@ -1,4 +1,4 @@
-import { and, asc, desc, eq } from "drizzle-orm";
+import { and, asc, desc, eq, sql } from "drizzle-orm";
 import { db } from "@/db";
 import {
   eraArchiveSnapshots,
@@ -320,6 +320,12 @@ export async function resolvePublicEraBySlug(
 }
 
 export async function resolveCurrentPublicEra(now = new Date()) {
+  // A preview without Era migrations is not equivalent to "no active Era".
+  // Avoid querying a missing table while preserving existing Between Eras fallback.
+  const schemaProbe = await db.execute(sql`SELECT to_regclass('public.eras') IS NOT NULL AS available`);
+  if (schemaProbe.rows[0]?.available !== true) {
+    return { ok: false as const, code: "ERA_SCHEMA_UNAVAILABLE" };
+  }
   const candidates = await db
     .select({ slug: eras.slug })
     .from(eras)
