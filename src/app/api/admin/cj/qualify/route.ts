@@ -1,16 +1,51 @@
+import { db } from "@/db";
+import { and, eq, sql } from "drizzle-orm";
+import { actionReceipts } from "@/db/schema";
 import { NextRequest,NextResponse } from "next/server";
 import { requireCurrentRecoveryAdmin } from "@/lib/admin-guard";
 import { loadCjProductBySku,quoteCjVariantToUs,parseAging } from "@/lib/cj/api";
+async function respondWithReceipt(payload:Record<string,unknown>,status=200){
+ let receiptId:number|null=null;
+ try{
+  const [saved]=await db.insert(actionReceipts).values({
+   actionType:"CJ_VARIANT_QUALIFICATION",authorityClass:"OBSERVE",subjectType:"cj_product",
+   subjectId:String(payload.sku||"unknown"),status:String(payload.state||"UNKNOWN").slice(0,30),actor:"acre-era-cj-qualification",
+   details:{schemaVersion:"acre-era-cj-check-v1",checkedAt:new Date().toISOString(),sku:payload.sku||null,variant:payload.variant||null,stock:payload.stock??null,productCost:payload.productCost??null,shippingCost:payload.shippingCost??null,baseLandedCost:payload.baseLandedCost??null,transitDays:payload.transitDays??null,reason:payload.reason||payload.error||null,approved:false,published:false,ordered:false},
+  }).returning({id:actionReceipts.id});
+  receiptId=saved?.id??null;
+  if (receiptId!==null) {
+   // A successful insert response is not a verified readback. Check durable row identity and payload.
+   const [stored]=await db.select({id:actionReceipts.id,subjectId:actionReceipts.subjectId,status:actionReceipts.status,details:actionReceipts.details})
+    .from(actionReceipts).where(and(eq(actionReceipts.id,receiptId),eq(actionReceipts.actionType,"CJ_VARIANT_QUALIFICATION"))).limit(1);
+   if (!stored||stored.subjectId!==String(payload.sku||"unknown")||stored.status!==String(payload.state||"UNKNOWN").slice(0,30)||stored.details?.sku!==(payload.sku||null)) {
+    receiptId=null;
+   }
+  }
+ }catch(error){console.error("CJ observation receipt write/readback failed:",error);receiptId=null;}
+ if(receiptId===null)return NextResponse.json({state:"BLOCKED",code:"CJ_RECEIPT_PERSISTENCE_FAILED",error:"CJ check completed but its audit receipt could not be saved and read back consistently. Treat the result as unverified; no approval or publication is permitted.",receiptPersisted:false},{status:503,headers:{"cache-control":"no-store"}});
+ return NextResponse.json({...payload,receiptId,receiptPersisted:true,receiptVerification:"SERVER_READBACK_MATCHED_NOT_INDEPENDENTLY_VERIFIED"},{status,headers:{"cache-control":"no-store"}});
+}
 export async function POST(req:NextRequest){
  const gate=await requireCurrentRecoveryAdmin(req);if(gate)return gate;
  let sku="";let vid="";try{const body=await req.json();sku=String(body.sku||"").trim();vid=String(body.vid||"").trim();}catch{return NextResponse.json({error:"Invalid request."},{status:400});}
  if(!/^[\w. -]{5,100}$/.test(sku))return NextResponse.json({error:"Invalid product SKU."},{status:400});
+ if(vid && !/^[a-zA-Z0-9_-]{5,100}$/.test(vid))return NextResponse.json({error:"Invalid CJ variant ID."},{status:400});
+ // The existing Watchtower receipt table must be available before any external CJ call.
+ // No migrations or writes occur in this preflight.
+ try {
+  const probe=await db.execute(sql`SELECT to_regclass('public.action_receipts') IS NOT NULL AS ready`);
+  if(probe.rows[0]?.ready!==true) {
+   return NextResponse.json({state:"BLOCKED",code:"WATCHTOWER_RECEIPTS_TABLE_MISSING",error:"This Preview database is missing the existing Watchtower receipt table. Open System Health and have engineering reconcile the database/migrations. No CJ request was sent.",receiptPersisted:false},{status:503,headers:{"cache-control":"no-store"}});
+  }
+ } catch(error) {
+  console.error("CJ receipt preflight failed:",error);
+  return NextResponse.json({state:"BLOCKED",code:"WATCHTOWER_RECEIPTS_PREFLIGHT_FAILED",error:"Cannot verify Watchtower receipt storage. No CJ request was sent.",receiptPersisted:false},{status:503,headers:{"cache-control":"no-store"}});
+ }
  try {
   const found=await loadCjProductBySku(sku);
-  if(vid && !/^[a-zA-Z0-9_-]{5,100}$/.test(vid))return NextResponse.json({error:"Invalid CJ variant ID."},{status:400});
   const exact=vid?found.variants.find(v=>v.vid===vid):found.variants.find(v=>v.variantSku===sku);
   const options=found.variants.slice(0,30).map(v=>({vid:v.vid,name:v.variantNameEn||v.variantSku||v.vid}));
-  if(!exact)return NextResponse.json({state:"HOLD",reason:vid?"Selected variant does not belong to this CJ product.":"CJ product found. Select a specific variant below to calculate shipping.",sku,variantOptions:options});
+  if(!exact)return respondWithReceipt({state:"HOLD",reason:vid?"Selected variant does not belong to this CJ product.":"CJ product found. Select a specific variant below to calculate shipping.",sku,variantOptions:options});
   const route=await quoteCjVariantToUs(exact.vid);
   const stock=route.inventory.reduce((sum,x)=>sum+Math.max(0,Number(x.totalInventoryNum||0)),0);
   const shipping=route.methods[0];
@@ -21,6 +56,6 @@ export async function POST(req:NextRequest){
   const validFreight=!!shipping&&Number.isFinite(freight)&&freight>=0;
   const landed=validPrice&&validFreight?cost+freight:null;
   const state=stock>0&&landed!==null&&aging.max!==null&&aging.max<=21?"NEEDS_PROCESSING_AND_APPROVAL":"HOLD";
-  return NextResponse.json({sku,variantOptions:options,variant:{id:exact.vid,name:exact.variantNameEn||exact.variantSku||exact.vid},state,stock,productCost:validPrice?cost:null,shippingCost:validFreight?freight:null,baseLandedCost:landed,transitDays:aging,carrier:shipping?.logisticName||null,origin:route.originCountryCode,priceExamples:landed===null?[]:[9.99,12.99,14.99,19.99].map(price=>({price,grossBeforeFees:Number((price-landed).toFixed(2))})),reason:state==="HOLD"?"Stock, price, freight, or delivery quote is incomplete.":"Stock and freight available; processing, fees, returns, product rights, and safety still require review.",approved:false,published:false,ordered:false},{headers:{"cache-control":"no-store"}});
- }catch{return NextResponse.json({state:"HOLD",error:"CJ qualification could not complete. Try the manual route check; do not assume this item is sellable."},{status:502});}
+  return respondWithReceipt({sku,variantOptions:options,variant:{id:exact.vid,name:exact.variantNameEn||exact.variantSku||exact.vid},state,stock,productCost:validPrice?cost:null,shippingCost:validFreight?freight:null,baseLandedCost:landed,transitDays:aging,carrier:shipping?.logisticName||null,origin:route.originCountryCode,priceExamples:landed===null?[]:[9.99,12.99,14.99,19.99].map(price=>({price,grossBeforeFees:Number((price-landed).toFixed(2))})),reason:state==="HOLD"?"Stock, price, freight, or delivery quote is incomplete.":"Stock and freight available; processing, fees, returns, product rights, and safety still require review.",approved:false,published:false,ordered:false});
+ }catch{return respondWithReceipt({sku,state:"HOLD",error:"CJ qualification could not complete. Try the manual route check; do not assume this item is sellable."},502);}
 }
