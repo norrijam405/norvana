@@ -64,6 +64,35 @@ export default async function SystemHealthPage() {
     console.error("Read-only CJ receipt column check failed:", error);
   }
 
+  // Inspect every Era Engine dependency before authorizing a migration.
+  const eraTables = [
+    "eras", "era_media_assets", "era_sections", "era_products",
+    "era_watchtower_bindings", "era_events", "era_archive_snapshots", "products"
+  ] as const;
+  let eraTableAvailability: Record<string, boolean> | null = null;
+  let eraColumnCompatibility: boolean | null = null;
+  try {
+    const result = await db.execute(sql`SELECT table_name FROM information_schema.tables
+      WHERE table_schema = 'public' AND table_name IN
+      ('eras','era_media_assets','era_sections','era_products','era_watchtower_bindings','era_events','era_archive_snapshots','products')`);
+    const found = new Set(result.rows.map((row) => String(row.table_name)));
+    eraTableAvailability = Object.fromEntries(eraTables.map((name) => [name, found.has(name)]));
+    if (found.has("eras")) {
+      const columns = await db.execute(sql`SELECT column_name FROM information_schema.columns
+        WHERE table_schema = 'public' AND table_name = 'eras'`);
+      const available = new Set(columns.rows.map((row) => String(row.column_name)));
+      eraColumnCompatibility = [
+        "id","slug","name","eyebrow","story","kind","lifecycle_state",
+        "visibility","is_primary","start_at","end_at","theme_tokens",
+        "watchtower_profile","archive_policy","created_at","updated_at","content_revision"
+      ].every((name) => available.has(name));
+    } else {
+      eraColumnCompatibility = false;
+    }
+  } catch (error) {
+    console.error("Read-only Era Engine schema check failed:", error);
+  }
+
   const runtimeId = currentWatchtowerRuntimeId();
   let controlProof = false;
   let workerProof = false;
@@ -138,6 +167,34 @@ export default async function SystemHealthPage() {
             </div>
           ) : (
             <p className="mt-4 text-sm text-emerald-200">Required tables are present. Application read/write tests and receipt readback are still required.</p>
+          )}
+        </section>
+
+        <section className="mt-6 rounded-[2rem] border border-white/10 bg-white/[0.035] p-6" aria-labelledby="era-readiness-title">
+          <h2 id="era-readiness-title" className="text-xl font-bold">Era Engine readiness · read-only</h2>
+          <p className="mt-2 text-sm text-white/55">Checks all known Era Engine table dependencies before planning a migration. This is not proof that a migration has run or that historical content exists.</p>
+          <div className="mt-4 grid gap-2 sm:grid-cols-2">
+            {eraTables.map((tableName) => (
+              <div key={tableName} className="flex items-center justify-between rounded-xl bg-black/20 p-3 text-sm">
+                <code>{tableName}</code>
+                <span className={eraTableAvailability?.[tableName] === true ? "text-emerald-200" : "text-amber-200"}>
+                  {eraTableAvailability === null ? "UNKNOWN" : eraTableAvailability[tableName] ? "PRESENT" : "MISSING"}
+                </span>
+              </div>
+            ))}
+            <div className="flex items-center justify-between rounded-xl bg-black/20 p-3 text-sm">
+              <span>Era root column compatibility</span>
+              <span className={eraColumnCompatibility === true ? "text-emerald-200" : "text-amber-200"}>
+                {eraColumnCompatibility === null ? "UNKNOWN" : eraColumnCompatibility ? "COMPATIBLE" : "NOT READY"}
+              </span>
+            </div>
+          </div>
+          {eraTableAvailability === null || Object.values(eraTableAvailability).some((present) => !present) || eraColumnCompatibility !== true ? (
+            <p className="mt-4 rounded-xl border border-amber-300/20 bg-amber-300/[0.06] p-4 text-sm text-amber-100">
+              Era Engine is not schema-ready in this deployment. Engineering must confirm the intended Preview database and apply only a reviewed, environment-scoped migration after checking existing data. Do not initialize or copy production credentials here.
+            </p>
+          ) : (
+            <p className="mt-4 text-sm text-emerald-200">Era Engine table inventory is present. Content, constraints, migrations and runtime behavior still require verification.</p>
           )}
         </section>
 
