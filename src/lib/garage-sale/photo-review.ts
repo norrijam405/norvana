@@ -59,3 +59,13 @@ export function approveAssignedPhoto<T extends AssignedDemoPhoto>(
     ? { ...photo, approved: approval && photo.itemId !== null && approvedIds.has(photo.itemId) }
     : photo);
 }
+
+/** Purge stale associations whenever a seller revokes approval or edits the draft. */
+export function revokeStalePhotoAssignments<T extends AssignedDemoPhoto>(
+  photos: T[], items: ApprovedDemoItem[]
+): T[] {
+  const approvedIds = new Set(items.filter(item => item.approved).map(item => item.id));
+  return photos.map(photo => photo.itemId !== null && approvedIds.has(photo.itemId)
+    ? photo
+    : { ...photo, itemId: null, approved: false });
+}
