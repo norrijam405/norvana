@@ -8,7 +8,7 @@ import {
 
 import type { DraftItem } from "@/lib/garage-sale/drafts";
 type LocalPhoto = AssignedDemoPhoto & { url: string };
-export function PhotoReviewWorkbench({ items = [] }: { items?: DraftItem[] }) {
+export function PhotoReviewWorkbench({ items = [], onPhotosChange }: { items?: DraftItem[]; onPhotosChange?: (photos: AssignedDemoPhoto[]) => void }) {
   const [photos, setPhotos] = useState<LocalPhoto[]>([]);
   const [notices, setNotices] = useState<string[]>([]);
   const [busy, setBusy] = useState(false);
@@ -18,6 +18,11 @@ export function PhotoReviewWorkbench({ items = [] }: { items?: DraftItem[] }) {
   useEffect(() => {
     return () => { for (const url of urls.current) URL.revokeObjectURL(url); };
   }, []);
+
+  // Share review metadata only; never share local image blob URLs with the summary.
+  useEffect(() => {
+    onPhotosChange?.(photos.map(({ id, name, size, type, approved, itemId }) => ({ id, name, size, type, approved, itemId })));
+  }, [photos, onPhotosChange]);
 
   // Removing/changing an approved item invalidates any linked photo approval.
   useEffect(() => {
