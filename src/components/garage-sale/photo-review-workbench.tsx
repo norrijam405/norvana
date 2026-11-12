@@ -3,11 +3,12 @@
 import { useEffect, useRef, useState } from "react";
 import {
   MAX_DEMO_PHOTOS, MAX_DEMO_PHOTO_BYTES, photoMetadataError, photoSignatureMatches,
-  canPublishDemoPhotos, type DemoPhoto,
+  canPublishDemoPhotos, assignPhotoToDraftItem, approveAssignedPhoto, eligiblePhotoCount, type AssignedDemoPhoto,
 } from "@/lib/garage-sale/photo-review";
 
-type LocalPhoto = DemoPhoto & { url: string };
-export function PhotoReviewWorkbench() {
+import type { DraftItem } from "@/lib/garage-sale/drafts";
+type LocalPhoto = AssignedDemoPhoto & { url: string };
+export function PhotoReviewWorkbench({ items = [] }: { items?: DraftItem[] }) {
   const [photos, setPhotos] = useState<LocalPhoto[]>([]);
   const [notices, setNotices] = useState<string[]>([]);
   const [busy, setBusy] = useState(false);
@@ -43,7 +44,7 @@ export function PhotoReviewWorkbench() {
         const url = URL.createObjectURL(file);
         urls.current.push(url);
         fingerprints.add(key);
-        next.push({ id: `demo-photo-${Date.now()}-${entries.current.length + next.length}`, name: file.name, size: file.size, type: file.type, approved: false, url });
+        next.push({ id: `demo-photo-${Date.now()}-${entries.current.length + next.length}`, name: file.name, size: file.size, type: file.type, approved: false, itemId: null, url });
       }
       if (next.length) {
         const merged = [...entries.current, ...next];
@@ -69,7 +70,12 @@ export function PhotoReviewWorkbench() {
     setPhotos(next);
   }
   function update(id: string, approved: boolean) {
-    const next = entries.current.map(photo => photo.id === id ? { ...photo, approved } : photo);
+    const next = approveAssignedPhoto(entries.current, id, approved, items);
+    entries.current = next;
+    setPhotos(next);
+  }
+  function assign(id: string, itemId: string | null) {
+    const next = assignPhotoToDraftItem(entries.current, id, itemId, items);
     entries.current = next;
     setPhotos(next);
   }
@@ -80,7 +86,8 @@ export function PhotoReviewWorkbench() {
     setPhotos([]);
     setNotices([]);
   }
-  const approvedCount = photos.filter(photo => photo.approved).length;
+  const approvedCount = eligiblePhotoCount(photos, items);
+  const approvedItems = items.filter(item => item.approved);
   return <section className="mt-7 rounded-[2rem] border border-soil/10 bg-cream p-6 md:p-9" aria-labelledby="garage-photo-title">
     <p className="text-xs font-bold uppercase tracking-[.2em] text-leaf">Seller studio · photo intake experiment</p>
     <h2 id="garage-photo-title" className="mt-2 font-display text-3xl font-black">Review photos before showing them.</h2>
@@ -109,15 +116,23 @@ export function PhotoReviewWorkbench() {
         <img src={photo.url} alt={photo.name} className="h-40 w-full rounded-xl bg-sage-wash object-contain" />
         <p title={photo.name} className="mt-3 truncate text-sm font-semibold">{photo.name}</p>
         <p className="mt-1 text-xs text-muted">{(photo.size / 1024).toFixed(0)} KB · {photo.type}</p>
+        <label className="mt-3 block text-sm font-semibold">
+          Associate with approved item
+          <select value={approvedItems.some(item => item.id === photo.itemId) ? photo.itemId ?? "" : ""} onChange={event => assign(photo.id, event.target.value || null)}
+            className="mt-2 w-full rounded-lg border border-soil/20 bg-cream px-3 py-2 text-sm">
+            <option value="">Unassigned · select an item</option>
+            {approvedItems.map(item => <option key={item.id} value={item.id}>{item.name}</option>)}
+          </select>
+        </label>
         <label className="mt-3 flex items-center gap-2 text-sm">
-          <input type="checkbox" checked={photo.approved} onChange={event => update(photo.id, event.target.checked)} className="h-4 w-4 accent-leaf" />
-          Approve in this browser preview
+          <input type="checkbox" checked={photo.approved && approvedItems.some(item => item.id === photo.itemId)} disabled={!approvedItems.some(item => item.id === photo.itemId)} onChange={event => update(photo.id, event.target.checked)} className="h-4 w-4 accent-leaf" />
+          Approve photo for the selected item
         </label>
         <button type="button" onClick={() => remove(photo.id)} className="mt-3 text-xs font-semibold text-clay underline underline-offset-2">Remove photo</button>
       </article>)}
     </div>
     <p role="status" className="mt-5 rounded-xl bg-sage-wash p-4 text-sm">
-      <strong>{approvedCount} of {photos.length} photos approved locally.</strong> Publish authorization: {canPublishDemoPhotos(photos) ? "Available" : "DISABLED"}.
+      <strong>{approvedCount} of {photos.length} photos approved for currently approved items.</strong> Publish authorization: {canPublishDemoPhotos(photos) ? "Available" : "DISABLED"}.
       <span className="mt-1 block text-xs text-muted">A future real upload needs server-side file scanning, metadata removal, seller authorization, storage isolation and a moderation queue.</span>
     </p>
   </section>;
