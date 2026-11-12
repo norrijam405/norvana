@@ -1,4 +1,5 @@
 import test from "node:test";
+import { DEMO_MESSAGE_TEMPLATES, demoMessageFromTemplate, messagePreviewGuard } from "../src/lib/garage-sale/message-preview.ts";
 import { photoMetadataError, photoSignatureMatches, MAX_DEMO_PHOTOS, MAX_DEMO_PHOTO_BYTES, changePhotoApproval, canPublishDemoPhotos } from "../src/lib/garage-sale/photo-review.ts";
 import assert from "node:assert/strict";
 import { GARAGE_SALE_FIXTURES, bundleTotal } from "../src/lib/garage-sale/fixtures.ts";
@@ -183,4 +184,26 @@ test("photo review requires opt-in selection and never grants publish authorizat
   assert.equal(photos[0].approved, false);
   assert.equal(canPublishDemoPhotos(changed), false);
   assert.equal(changePhotoApproval(changed, "unknown", false)[0].approved, true);
+});
+
+test("messaging preview allows only known fictional templates and never sends", () => {
+  assert.ok(DEMO_MESSAGE_TEMPLATES.length >= 3);
+  assert.equal(new Set(DEMO_MESSAGE_TEMPLATES.map(x => x.id)).size, DEMO_MESSAGE_TEMPLATES.length);
+  for (const template of DEMO_MESSAGE_TEMPLATES) {
+    const message = demoMessageFromTemplate(template.id);
+    assert.ok(message);
+    assert.equal(message.sent, false);
+    assert.equal(message.role, "BUYER");
+    assert.equal(message.text, template.text);
+  }
+  assert.equal(demoMessageFromTemplate("not-a-real-message"), null);
+  assert.deepEqual(messagePreviewGuard(), { permitted: false, code: "NO_REAL_MESSAGING_AUTHORIZED" });
+});
+
+test("message templates never include precise location or sensitive buyer details", () => {
+  for (const template of DEMO_MESSAGE_TEMPLATES) {
+    for (const forbidden of ["@", "http://", "https://", "my address", "my phone", "cash app", "venmo"]) {
+      assert.equal(template.text.toLowerCase().includes(forbidden), false, forbidden);
+    }
+  }
 });
