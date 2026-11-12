@@ -2,6 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { GARAGE_SALE_FIXTURES, bundleTotal } from "../src/lib/garage-sale/fixtures.ts";
 import { getGarageSaleSafeSpotAdapter } from "../src/lib/garage-sale/safespot-fixtures.ts";
+import { normalizeSafeSpotForAcreEra } from "../src/lib/garage-sale/safespot-adapter.ts";
 import { SAMPLE_BULK_ITEMS, GARAGE_SALE_EVENTS, parseGarageSaleDraft, markDraftItem, approvedDraftItems } from "../src/lib/garage-sale/drafts.ts";
 
 test("fictional sales use unique IDs and item IDs", () => {
@@ -87,5 +88,66 @@ test("community sale event fixtures have no real coordinates or booking details"
     assert.equal(event.fictional, true);
     assert.ok(event.saleIds.every(id => ids.has(id)));
     assert.ok(!("location" in event) && !("coordinates" in event) && !("bookingUrl" in event));
+  }
+});
+
+test("SafeSpot R0 officialExchangeZone/operatingHours mapping preserves uncertainty", () => {
+  const mapped = normalizeSafeSpotForAcreEra({ places: [{
+    id: "fake-zone-01", label: "Fictional exchange point",
+    location: { precision: "exact", authorized: true, lat: 35.2, lng: -97.3 },
+    safetyGuarantee: true,
+    attributes: {
+      officialExchangeZone: { status: "VERIFIED", value: true, sourceUrl: "https://example.org/fake", checkedAt: "2026-11-10T12:00:00Z" },
+      lighting: { status: "REPORTED", value: "bright", sourceUrl: null, checkedAt: null },
+      operatingHours: { status: "UNKNOWN", value: "24 hours" },
+    },
+    incidentReport: "Never display me", sellerAddress: "Never display me",
+  }] });
+  assert.equal(mapped.integration, "FIXTURE_ONLY");
+  assert.equal(mapped.options.length, 1);
+  const option = mapped.options[0];
+  assert.equal(option.attributes.designatedExchangeZone.state, "REPORTED"); // NOT upgraded to VERIFIED
+  assert.equal(option.attributes.lighting.state, "REPORTED");
+  assert.equal(option.attributes.accessHours.state, "UNKNOWN");
+  assert.equal(option.accessHoursLabel, null);
+  assert.equal(option.addressVisibility, "REDACTED");
+  const output = JSON.stringify(mapped);
+  for (const secret of ["35.2", "-97.3", "Never display me", "incidentReport", "sellerAddress", "safetyGuarantee"]) assert.ok(!output.includes(secret), secret);
+});
+
+test("SafeSpot adapter rejects malformed IDs and duplicate place records", () => {
+  const response = normalizeSafeSpotForAcreEra({ places: [
+    { id: "ok-zone", label: "First" },
+    { id: "ok-zone", label: "Duplicate" },
+    { id: "../../bad", label: "Bad" },
+    { id: "valid-two", label: "Second" },
+  ] });
+  assert.deepEqual(response.options.map(x => x.id), ["ok-zone", "valid-two"]);
+  assert.equal(response.options[1].attributes.designatedExchangeZone.state, "UNKNOWN");
+});
+
+test("SafeSpot adapter never trusts an unreviewed source URL or upstream safety rating", () => {
+  const data = normalizeSafeSpotForAcreEra({ places: [{
+    id: "unsafe-demo",
+    label: "Unsafe fixture",
+    attributes: {
+      officialExchangeZone: { status: "VERIFIED", sourceUrl: "http://insecure.invalid", checkedAt: "wrong", value: true },
+      lighting: { status: "VERIFIED", sourceUrl: "https://u:p@evil.invalid/", checkedAt: "2026-11-12", value: true },
+    },
+  }] });
+  const [venue] = data.options;
+  assert.equal(venue.attributes.designatedExchangeZone.state, "REPORTED");
+  assert.equal(venue.attributes.designatedExchangeZone.sourceUrl, null);
+  assert.equal(venue.attributes.designatedExchangeZone.checkedAt, null);
+  assert.equal(venue.attributes.lighting.sourceUrl, null);
+  assert.equal(venue.officialSourceUrl, null);
+  assert.equal(data.provider, "FICTIONAL_FIXTURE");
+});
+
+test("SafeSpot adapter fails closed on missing and malformed payloads", () => {
+  for (const value of [null, undefined, 5, "broken", {}, { places: null }]) {
+    const data = normalizeSafeSpotForAcreEra(value);
+    assert.deepEqual(data.options, []);
+    assert.equal(data.integration, "FIXTURE_ONLY");
   }
 });
