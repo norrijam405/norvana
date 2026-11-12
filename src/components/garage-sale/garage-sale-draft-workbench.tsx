@@ -7,7 +7,7 @@ import {
   type DraftItem,
 } from "@/lib/garage-sale/drafts";
 
-export function GarageSaleDraftWorkbench() {
+export function GarageSaleDraftWorkbench({ onItemsChange }: { onItemsChange?: (items: DraftItem[]) => void }) {
   const [raw, setRaw] = useState(SAMPLE_BULK_ITEMS);
   const [items, setItems] = useState<DraftItem[]>([]);
   const [issues, setIssues] = useState<string[]>([]);
@@ -18,12 +18,14 @@ export function GarageSaleDraftWorkbench() {
   function review() {
     const result = parseGarageSaleDraft(raw);
     setItems(result.items);
+    onItemsChange?.(result.items);
     setIssues(result.errors);
     setReviewed(true);
   }
   function reset() {
     setRaw(SAMPLE_BULK_ITEMS);
     setItems([]);
+    onItemsChange?.([]);
     setIssues([]);
     setReviewed(false);
   }
@@ -40,14 +42,14 @@ export function GarageSaleDraftWorkbench() {
           </p>
           <label htmlFor="garage-bulk-lines" className="mt-5 block text-sm font-semibold">Bulk item drafts</label>
           <textarea id="garage-bulk-lines" rows={6} maxLength={15000} value={raw}
-            onChange={event => { setRaw(event.target.value); setReviewed(false); setItems([]); setIssues([]); }}
+            onChange={event => { setRaw(event.target.value); setReviewed(false); setItems([]); onItemsChange?.([]); setIssues([]); }}
             className="mt-2 w-full rounded-xl border border-soil/20 bg-bone p-4 font-mono text-sm"
             spellCheck={false} />
           <div className="mt-3 flex flex-wrap gap-2">
             <button onClick={review} type="button" className="rounded-xl bg-leaf px-5 py-3 text-sm font-bold text-white">Review items</button>
             <button onClick={reset} type="button" className="rounded-xl border border-soil/20 px-5 py-3 text-sm font-semibold">Reset fictional sample</button>
           </div>
-          <p className="mt-3 text-xs text-muted">Valid conditions: New, Used - like new, Used - good, Used - fair, For parts. Up to 40 lines of valid items. No photos or files are collected.</p>
+          <p className="mt-3 text-xs text-muted">Valid conditions: New, Used - like new, Used - good, Used - fair, For parts. Up to 40 lines of valid items. Photos can be linked to approved items below in the browser-only demo.</p>
           {issues.length > 0 && <div role="alert" className="mt-4 rounded-xl border border-amber-300/30 bg-amber-50 p-4 text-sm">
             <p className="font-semibold">{issues.length} review note{issues.length === 1 ? "" : "s"}</p>
             <ul className="mt-2 list-disc space-y-1 pl-4">{issues.map((issue, i) => <li key={i}>{issue}</li>)}</ul>
@@ -61,7 +63,7 @@ export function GarageSaleDraftWorkbench() {
           <div className="mt-4 space-y-2">
             {items.map(item => (
               <label key={item.id} className="flex cursor-pointer items-start gap-3 rounded-xl bg-cream p-3 text-sm">
-                <input type="checkbox" checked={item.approved} onChange={event => setItems(previous => markDraftItem(previous, item.id, event.target.checked))}
+                <input type="checkbox" checked={item.approved} onChange={event => { const next = markDraftItem(items, item.id, event.target.checked); setItems(next); onItemsChange?.(next); }}
                   className="mt-1 h-4 w-4 accent-leaf" />
                 <span className="flex-1"><strong className="block">{item.name}</strong>
                   <span className="text-xs text-muted">{item.category} · {item.condition}</span>
