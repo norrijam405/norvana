@@ -1,3 +1,4 @@
+import { ACRE_SAFETY_CONTEXTS, ACRE_SAFETY_DOMAINS, coverageByContext, evaluateSyntheticAcreSafety } from "../src/lib/acre-era/safety-coverage.ts";
 import { buildGarageSaleReviewManifest } from "../src/lib/garage-sale/review-manifest.ts";
 import test from "node:test";
 import { DEMO_MESSAGE_TEMPLATES, demoMessageFromTemplate, messagePreviewGuard } from "../src/lib/garage-sale/message-preview.ts";
@@ -282,4 +283,48 @@ test("seller review manifest remains nonpublishable for empty or revoked drafts"
   assert.equal(revoked.items.length, 0);
   assert.equal(revoked.publishAuthorized, false);
   assert.equal(buildGarageSaleReviewManifest([], []).approvedItemCount, 0);
+});
+
+test("every Acre Era experience has meaningful safety coverage with explicit owners", () => {
+  assert.equal(ACRE_SAFETY_CONTEXTS.length, 7);
+  assert.equal(new Set(ACRE_SAFETY_DOMAINS.map(domain => domain.id)).size, ACRE_SAFETY_DOMAINS.length);
+  for (const context of ACRE_SAFETY_CONTEXTS) {
+    const coverage = coverageByContext(context);
+    assert.ok(coverage.length >= 3, context);
+    assert.ok(coverage.some(domain => domain.id === "privacy"));
+    assert.ok(coverage.some(domain => domain.id === "incidents"));
+    assert.ok(coverage.every(domain => domain.releaseGate && domain.customerAdvice && ["ACRE_ERA","IGNIAQUA","SHARED"].includes(domain.accountableOwner)));
+  }
+});
+
+test("food and affiliate safety requirements are scoped to relevant customer journeys", () => {
+  assert.ok(coverageByContext("MARKET_FARM").some(domain => domain.id === "food"));
+  assert.ok(!coverageByContext("GARAGE_SALE").some(domain => domain.id === "food"));
+  assert.ok(coverageByContext("FINDS_AFFILIATE").some(domain => domain.id === "affiliates"));
+  assert.ok(!coverageByContext("BUYER_SELLER_CHAT").some(domain => domain.id === "affiliates"));
+});
+
+test("synthetic Acre Era safety assessment always fails closed even with green inputs", () => {
+  for (const context of ACRE_SAFETY_CONTEXTS) {
+    const assessment = evaluateSyntheticAcreSafety({
+      context, vendorVerified:true, productClaimsVerified:true,
+      paymentConfirmedByProvider:true, meetupEvidenceVerified:true,
+      foodHandlingDocumentationReviewed:true,
+      requestingOffPlatformPayment:false, containsPrivateAddress:false,
+    });
+    assert.equal(assessment.mode, "SYNTHETIC_ONLY");
+    assert.equal(assessment.outcome, "REVIEW_REQUIRED");
+    assert.equal(assessment.safeToProceed, false);
+    assert.equal(assessment.safeToPublish, false);
+  }
+});
+
+test("specific fraud, privacy and food safety flags are surfaced without individual scoring", () => {
+  const risk = evaluateSyntheticAcreSafety({ context:"MARKET_FARM", containsPrivateAddress:true, requestingOffPlatformPayment:true });
+  assert.ok(risk.flags.includes("Sensitive address exposure"));
+  assert.ok(risk.flags.includes("Unapproved off-platform payment request"));
+  assert.ok(risk.flags.includes("Food-handling evidence not reviewed"));
+  assert.equal(risk.safeToProceed, false);
+  const meetup = evaluateSyntheticAcreSafety({ context:"GARAGE_SALE" });
+  assert.ok(meetup.flags.includes("Meetup evidence unverified"));
 });
