@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { GarageSaleDemo } from "@/components/garage-sale/garage-sale-demo";
 import { SellerStudio } from "@/components/garage-sale/seller-studio";
 import { MessagePreviewWorkbench } from "@/components/garage-sale/message-preview-workbench";
@@ -26,6 +27,7 @@ export default function GarageSalePage() {
             </p>
           </div>
         </section>
+        <div className="mx-auto max-w-7xl px-4 pt-6 sm:px-6 lg:px-8"><Link href="/safety" className="inline-flex rounded-xl border border-soil/15 bg-cream px-5 py-3 text-sm font-semibold text-soil underline underline-offset-4">Explore safety across all Acre Era experiences</Link></div>
         <GarageSaleDemo safeSpots={safeSpots} />
         <div className="mx-auto max-w-7xl px-4 pb-16 sm:px-6 lg:px-8"><SellerStudio /><MessagePreviewWorkbench /></div>
       </main>
