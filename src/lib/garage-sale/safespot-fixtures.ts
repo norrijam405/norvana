@@ -3,7 +3,7 @@
  * All fixtures are fictional. IgniAqua remains the data/policy owner.
  * Never reinterpret a survey/rating as official safety certification.
  */
-import { normalizeSafeSpotForAcreEra } from "./safespot-adapter";
+import { normalizeSafeSpotForAcreEra } from "./safespot-adapter.ts";
 export type EvidenceState = "UNKNOWN" | "REPORTED" | "VERIFIED";
 export type SafeSpotAttribute = {
   state: EvidenceState;
