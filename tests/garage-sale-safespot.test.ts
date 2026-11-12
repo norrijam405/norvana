@@ -1,4 +1,5 @@
 import test from "node:test";
+import { photoMetadataError, photoSignatureMatches, MAX_DEMO_PHOTOS, MAX_DEMO_PHOTO_BYTES, changePhotoApproval, canPublishDemoPhotos } from "../src/lib/garage-sale/photo-review.ts";
 import assert from "node:assert/strict";
 import { GARAGE_SALE_FIXTURES, bundleTotal } from "../src/lib/garage-sale/fixtures.ts";
 import { getGarageSaleSafeSpotAdapter } from "../src/lib/garage-sale/safespot-fixtures.ts";
@@ -150,4 +151,36 @@ test("SafeSpot adapter fails closed on missing and malformed payloads", () => {
     assert.deepEqual(data.options, []);
     assert.equal(data.integration, "FIXTURE_ONLY");
   }
+});
+
+test("photo policy accepts bounded JPEG PNG WEBP metadata and rejects other formats", () => {
+  for (const type of ["image/jpeg", "image/png", "image/webp"]) {
+    assert.equal(photoMetadataError({ name: "sample-image.jpg", size: 5000, type }), null);
+  }
+  for (const type of ["image/svg+xml", "image/gif", "text/html", "application/pdf"]) {
+    assert.ok(photoMetadataError({ name: "bad-file", size: 5000, type }));
+  }
+  assert.ok(photoMetadataError({ name: "large.png", size: MAX_DEMO_PHOTO_BYTES + 1, type: "image/png" }));
+  assert.ok(photoMetadataError({ name: "too-small", size: 10, type: "image/png" }));
+  assert.ok(photoMetadataError({ name: "../private.jpg", size: 5000, type: "image/jpeg" }));
+  assert.equal(MAX_DEMO_PHOTOS, 6);
+});
+
+test("photo magic bytes prevent SVG/HTML disguised as images", () => {
+  assert.equal(photoSignatureMatches(new Uint8Array([255, 216, 255, 224]), "image/jpeg"), true);
+  assert.equal(photoSignatureMatches(new Uint8Array([137,80,78,71,13,10,26,10]), "image/png"), true);
+  assert.equal(photoSignatureMatches(new Uint8Array([82,73,70,70,0,0,0,0,87,69,66,80]), "image/webp"), true);
+  assert.equal(photoSignatureMatches(new Uint8Array([60,115,118,103,62]), "image/jpeg"), false);
+  assert.equal(photoSignatureMatches(new Uint8Array([60,104,116,109,108,62]), "image/png"), false);
+  assert.equal(photoSignatureMatches(new Uint8Array([255,216,255]), "image/svg+xml"), false);
+});
+
+test("photo review requires opt-in selection and never grants publish authorization", () => {
+  const photos = [{ id: "demo-1", name: "test.png", type: "image/png", size: 300, approved: false }];
+  assert.equal(canPublishDemoPhotos(photos), false);
+  const changed = changePhotoApproval(photos, "demo-1", true);
+  assert.equal(changed[0].approved, true);
+  assert.equal(photos[0].approved, false);
+  assert.equal(canPublishDemoPhotos(changed), false);
+  assert.equal(changePhotoApproval(changed, "unknown", false)[0].approved, true);
 });
