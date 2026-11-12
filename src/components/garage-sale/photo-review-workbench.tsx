@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import {
   MAX_DEMO_PHOTOS, MAX_DEMO_PHOTO_BYTES, photoMetadataError, photoSignatureMatches,
-  changePhotoApproval, canPublishDemoPhotos, type DemoPhoto,
+  canPublishDemoPhotos, type DemoPhoto,
 } from "@/lib/garage-sale/photo-review";
 
 type LocalPhoto = DemoPhoto & { url: string };
@@ -69,7 +69,7 @@ export function PhotoReviewWorkbench() {
     setPhotos(next);
   }
   function update(id: string, approved: boolean) {
-    const next = changePhotoApproval(entries.current, id, approved);
+    const next = entries.current.map(photo => photo.id === id ? { ...photo, approved } : photo);
     entries.current = next;
     setPhotos(next);
   }
