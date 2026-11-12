@@ -1,3 +1,4 @@
+import { buildGarageSaleReviewManifest } from "../src/lib/garage-sale/review-manifest.ts";
 import test from "node:test";
 import { DEMO_MESSAGE_TEMPLATES, demoMessageFromTemplate, messagePreviewGuard } from "../src/lib/garage-sale/message-preview.ts";
 import { photoMetadataError, photoSignatureMatches, MAX_DEMO_PHOTOS, MAX_DEMO_PHOTO_BYTES, changePhotoApproval, eligiblePhotoCount, assignPhotoToDraftItem, approveAssignedPhoto, revokeStalePhotoAssignments, canPublishDemoPhotos } from "../src/lib/garage-sale/photo-review.ts";
@@ -245,4 +246,40 @@ test("editing or revoking draft items clears stale linked photo approval", () =>
     assert.equal(eligiblePhotoCount(cleared, items), 0);
   }
   assert.equal(photos[0].approved, true, "pure operation must not mutate original objects");
+});
+
+test("seller review export includes approved items and linked approved photo counts only", () => {
+  const items = [
+    { id: "a", name: "Demo lamp", category: "Home", condition: "Used - good", price: 19.95, approved: true },
+    { id: "b", name: "Rejected", category: "Home", condition: "Used - fair", price: 5, approved: false },
+  ];
+  const photos = [
+    { id: "photo-1", name: "seller-home-location.jpg", size: 123, type: "image/jpeg", approved: true, itemId: "a", url: "blob:private" },
+    { id: "photo-2", name: "unapproved.jpg", size: 123, type: "image/jpeg", approved: false, itemId: "a" },
+    { id: "photo-3", name: "rejected-item.jpg", size: 123, type: "image/jpeg", approved: true, itemId: "b" },
+  ];
+  const result = buildGarageSaleReviewManifest(items, photos);
+  assert.equal(result.state, "LOCAL_REVIEW_ONLY");
+  assert.equal(result.publishAuthorized, false);
+  assert.equal(result.itemCount, 2);
+  assert.equal(result.approvedItemCount, 1);
+  assert.equal(result.approvedPhotoCount, 1);
+  assert.equal(result.subtotal, 19.95);
+  assert.deepEqual(result.items.map(item => item.name), ["Demo lamp"]);
+  const output = JSON.stringify(result);
+  for (const forbidden of ["seller-home-location", "blob:private", "rejected-item", "unapproved.jpg", '"url"', '"name":"Rejected"']) {
+    assert.equal(output.includes(forbidden), false, forbidden);
+  }
+});
+
+test("seller review manifest remains nonpublishable for empty or revoked drafts", () => {
+  const approved = { id: "a", name: "Sample", category: "Home", condition: "New", price: 10, approved: true };
+  const photo = { id: "p", name: "private.png", size: 100, type: "image/png", approved: true, itemId: "a" };
+  const active = buildGarageSaleReviewManifest([approved], [photo]);
+  assert.equal(active.approvedPhotoCount, 1);
+  const revoked = buildGarageSaleReviewManifest([{ ...approved, approved: false }], [photo]);
+  assert.equal(revoked.approvedPhotoCount, 0);
+  assert.equal(revoked.items.length, 0);
+  assert.equal(revoked.publishAuthorized, false);
+  assert.equal(buildGarageSaleReviewManifest([], []).approvedItemCount, 0);
 });
