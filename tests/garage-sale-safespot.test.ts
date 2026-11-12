@@ -1,6 +1,6 @@
 import test from "node:test";
 import { DEMO_MESSAGE_TEMPLATES, demoMessageFromTemplate, messagePreviewGuard } from "../src/lib/garage-sale/message-preview.ts";
-import { photoMetadataError, photoSignatureMatches, MAX_DEMO_PHOTOS, MAX_DEMO_PHOTO_BYTES, changePhotoApproval, eligiblePhotoCount, assignPhotoToDraftItem, approveAssignedPhoto, canPublishDemoPhotos } from "../src/lib/garage-sale/photo-review.ts";
+import { photoMetadataError, photoSignatureMatches, MAX_DEMO_PHOTOS, MAX_DEMO_PHOTO_BYTES, changePhotoApproval, eligiblePhotoCount, assignPhotoToDraftItem, approveAssignedPhoto, revokeStalePhotoAssignments, canPublishDemoPhotos } from "../src/lib/garage-sale/photo-review.ts";
 import assert from "node:assert/strict";
 import { GARAGE_SALE_FIXTURES, bundleTotal } from "../src/lib/garage-sale/fixtures.ts";
 import { getGarageSaleSafeSpotAdapter } from "../src/lib/garage-sale/safespot-fixtures.ts";
@@ -231,4 +231,18 @@ test("revoking seller item approval immediately invalidates linked-photo eligibi
   assert.equal(eligiblePhotoCount([photo], [{ id: "draft-1", approved: false }]), 0);
   assert.equal(eligiblePhotoCount([photo], []), 0);
   assert.equal(approveAssignedPhoto([photo], "photo-1", true, [])[0].approved, false);
+});
+
+test("editing or revoking draft items clears stale linked photo approval", () => {
+  const photos = [{ id: "demo-photo", name: "fixture.png", type: "image/png", size: 100, approved: true, itemId: "draft-1" }];
+  const retained = revokeStalePhotoAssignments(photos, [{ id: "draft-1", approved: true }]);
+  assert.equal(retained[0].approved, true);
+  assert.equal(retained[0].itemId, "draft-1");
+  for (const items of [[], [{ id: "draft-1", approved: false }], [{ id: "draft-2", approved: true }]]) {
+    const cleared = revokeStalePhotoAssignments(photos, items);
+    assert.equal(cleared[0].approved, false);
+    assert.equal(cleared[0].itemId, null);
+    assert.equal(eligiblePhotoCount(cleared, items), 0);
+  }
+  assert.equal(photos[0].approved, true, "pure operation must not mutate original objects");
 });
