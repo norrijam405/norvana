@@ -33,3 +33,29 @@ export function canPublishDemoPhotos(_photos: DemoPhoto[]): false {
   // A local preview approval is never a publish authorization.
   return false;
 }
+
+/**
+ * A local photo is eligible for a fictional item's review only if that item
+ * exists and has its own explicit approval. No action grants publication.
+ */
+export type AssignedDemoPhoto = DemoPhoto & { itemId: string | null };
+export type ApprovedDemoItem = { id: string; approved: boolean };
+export function eligiblePhotoCount(photos: AssignedDemoPhoto[], items: ApprovedDemoItem[]): number {
+  const approvedIds = new Set(items.filter(item => item.approved).map(item => item.id));
+  return photos.filter(photo => photo.approved && photo.itemId !== null && approvedIds.has(photo.itemId)).length;
+}
+export function assignPhotoToDraftItem<T extends AssignedDemoPhoto>(
+  photos: T[], photoId: string, itemId: string | null, items: ApprovedDemoItem[]
+): T[] {
+  const approvedIds = new Set(items.filter(item => item.approved).map(item => item.id));
+  const safeItemId = itemId !== null && approvedIds.has(itemId) ? itemId : null;
+  return photos.map(photo => photo.id === photoId ? { ...photo, itemId: safeItemId, approved: false } : photo);
+}
+export function approveAssignedPhoto<T extends AssignedDemoPhoto>(
+  photos: T[], photoId: string, approval: boolean, items: ApprovedDemoItem[]
+): T[] {
+  const approvedIds = new Set(items.filter(item => item.approved).map(item => item.id));
+  return photos.map(photo => photo.id === photoId
+    ? { ...photo, approved: approval && photo.itemId !== null && approvedIds.has(photo.itemId) }
+    : photo);
+}
