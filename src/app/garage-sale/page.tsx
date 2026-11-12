@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { GarageSaleDemo } from "@/components/garage-sale/garage-sale-demo";
 import { GarageSaleDraftWorkbench } from "@/components/garage-sale/garage-sale-draft-workbench";
+import { PhotoReviewWorkbench } from "@/components/garage-sale/photo-review-workbench";
 import { getGarageSaleSafeSpotAdapter } from "@/lib/garage-sale/safespot-fixtures";
 import { Footer } from "@/components/footer";
 
@@ -26,7 +27,7 @@ export default function GarageSalePage() {
           </div>
         </section>
         <GarageSaleDemo safeSpots={safeSpots} />
-        <div className="mx-auto max-w-7xl px-4 pb-16 sm:px-6 lg:px-8"><GarageSaleDraftWorkbench /></div>
+        <div className="mx-auto max-w-7xl px-4 pb-16 sm:px-6 lg:px-8"><GarageSaleDraftWorkbench /><PhotoReviewWorkbench /></div>
       </main>
       <Footer />
     </>
