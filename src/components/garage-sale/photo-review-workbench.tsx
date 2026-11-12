@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import {
   MAX_DEMO_PHOTOS, MAX_DEMO_PHOTO_BYTES, photoMetadataError, photoSignatureMatches,
-  canPublishDemoPhotos, assignPhotoToDraftItem, approveAssignedPhoto, eligiblePhotoCount, type AssignedDemoPhoto,
+  canPublishDemoPhotos, assignPhotoToDraftItem, approveAssignedPhoto, eligiblePhotoCount, revokeStalePhotoAssignments, type AssignedDemoPhoto,
 } from "@/lib/garage-sale/photo-review";
 
 import type { DraftItem } from "@/lib/garage-sale/drafts";
@@ -18,6 +18,15 @@ export function PhotoReviewWorkbench({ items = [] }: { items?: DraftItem[] }) {
   useEffect(() => {
     return () => { for (const url of urls.current) URL.revokeObjectURL(url); };
   }, []);
+
+  // Removing/changing an approved item invalidates any linked photo approval.
+  useEffect(() => {
+    const next = revokeStalePhotoAssignments(entries.current, items);
+    if (next.some((photo, index) => photo !== entries.current[index])) {
+      entries.current = next;
+      setPhotos(next);
+    }
+  }, [items]);
 
   async function addPhotos(selected: FileList | null) {
     if (!selected || busy) return;
