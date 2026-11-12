@@ -1,6 +1,6 @@
 import test from "node:test";
 import { DEMO_MESSAGE_TEMPLATES, demoMessageFromTemplate, messagePreviewGuard } from "../src/lib/garage-sale/message-preview.ts";
-import { photoMetadataError, photoSignatureMatches, MAX_DEMO_PHOTOS, MAX_DEMO_PHOTO_BYTES, changePhotoApproval, canPublishDemoPhotos } from "../src/lib/garage-sale/photo-review.ts";
+import { photoMetadataError, photoSignatureMatches, MAX_DEMO_PHOTOS, MAX_DEMO_PHOTO_BYTES, changePhotoApproval, eligiblePhotoCount, assignPhotoToDraftItem, approveAssignedPhoto, canPublishDemoPhotos } from "../src/lib/garage-sale/photo-review.ts";
 import assert from "node:assert/strict";
 import { GARAGE_SALE_FIXTURES, bundleTotal } from "../src/lib/garage-sale/fixtures.ts";
 import { getGarageSaleSafeSpotAdapter } from "../src/lib/garage-sale/safespot-fixtures.ts";
@@ -206,4 +206,29 @@ test("message templates never include precise location or sensitive buyer detail
       assert.equal(template.text.toLowerCase().includes(forbidden), false, forbidden);
     }
   }
+});
+
+test("photo association requires approved seller item and re-approval on relinking", () => {
+  const items = [{ id: "draft-1", approved: true }, { id: "draft-2", approved: false }];
+  const photos = [{ id: "photo-1", name: "mock.png", type: "image/png", size: 900, approved: false, itemId: null }];
+  const unapproved = assignPhotoToDraftItem(photos, "photo-1", "draft-2", items);
+  assert.equal(unapproved[0].itemId, null);
+  const linked = assignPhotoToDraftItem(photos, "photo-1", "draft-1", items);
+  assert.equal(linked[0].itemId, "draft-1");
+  assert.equal(linked[0].approved, false);
+  const approved = approveAssignedPhoto(linked, "photo-1", true, items);
+  assert.equal(approved[0].approved, true);
+  assert.equal(eligiblePhotoCount(approved, items), 1);
+  const relinked = assignPhotoToDraftItem(approved, "photo-1", null, items);
+  assert.equal(relinked[0].approved, false);
+  assert.equal(eligiblePhotoCount(relinked, items), 0);
+  assert.equal(canPublishDemoPhotos(approved), false);
+});
+
+test("revoking seller item approval immediately invalidates linked-photo eligibility", () => {
+  const photo = { id: "photo-1", name: "mock.png", type: "image/png", size: 900, approved: true, itemId: "draft-1" };
+  assert.equal(eligiblePhotoCount([photo], [{ id: "draft-1", approved: true }]), 1);
+  assert.equal(eligiblePhotoCount([photo], [{ id: "draft-1", approved: false }]), 0);
+  assert.equal(eligiblePhotoCount([photo], []), 0);
+  assert.equal(approveAssignedPhoto([photo], "photo-1", true, [])[0].approved, false);
 });
