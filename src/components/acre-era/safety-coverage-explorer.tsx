@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { reviewSyntheticAcreClaims, CLAIM_CONTEXTS, type AcreClaimType } from "@/lib/acre-era/claim-review";
 import {
   ACRE_SAFETY_CONTEXTS, coverageByContext, evaluateSyntheticAcreSafety,
   type AcreSafetyContext,
@@ -14,6 +15,10 @@ const DISPLAY: Record<AcreSafetyContext, string> = {
 export function SafetyCoverageExplorer() {
   const [context, setContext] = useState<AcreSafetyContext>("GARAGE_SALE");
   const [flags, setFlags] = useState({ offPlatform:false, address:false });
+  const [claimType, setClaimType] = useState<AcreClaimType>("SELLER_IDENTITY");
+  const supportedClaims = (Object.keys(CLAIM_CONTEXTS) as AcreClaimType[]).filter(type => CLAIM_CONTEXTS[type].includes(context));
+  const activeClaim = supportedClaims.includes(claimType) ? claimType : supportedClaims[0];
+  const evidenceReview = reviewSyntheticAcreClaims([{ id:"fictional_claim", context, type:activeClaim, evidence:[{ kind:"SELLER_ASSERTION" }] }], new Date());
   const domains = coverageByContext(context);
   const assessment = evaluateSyntheticAcreSafety({
     context, requestingOffPlatformPayment:flags.offPlatform, containsPrivateAddress:flags.address,
@@ -54,6 +59,21 @@ export function SafetyCoverageExplorer() {
           <ul className="mt-3 list-disc space-y-2 pl-5 text-sm">
             {assessment.flags.map(flag=><li key={flag}>{flag}</li>)}
           </ul>
+        </div>
+        <div className="mt-6 border-t border-soil/10 pt-5">
+          <p className="text-xs font-bold uppercase tracking-[.17em] text-leaf">Evidence review · fictional</p>
+          <label htmlFor="acre-claim-type" className="mt-3 block text-sm font-semibold">Which claim is being made?</label>
+          <select id="acre-claim-type" className="mt-2 w-full rounded-xl border border-soil/20 bg-bone px-3 py-3 text-sm"
+            value={activeClaim} onChange={event=>setClaimType(event.target.value as AcreClaimType)}>
+            {supportedClaims.map(type=><option key={type} value={type}>{type.toLowerCase().replaceAll("_"," ")}</option>)}
+          </select>
+          <div role="status" className="mt-4 rounded-xl bg-amber-50 p-4 text-sm">
+            <p className="font-bold">Evidence status: {evidenceReview.findings[0].status} · Not verified</p>
+            <ul className="mt-2 list-disc space-y-1 pl-5">
+              {evidenceReview.findings[0].blockers.map(blocker=><li key={blocker}>{blocker}</li>)}
+            </ul>
+          </div>
+          <p className="mt-2 text-xs text-muted">A seller's statement, apparent receipt, URL or safety badge never proves itself.</p>
         </div>
         <p className="mt-5 text-xs leading-5 text-muted">Immediate danger: contact local emergency services. This prototype does not receive alerts or incident reports.</p>
       </aside>
