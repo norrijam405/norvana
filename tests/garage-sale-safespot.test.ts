@@ -1,3 +1,4 @@
+import { CLAIM_CONTEXTS, reviewSyntheticAcreClaims } from "../src/lib/acre-era/claim-review.ts";
 import { consumeIgniAquaSafeSpotR11 } from "../src/lib/garage-sale/safespot-r11-contract.ts";
 import { getGarageSaleSafeSpotR11Demo } from "../src/lib/garage-sale/safespot-fixtures.ts";
 import { ACRE_SAFETY_CONTEXTS, ACRE_SAFETY_DOMAINS, coverageByContext, evaluateSyntheticAcreSafety } from "../src/lib/acre-era/safety-coverage.ts";
@@ -403,4 +404,45 @@ test("R1.1 consumer rejects missing evidence and invalid place IDs before render
     places:[{id:"../../bad",label:"Bad",attributes:{}}],
   };
   assert.deepEqual(consumeIgniAquaSafeSpotR11(envelope,now).display.options,[]);
+});
+
+test("every claim provenance category is linked to an Acre Era customer journey", () => {
+  assert.equal(Object.keys(CLAIM_CONTEXTS).length, 10);
+  for (const [type, contexts] of Object.entries(CLAIM_CONTEXTS)) {
+    assert.ok(contexts.length >= 1, type);
+    assert.ok(contexts.every(context => ACRE_SAFETY_CONTEXTS.includes(context)));
+  }
+});
+
+test("claim review never certifies caller-supplied evidence or marks publish authorized", () => {
+  const now = new Date("2026-11-13T12:00:00Z");
+  const claims = [
+    { id:"seller_1", context:"GARAGE_SALE", type:"SELLER_IDENTITY", evidence:[{kind:"THIRD_PARTY_DOCUMENT",sourceUrl:"https://example.org/id",checkedAt:now.toISOString(),reviewerAttested:true}] },
+    { id:"payment_1", context:"GARAGE_SALE", type:"PAYMENT_SETTLEMENT", evidence:[{kind:"PROVIDER_RECEIPT",providerAuthenticated:true,sourceUrl:"https://example.org/receipt",checkedAt:now.toISOString()}] },
+  ] as const;
+  const r = reviewSyntheticAcreClaims(claims.map(x=>({...x,evidence:x.evidence.map(y=>({...y}))})),now);
+  assert.equal(r.publishAuthorized,false);
+  assert.equal(r.outcome,"REVIEW_REQUIRED");
+  assert.equal(r.mode,"SYNTHETIC_ONLY");
+  assert.ok(r.findings.every(x=>x.status!=="VERIFIED" && x.blockers.length>0));
+  assert.ok(r.findings.some(x=>x.blockers.some(reason=>reason.includes("Caller-provided"))));
+});
+
+test("payment screenshots cannot become settlement confirmation", () => {
+  const r = reviewSyntheticAcreClaims([{id:"payment_2",context:"GOODS",type:"PAYMENT_SETTLEMENT",evidence:[{kind:"SELLER_ASSERTION"}]}],new Date("2026-11-13T12:00:00Z"));
+  assert.ok(r.findings[0].blockers.includes("No authenticated payment-provider receipt"));
+  assert.equal(r.publishAuthorized,false);
+});
+
+test("claim review identifies invalid, stale and potentially unsafe sources", () => {
+  const now = new Date("2026-11-13T12:00:00Z");
+  const result = reviewSyntheticAcreClaims([
+    {id:"bad/id",context:"GARAGE_SALE",type:"PICKUP_DESIGNATION",evidence:[{kind:"THIRD_PARTY_DOCUMENT",sourceUrl:"http://localhost/claim",checkedAt:"2023-01-01T00:00:00Z"}]},
+    {id:"food_1",context:"MARKET_FARM",type:"FOOD_HANDLING",evidence:[{kind:"SELLER_ASSERTION"}]},
+  ],now);
+  assert.ok(result.findings[0].blockers.some(s=>s.includes("Invalid fictional claim ID")));
+  assert.ok(result.findings[0].blockers.some(s=>s.includes("source link")));
+  assert.ok(result.findings[0].blockers.some(s=>s.includes("timestamp")));
+  assert.ok(result.findings[0].blockers.some(s=>s.includes("IgniAqua")));
+  assert.ok(result.findings[1].blockers.some(s=>s.includes("Regulatory")));
 });
