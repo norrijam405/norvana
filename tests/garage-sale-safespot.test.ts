@@ -1,3 +1,5 @@
+import { consumeIgniAquaSafeSpotR11 } from "../src/lib/garage-sale/safespot-r11-contract.ts";
+import { getGarageSaleSafeSpotR11Demo } from "../src/lib/garage-sale/safespot-fixtures.ts";
 import { ACRE_SAFETY_CONTEXTS, ACRE_SAFETY_DOMAINS, coverageByContext, evaluateSyntheticAcreSafety } from "../src/lib/acre-era/safety-coverage.ts";
 import { buildGarageSaleReviewManifest } from "../src/lib/garage-sale/review-manifest.ts";
 import test from "node:test";
@@ -327,4 +329,78 @@ test("specific fraud, privacy and food safety flags are surfaced without individ
   assert.equal(risk.safeToProceed, false);
   const meetup = evaluateSyntheticAcreSafety({ context:"GARAGE_SALE" });
   assert.ok(meetup.flags.includes("Meetup evidence unverified"));
+});
+
+test("exact R1.1-shaped offline demo matches contract and never verifies a location", () => {
+  const result = getGarageSaleSafeSpotR11Demo(new Date("2026-11-12T18:00:00Z"));
+  assert.equal(result.state, "FICTIONAL_CONTRACT_MATCH");
+  assert.equal(result.display.integration, "FIXTURE_ONLY");
+  assert.equal(result.display.provider, "FICTIONAL_FIXTURE");
+  assert.equal(result.display.options.length, 2);
+  assert.ok(result.display.options.every(option =>
+    option.attributes.designatedExchangeZone.state === "UNKNOWN" &&
+    option.attributes.accessHours.state === "UNKNOWN" &&
+    option.addressVisibility === "REDACTED"));
+});
+
+test("IgniAqua R1.1 consumer fails closed for wrong producer, client and stale feed", () => {
+  const now = new Date("2026-11-12T18:00:00Z");
+  const claim = { status:"UNKNOWN", value:null, sourceUrl:null, checkedAt:null, needsReview:false };
+  const feed = {
+    schemaVersion:"igniaqua-safespot-public-venues-r1", provider:"IGNIAQUA_SAFESPOT",
+    integration:"OFFLINE_DRAFT", client:"ACRE_ERA", generatedAt:now.toISOString(),
+    places:[{ id:"sample_venue",label:"Fixture",attributes:{
+      officialExchangeZone:claim,lighting:claim,cameras:claim,publicAccess:claim,operatingHours:claim,
+    }}],
+  };
+  assert.equal(consumeIgniAquaSafeSpotR11(feed,now).state, "FICTIONAL_CONTRACT_MATCH");
+  for (const malformed of [
+    { ...feed, client:"NOR_AUTO_MATCH" },
+    { ...feed, provider:"IMPERSONATOR" },
+    { ...feed, integration:"VERIFIED" },
+    { ...feed, schemaVersion:"safespot-public-v99" },
+    { ...feed, generatedAt:"2026-11-10T00:00:00Z" },
+    { ...feed, generatedAt:"2026-11-14T00:00:00Z" },
+    { ...feed, places:null },
+  ]) {
+    const outcome = consumeIgniAquaSafeSpotR11(malformed, now);
+    assert.equal(outcome.state, "REJECTED_UNTRUSTED_FEED");
+    assert.deepEqual(outcome.display.options, []);
+  }
+});
+
+test("R1.1 contract blocks forged VERIFIED and strips all sensitive venue fields", () => {
+  const now = new Date("2026-11-12T18:00:00Z");
+  const base = { status:"REPORTED", value:true, sourceUrl:"https://example.org/sample",checkedAt:now.toISOString(),needsReview:false };
+  const place = {
+    id:"fixture_venue", label:"Fictional point",
+    location:{lat:35.3,lng:-97.2,privateAddress:"Secret address"},
+    person:{email:"secret@invalid.test"},
+    incidents:[{narrative:"Confidential"}],
+    attributes:{officialExchangeZone:base,lighting:base,cameras:base,publicAccess:base,operatingHours:base},
+  };
+  const envelope = {
+    schemaVersion:"igniaqua-safespot-public-venues-r1", provider:"IGNIAQUA_SAFESPOT",
+    integration:"OFFLINE_DRAFT", client:"ACRE_ERA", generatedAt:now.toISOString(), places:[place],
+  };
+  const valid = consumeIgniAquaSafeSpotR11(envelope,now);
+  assert.equal(valid.state,"FICTIONAL_CONTRACT_MATCH");
+  assert.equal(valid.display.options[0].attributes.designatedExchangeZone.state,"REPORTED");
+  const serialized=JSON.stringify(valid.display);
+  for(const secret of ["Secret address","secret@invalid.test","Confidential","35.3","-97.2","incidents","person"])
+    assert.ok(!serialized.includes(secret),secret);
+  const forged = { ...envelope, places:[{...place,attributes:{...place.attributes,officialExchangeZone:{...base,status:"VERIFIED"}}}] };
+  const blocked=consumeIgniAquaSafeSpotR11(forged,now);
+  assert.equal(blocked.state,"REJECTED_UNTRUSTED_FEED");
+  assert.deepEqual(blocked.display.options,[]);
+});
+
+test("R1.1 consumer rejects missing evidence and invalid place IDs before rendering any venue", () => {
+  const now = new Date("2026-11-12T18:00:00Z");
+  const envelope = {
+    schemaVersion:"igniaqua-safespot-public-venues-r1", provider:"IGNIAQUA_SAFESPOT",
+    integration:"OFFLINE_DRAFT", client:"ACRE_ERA", generatedAt:now.toISOString(),
+    places:[{id:"../../bad",label:"Bad",attributes:{}}],
+  };
+  assert.deepEqual(consumeIgniAquaSafeSpotR11(envelope,now).display.options,[]);
 });
