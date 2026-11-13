@@ -1,0 +1,82 @@
+"use client";
+
+import { useState } from "react";
+import { reviewSyntheticAcreClaims, CLAIM_CONTEXTS, type AcreClaimType } from "@/lib/acre-era/claim-review";
+import {
+  ACRE_SAFETY_CONTEXTS, coverageByContext, evaluateSyntheticAcreSafety,
+  type AcreSafetyContext,
+} from "@/lib/acre-era/safety-coverage";
+
+const DISPLAY: Record<AcreSafetyContext, string> = {
+  GARAGE_SALE:"Garage Sale", MARKET_FARM:"Market & farms", GOODS:"Goods Era",
+  FINDS_AFFILIATE:"Finds & affiliates", ERA_DROP:"Era Drop",
+  PICKUP_DELIVERY:"Pickup & delivery", BUYER_SELLER_CHAT:"Buyer–seller chat",
+};
+export function SafetyCoverageExplorer() {
+  const [context, setContext] = useState<AcreSafetyContext>("GARAGE_SALE");
+  const [flags, setFlags] = useState({ offPlatform:false, address:false });
+  const [claimType, setClaimType] = useState<AcreClaimType>("SELLER_IDENTITY");
+  const supportedClaims = (Object.keys(CLAIM_CONTEXTS) as AcreClaimType[]).filter(type => CLAIM_CONTEXTS[type].includes(context));
+  const activeClaim = supportedClaims.includes(claimType) ? claimType : supportedClaims[0];
+  const evidenceReview = reviewSyntheticAcreClaims([{ id:"fictional_claim", context, type:activeClaim, evidence:[{ kind:"SELLER_ASSERTION" }] }], new Date());
+  const domains = coverageByContext(context);
+  const assessment = evaluateSyntheticAcreSafety({
+    context, requestingOffPlatformPayment:flags.offPlatform, containsPrivateAddress:flags.address,
+  });
+  return <section className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
+    <div role="status" className="rounded-2xl border border-amber-500/20 bg-amber-50 p-4 text-sm text-soil">
+      <strong>Safety planning Preview · not a live safety service.</strong> No account, official location, payment, seller, product, shipment or incident is checked here. This page gives general precautions and shows synthetic review requirements.
+    </div>
+    <div className="mt-8 grid gap-8 lg:grid-cols-[1.45fr_.85fr]">
+      <div>
+        <label htmlFor="acre-safety-area" className="block text-sm font-semibold">Choose an Acre Era experience</label>
+        <select id="acre-safety-area" value={context} onChange={event => setContext(event.target.value as AcreSafetyContext)}
+          className="mt-2 w-full rounded-xl border border-soil/20 bg-cream px-4 py-3">
+          {ACRE_SAFETY_CONTEXTS.map(id => <option key={id} value={id}>{DISPLAY[id]}</option>)}
+        </select>
+        <h2 className="mt-7 font-display text-2xl font-bold">{DISPLAY[context]} · coverage areas</h2>
+        <p className="mt-2 text-sm text-muted">{domains.length} distinct protection areas mapped to this experience. None is a statement that operational safeguards have been verified.</p>
+        <div className="mt-5 grid gap-4">
+          {domains.map(domain => <article key={domain.id} className="rounded-2xl border border-soil/10 bg-cream p-5">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <h3 className="font-display text-lg font-bold">{domain.title}</h3>
+              <span className="rounded-full bg-sage-wash px-3 py-1 text-xs font-semibold">Owner: {domain.accountableOwner.replaceAll("_", " ")}</span>
+            </div>
+            <p className="mt-3 text-sm leading-6">{domain.customerAdvice}</p>
+            <details className="mt-3 text-xs text-muted"><summary className="cursor-pointer font-semibold">What must be verified before release?</summary><p className="mt-2 leading-5">{domain.releaseGate}</p></details>
+          </article>)}
+        </div>
+      </div>
+      <aside className="h-fit rounded-[1.5rem] border border-soil/10 bg-cream p-6">
+        <p className="text-xs font-bold uppercase tracking-[.17em] text-leaf">Synthetic safety challenge</p>
+        <h2 className="mt-2 font-display text-2xl font-bold">Practice spotting risks</h2>
+        <p className="mt-3 text-sm text-muted">Toggle fictional risk signals to see why a transaction would need review. Nothing is submitted, scored against a person, or treated as a real threat.</p>
+        <label className="mt-5 flex items-start gap-3 text-sm"><input type="checkbox" checked={flags.offPlatform} onChange={event=>setFlags(previous=>({...previous,offPlatform:event.target.checked}))} className="mt-1 accent-leaf"/> Fictional seller asks for off-platform payment</label>
+        <label className="mt-4 flex items-start gap-3 text-sm"><input type="checkbox" checked={flags.address} onChange={event=>setFlags(previous=>({...previous,address:event.target.checked}))} className="mt-1 accent-leaf"/> Fictional listing exposes a private address</label>
+        <div aria-live="polite" className="mt-6 rounded-xl bg-sage-wash p-4">
+          <p className="font-semibold">Review required · not cleared for release</p>
+          <p className="mt-2 text-xs text-muted">The simulation always fails closed, including when no warning is selected.</p>
+          <ul className="mt-3 list-disc space-y-2 pl-5 text-sm">
+            {assessment.flags.map(flag=><li key={flag}>{flag}</li>)}
+          </ul>
+        </div>
+        <div className="mt-6 border-t border-soil/10 pt-5">
+          <p className="text-xs font-bold uppercase tracking-[.17em] text-leaf">Evidence review · fictional</p>
+          <label htmlFor="acre-claim-type" className="mt-3 block text-sm font-semibold">Which claim is being made?</label>
+          <select id="acre-claim-type" className="mt-2 w-full rounded-xl border border-soil/20 bg-bone px-3 py-3 text-sm"
+            value={activeClaim} onChange={event=>setClaimType(event.target.value as AcreClaimType)}>
+            {supportedClaims.map(type=><option key={type} value={type}>{type.toLowerCase().replaceAll("_"," ")}</option>)}
+          </select>
+          <div role="status" className="mt-4 rounded-xl bg-amber-50 p-4 text-sm">
+            <p className="font-bold">Evidence status: {evidenceReview.findings[0].status} · Not verified</p>
+            <ul className="mt-2 list-disc space-y-1 pl-5">
+              {evidenceReview.findings[0].blockers.map(blocker=><li key={blocker}>{blocker}</li>)}
+            </ul>
+          </div>
+          <p className="mt-2 text-xs text-muted">A seller's statement, apparent receipt, URL or safety badge never proves itself.</p>
+        </div>
+        <p className="mt-5 text-xs leading-5 text-muted">Immediate danger: contact local emergency services. This prototype does not receive alerts or incident reports.</p>
+      </aside>
+    </div>
+  </section>;
+}
