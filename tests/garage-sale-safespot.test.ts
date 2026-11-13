@@ -424,7 +424,7 @@ test("claim review never certifies caller-supplied evidence or marks publish aut
   assert.equal(r.publishAuthorized,false);
   assert.equal(r.outcome,"REVIEW_REQUIRED");
   assert.equal(r.mode,"SYNTHETIC_ONLY");
-  assert.ok(r.findings.every(x=>x.status!=="VERIFIED" && x.blockers.length>0));
+  assert.ok(r.findings.every(x=>["UNKNOWN","REPORTED"].includes(x.status) && x.blockers.length>0));
   assert.ok(r.findings.some(x=>x.blockers.some(reason=>reason.includes("Caller-provided"))));
 });
 
