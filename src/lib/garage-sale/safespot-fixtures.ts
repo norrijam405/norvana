@@ -3,7 +3,7 @@
  * All fixtures are fictional. IgniAqua remains the data/policy owner.
  * Never reinterpret a survey/rating as official safety certification.
  */
-import { normalizeSafeSpotForAcreEra } from "./safespot-adapter.ts";
+import { consumeIgniAquaSafeSpotR11 } from "./safespot-r11-contract.ts";
 export type EvidenceState = "UNKNOWN" | "REPORTED" | "VERIFIED";
 export type SafeSpotAttribute = {
   state: EvidenceState;
@@ -56,19 +56,30 @@ export const FICTIONAL_SAFESPOT_RESPONSE: SafeSpotAdapterResponse = {
     },
   ],
 };
-export function getGarageSaleSafeSpotAdapter(): SafeSpotAdapterResponse {
-  // Exercise the IgniAqua R0-shaped normalization path in the actual fictional UI.
-  // This does not fetch an external service and must never be mistaken for connected data.
-  return normalizeSafeSpotForAcreEra({
+/**
+ * Explicitly synthetic R1.1 producer-shaped fixture. This function does NOT
+ * import or execute IgniAqua's producer or make a network request.
+ */
+export function getGarageSaleSafeSpotR11Demo(now = new Date()) {
+  const claim = { status: "UNKNOWN", value: null, sourceUrl: null, checkedAt: null, needsReview: false };
+  return consumeIgniAquaSafeSpotR11({
+    schemaVersion: "igniaqua-safespot-public-venues-r1",
+    provider: "IGNIAQUA_SAFESPOT",
+    integration: "OFFLINE_DRAFT",
+    client: "ACRE_ERA",
+    generatedAt: now.toISOString(),
     places: FICTIONAL_SAFESPOT_RESPONSE.options.map(option => ({
       id: option.id,
       label: option.displayName,
-      location: { precision: "city" },
       attributes: {
-        officialExchangeZone: { status: "UNKNOWN" },
-        lighting: { status: "UNKNOWN" },
-        operatingHours: { status: "UNKNOWN" },
+        officialExchangeZone: claim, lighting: claim, cameras: claim,
+        publicAccess: claim, operatingHours: claim,
       },
     })),
-  });
+  }, now);
+}
+
+export function getGarageSaleSafeSpotAdapter(): SafeSpotAdapterResponse {
+  // Existing UI consumes only the sanitized output from R1.1 contract review.
+  return getGarageSaleSafeSpotR11Demo().display;
 }
