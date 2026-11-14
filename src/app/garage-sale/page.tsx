@@ -1,37 +1,37 @@
 import type { Metadata } from "next";
-import Link from "next/link";
-import { GarageSaleDemo } from "@/components/garage-sale/garage-sale-demo";
-import { SellerStudio } from "@/components/garage-sale/seller-studio";
-import { MessagePreviewWorkbench } from "@/components/garage-sale/message-preview-workbench";
+import { GarageSaleExperience } from "@/components/garage-sale/garage-sale-experience";
 import { getGarageSaleSafeSpotAdapter } from "@/lib/garage-sale/safespot-fixtures";
 import { Footer } from "@/components/footer";
 
 export const metadata: Metadata = {
   title: "Digital Garage Sale — fictional concept preview",
-  description: "Explore a fictional digital garage sale with sample bundle offers and a future SafeSpot integration concept. No live listings or reservations.",
+  description: "Explore whole-sale shopping and a local-only seller studio in the Acre Era fictional Garage Sale preview. No live listings or bookings.",
   robots: { index: false, follow: false },
 };
 export default function GarageSalePage() {
-  // Fixture-only: no database writes, external API calls or customer data.
   const safeSpots = getGarageSaleSafeSpotAdapter();
-  return (
-    <>
-      <main className="min-h-screen bg-bone text-soil">
-        <section className="bg-[linear-gradient(125deg,#263428,#465c43)] px-4 py-16 text-cream sm:px-6 lg:px-8">
-          <div className="mx-auto max-w-7xl">
-            <p className="text-xs font-semibold uppercase tracking-[.22em] text-wheat">Acre Era · future marketplace module</p>
-            <h1 className="mt-4 max-w-4xl font-display text-5xl font-black tracking-tight md:text-7xl">Your whole garage sale. One digital storefront.</h1>
-            <p className="mt-5 max-w-2xl text-base leading-7 text-cream/80">
-              Explore an entire neighborhood sale, build a sample bundle and preview a private-pickup journey.
-              A fictional, non-transactional prototype for testing the experience.
-            </p>
+  return <>
+    <main className="min-h-screen bg-bone text-soil">
+      <section className="relative overflow-hidden bg-[linear-gradient(118deg,#263428_0%,#40583e_65%,#675746_100%)] px-4 py-14 text-cream sm:px-6 lg:px-8 lg:py-20">
+        <div aria-hidden="true" className="pointer-events-none absolute -right-28 -top-52 h-[36rem] w-[36rem] rounded-full border-[4rem] border-cream/[0.055]" />
+        <div className="relative mx-auto max-w-7xl">
+          <p className="text-xs font-bold uppercase tracking-[.24em] text-wheat">Acre Era / Neighborhood discoveries</p>
+          <h1 className="mt-5 max-w-4xl font-display text-5xl font-black leading-[1.05] tracking-tight sm:text-6xl lg:text-7xl">
+            One person's clear-out.<span className="block text-wheat">Your next good find.</span>
+          </h1>
+          <p className="mt-5 max-w-2xl text-base leading-7 text-cream/80 sm:text-lg">
+            Explore an entire garage sale, put together a bundle, or build your own sale—all in one place.
+            For now, this is a fictional, non-transactional preview.
+          </p>
+          <div className="mt-7 flex flex-wrap gap-3 text-xs font-semibold text-cream/75">
+            <span className="rounded-full border border-cream/25 px-4 py-2">Whole-sale storefronts</span>
+            <span className="rounded-full border border-cream/25 px-4 py-2">Build a sample bundle</span>
+            <span className="rounded-full border border-cream/25 px-4 py-2">Seller review studio</span>
           </div>
-        </section>
-        <div className="mx-auto max-w-7xl px-4 pt-6 sm:px-6 lg:px-8"><Link href="/safety" className="inline-flex rounded-xl border border-soil/15 bg-cream px-5 py-3 text-sm font-semibold text-soil underline underline-offset-4">Explore safety across all Acre Era experiences</Link></div>
-        <GarageSaleDemo safeSpots={safeSpots} />
-        <div className="mx-auto max-w-7xl px-4 pb-16 sm:px-6 lg:px-8"><SellerStudio /><MessagePreviewWorkbench /></div>
-      </main>
-      <Footer />
-    </>
-  );
+        </div>
+      </section>
+      <GarageSaleExperience safeSpots={safeSpots} />
+    </main>
+    <Footer />
+  </>;
 }
