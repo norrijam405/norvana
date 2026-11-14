@@ -1,3 +1,4 @@
+import { GARAGE_SALE_JOURNEYS, getGarageSaleJourney, isGarageSaleJourney } from "../src/lib/garage-sale/experience.ts";
 import { CLAIM_CONTEXTS, reviewSyntheticAcreClaims } from "../src/lib/acre-era/claim-review.ts";
 import { consumeIgniAquaSafeSpotR11 } from "../src/lib/garage-sale/safespot-r11-contract.ts";
 import { getGarageSaleSafeSpotR11Demo } from "../src/lib/garage-sale/safespot-fixtures.ts";
@@ -445,4 +446,22 @@ test("claim review identifies invalid, stale and potentially unsafe sources", ()
   assert.ok(result.findings[0].blockers.some(s=>s.includes("timestamp")));
   assert.ok(result.findings[0].blockers.some(s=>s.includes("IgniAqua")));
   assert.ok(result.findings[1].blockers.some(s=>s.includes("Regulatory")));
+});
+
+test("customer-first Garage Sale journey has only two supported choices and buyer default", () => {
+  assert.deepEqual(GARAGE_SALE_JOURNEYS.map(journey => journey.id), ["BUY", "SELL"]);
+  assert.equal(getGarageSaleJourney(null).id, "BUY");
+  assert.equal(getGarageSaleJourney("BUY").id, "BUY");
+  assert.equal(getGarageSaleJourney("SELL").id, "SELL");
+  assert.ok(GARAGE_SALE_JOURNEYS.every(journey =>
+    journey.label.length > 0 && journey.eyebrow.length > 0 && journey.action.length > 0));
+});
+
+test("Garage Sale journey guards reject unknown mode names", () => {
+  for (const value of ["ADMIN", "PUBLISH", "CHECKOUT", "", null, {}, 0]) {
+    assert.equal(isGarageSaleJourney(value), false);
+    assert.equal(getGarageSaleJourney(value).id, "BUY");
+  }
+  assert.equal(isGarageSaleJourney("BUY"), true);
+  assert.equal(isGarageSaleJourney("SELL"), true);
 });
