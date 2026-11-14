@@ -6,6 +6,7 @@ const departments = [
   { number: "01", name: "Everyday goods", detail: "Home, personal care, pets and useful essentials.", href: "/shop", action: "Explore goods", tone: "bg-[#ebe7de]" },
   { number: "02", name: "Market & makers", detail: "Discover producers and the people behind the products.", href: "/market", action: "Explore market", tone: "bg-[#e4e9df]" },
   { number: "03", name: "Selected finds", detail: "Discover distinctive brands and partner collections.", href: "/partners", action: "Explore finds", tone: "bg-[#e6e0db]" },
+  { number: "04", name: "Neighborhood sales", detail: "Browse whole-sale storefronts and discover one-of-a-kind finds in our fictional preview.", href: "/garage-sale", action: "Explore garage sales", tone: "bg-[#e2e8d9]" },
 ];
 
 export function BetweenErasHome() {
@@ -30,11 +31,11 @@ export function BetweenErasHome() {
             </div>
             <p className="max-w-sm text-sm leading-7 text-muted">Browse by what matters to you today. Availability and purchase options are shown on each product listing.</p>
           </div>
-          <div className="mt-10 grid gap-4 md:grid-cols-3">
+          <div className="mt-10 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
             {departments.map((department) => (
               <Link href={department.href} key={department.number} className={department.tone + " group flex min-h-[18rem] flex-col justify-between rounded-[1.6rem] border border-soil/10 p-7 transition duration-300 hover:-translate-y-1 hover:shadow-lg sm:p-8"}>
                 <div className="flex items-start justify-between">
-                  <span className="font-mono text-xs text-soil/45">{department.number} / 03</span>
+                  <span className="font-mono text-xs text-soil/45">{department.number} / 04</span>
                   <span aria-hidden="true" className="text-2xl text-soil/50 transition group-hover:translate-x-1">↗</span>
                 </div>
                 <div>
