@@ -4,6 +4,7 @@ import { actionReceipts } from "@/db/schema";
 import { NextRequest,NextResponse } from "next/server";
 import { requireCurrentRecoveryAdmin } from "@/lib/admin-guard";
 import { blockUnverifiedRetailPricing } from "@/lib/watchtower/cost-floor-gate";
+import { verifyCjReceiptReadback } from "@/lib/watchtower/cj-receipt-integrity";
 import { loadCjProductBySku,quoteCjVariantToUs,parseAging } from "@/lib/cj/api";
 async function respondWithReceipt(payload:Record<string,unknown>,status=200){
  let receiptId:number|null=null;
@@ -16,9 +17,9 @@ async function respondWithReceipt(payload:Record<string,unknown>,status=200){
   receiptId=saved?.id??null;
   if (receiptId!==null) {
    // A successful insert response is not a verified readback. Check durable row identity and payload.
-   const [stored]=await db.select({id:actionReceipts.id,subjectId:actionReceipts.subjectId,status:actionReceipts.status,details:actionReceipts.details})
+   const [stored]=await db.select({id:actionReceipts.id,actionType:actionReceipts.actionType,subjectId:actionReceipts.subjectId,status:actionReceipts.status,details:actionReceipts.details})
     .from(actionReceipts).where(and(eq(actionReceipts.id,receiptId),eq(actionReceipts.actionType,"CJ_VARIANT_QUALIFICATION"))).limit(1);
-   if (!stored||stored.subjectId!==String(payload.sku||"unknown")||stored.status!==String(payload.state||"UNKNOWN").slice(0,30)||stored.details?.sku!==(payload.sku||null)) {
+   if (!verifyCjReceiptReadback(stored, receiptId, payload).ok) {
     receiptId=null;
    }
   }
