@@ -1,3 +1,4 @@
+import { verifyCjReceiptReadback } from "../src/lib/watchtower/cj-receipt-integrity.ts";
 import { blockUnverifiedRetailPricing } from "../src/lib/watchtower/cost-floor-gate.ts";
 import { GARAGE_SALE_JOURNEYS, getGarageSaleJourney, isGarageSaleJourney } from "../src/lib/garage-sale/experience.ts";
 import { CLAIM_CONTEXTS, reviewSyntheticAcreClaims } from "../src/lib/acre-era/claim-review.ts";
@@ -484,4 +485,49 @@ test("CJ Cost Layer boundary response remains fail-closed across calls", () => {
   assert.notEqual(a, b);
   assert.equal(a.requires.includes("APPROVED_PRICE_AND_DISCOUNT_POLICY"), true);
   assert.equal(a.examplePrices.length, 0);
+});
+
+test("CJ readback integrity accepts only exact fictional observation receipts", () => {
+  const payload = {
+    sku:"DEMO-SKU", state:"NEEDS_PROCESSING_AND_APPROVAL",
+    variant:{id:"variant-123",name:"Fictional item"},
+    stock:12, productCost:8.25, shippingCost:2.5, baseLandedCost:10.75,
+    transitDays:{min:5,max:12},reason:"Additional verification required",
+  };
+  const stored = {
+    id:123, actionType:"CJ_VARIANT_QUALIFICATION",subjectId:"DEMO-SKU",
+    status:"NEEDS_PROCESSING_AND_APPROVAL",
+    details: {
+      schemaVersion:"acre-era-cj-check-v1",
+      ...payload, approved:false,published:false,ordered:false,
+      checkedAt:"2026-11-15T10:00:00Z",
+    },
+  };
+  assert.equal(verifyCjReceiptReadback(stored,123,payload).ok,true);
+  assert.equal(verifyCjReceiptReadback(stored,123,payload).code,"READBACK_MATCHED_NOT_INDEPENDENTLY_VERIFIED");
+  for (const mutation of [
+    { ...stored,id:124 },
+    { ...stored,actionType:"OTHER" },
+    { ...stored,status:"HOLD" },
+    { ...stored,details:{...stored.details,variant:{id:"wrong",name:"Fictional item"}} },
+    { ...stored,details:{...stored.details,stock:0} },
+    { ...stored,details:{...stored.details,shippingCost:2.51} },
+    { ...stored,details:{...stored.details,transitDays:{min:5,max:22}} },
+    { ...stored,details:{...stored.details,published:true} },
+    { ...stored,details:{...stored.details,schemaVersion:"wrong-version"} },
+  ]) assert.equal(verifyCjReceiptReadback(mutation,123,payload).ok,false);
+});
+
+test("CJ receipt readback fails closed for missing, malformed, replayed or unrelated rows", () => {
+  const payload = {sku:"DEMO-SKU",state:"HOLD",error:"Fictional provider failure"};
+  const row = {id:100,subjectId:"DEMO-SKU",actionType:"CJ_VARIANT_QUALIFICATION",status:"HOLD",
+    details:{schemaVersion:"acre-era-cj-check-v1",sku:"DEMO-SKU",variant:null,stock:null,productCost:null,
+    shippingCost:null,baseLandedCost:null,transitDays:null,reason:"Fictional provider failure",
+    approved:false,published:false,ordered:false}};
+  assert.equal(verifyCjReceiptReadback(row,100,payload).ok,true);
+  assert.equal(verifyCjReceiptReadback(row,101,payload).ok,false);
+  assert.equal(verifyCjReceiptReadback(row,0,payload).ok,false);
+  assert.equal(verifyCjReceiptReadback(null,100,payload).ok,false);
+  assert.equal(verifyCjReceiptReadback({...row,details:null},100,payload).ok,false);
+  assert.equal(verifyCjReceiptReadback({...row,subjectId:"OTHER"},100,payload).ok,false);
 });
