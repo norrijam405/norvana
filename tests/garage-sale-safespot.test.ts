@@ -1,3 +1,4 @@
+import { blockUnverifiedRetailPricing } from "../src/lib/watchtower/cost-floor-gate.ts";
 import { GARAGE_SALE_JOURNEYS, getGarageSaleJourney, isGarageSaleJourney } from "../src/lib/garage-sale/experience.ts";
 import { CLAIM_CONTEXTS, reviewSyntheticAcreClaims } from "../src/lib/acre-era/claim-review.ts";
 import { consumeIgniAquaSafeSpotR11 } from "../src/lib/garage-sale/safespot-r11-contract.ts";
@@ -464,4 +465,23 @@ test("Garage Sale journey guards reject unknown mode names", () => {
   }
   assert.equal(isGarageSaleJourney("BUY"), true);
   assert.equal(isGarageSaleJourney("SELL"), true);
+});
+
+test("CJ supplier qualification cannot invent retail minimums without Cost Layer 2.0", () => {
+  const gate = blockUnverifiedRetailPricing();
+  assert.equal(gate.status, "BLOCKED_PENDING_COST_LAYER_2");
+  assert.equal(gate.canQuote, false);
+  assert.equal(gate.canPublish, false);
+  assert.equal(gate.minimumPrice, null);
+  assert.deepEqual(gate.examplePrices, []);
+  assert.ok(gate.requires.includes("AUTHORITATIVE_FLOOR_ATTESTATION"));
+  assert.ok(gate.requires.includes("REAL_FEES_AND_SUPPORT_RESERVE"));
+});
+
+test("CJ Cost Layer boundary response remains fail-closed across calls", () => {
+  const a = blockUnverifiedRetailPricing(), b = blockUnverifiedRetailPricing();
+  assert.deepEqual(a, b);
+  assert.notEqual(a, b);
+  assert.equal(a.requires.includes("APPROVED_PRICE_AND_DISCOUNT_POLICY"), true);
+  assert.equal(a.examplePrices.length, 0);
 });
