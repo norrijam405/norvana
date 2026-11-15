@@ -43,3 +43,15 @@ Reviewed IgniAqua #96 founder comment 6896152543. KEEP approved Cost Layer 2.0, 
 2. Request Cost Layer canonical schema/attestation and build a read-only consumer of *signed server-owned* facts in synthetic Preview; retain block until verified; independent challenge mandatory.
 3. Browser acceptance for Garage Sale and Safety, then authenticated customer/tenant + local-to-durable draft handoff and photo security.
 No merges, production deploy, paid infra, credential/permission modifications or real customer data.
+
+
+## R27 addendum — stronger CJ receipt readback (2026-11-15)
+**Source implementation:** `src/lib/watchtower/cj-receipt-integrity.ts` pure consistency checker, wired into `src/app/api/admin/cj/qualify/route.ts`. Previously the route selected and compared only receipt row id, SKU and status, plus the embedded SKU. It now also selects and requires the expected action type, schema version, variant, stock, product cost, freight, landed cost, transit estimate, reason, and approved/published/ordered = false. Any mismatch returns the existing BLOCKED / 503 outcome. This is a *readback consistency repair*, NOT independently authenticated source verification, idempotency, or tenant/RLS security.
+
+**Pushed commits:** `f16e7ff084d8d9ae5eae1aab23f699ec56a3811d` creates checker; `3c2b5fff7c827e4cd6284e73761448fff4c73730` wires into CJ route; `f1a5935e571de8c35eac1b8c1324af14877ed29b` adds two fictional test cases including swapped SKU/variant, amounts, transit and approval state.
+
+**Independent external Vercel build test:** deployment `dpl_4DeGKdxzXuSqapN18WRCHnL52679` READY for exact executable SHA `f1a5935e571de8c35eac1b8c1324af14877ed29b`. Node suite **40 PASS / 0 FAIL**, Next compile and TypeScript succeeded. Preview https://norvana-hwzzo3c5j-norrijam405-2107s-projects.vercel.app/garage-sale . No authenticated CJ provider call, DB write/readback or real browser E2E executed. No production merge, migration, permissions, credentials or paid infrastructure.
+
+**Remaining first broken seams:** duplicates/retries can still create more than one observation receipt; no durable idempotency key or unique constraint. Live Preview database tenancy and backups unverified. Timestamp `checkedAt` is emitted by the server but not an independent signed attestation. The pricing gate still holds until the canonical Cost Layer 2.0 service provides a trusted decision. Cost owner now identifies Governance Authority PR #1, independent challenge PR #2, neither a deployed House-wide price floor. IgniCheck independently challenged Head's Academy #109 patch, but Academy production remains at older SHA and public /api/state policy needs work.
+
+**Next safe owner handoff:** schema-safe idempotency design and test with retry/replay simulations, full current DB schema assessment before any migration; canonical Cost floor signed consumer only after owner-approved contract. Keep all approved House layers and separate product roadmaps.
