@@ -3,6 +3,7 @@ import { and, eq, sql } from "drizzle-orm";
 import { actionReceipts } from "@/db/schema";
 import { NextRequest,NextResponse } from "next/server";
 import { requireCurrentRecoveryAdmin } from "@/lib/admin-guard";
+import { blockUnverifiedRetailPricing } from "@/lib/watchtower/cost-floor-gate";
 import { loadCjProductBySku,quoteCjVariantToUs,parseAging } from "@/lib/cj/api";
 async function respondWithReceipt(payload:Record<string,unknown>,status=200){
  let receiptId:number|null=null;
@@ -56,6 +57,6 @@ export async function POST(req:NextRequest){
   const validFreight=!!shipping&&Number.isFinite(freight)&&freight>=0;
   const landed=validPrice&&validFreight?cost+freight:null;
   const state=stock>0&&landed!==null&&aging.max!==null&&aging.max<=21?"NEEDS_PROCESSING_AND_APPROVAL":"HOLD";
-  return respondWithReceipt({sku,variantOptions:options,variant:{id:exact.vid,name:exact.variantNameEn||exact.variantSku||exact.vid},state,stock,productCost:validPrice?cost:null,shippingCost:validFreight?freight:null,baseLandedCost:landed,transitDays:aging,carrier:shipping?.logisticName||null,origin:route.originCountryCode,priceExamples:landed===null?[]:[9.99,12.99,14.99,19.99].map(price=>({price,grossBeforeFees:Number((price-landed).toFixed(2))})),reason:state==="HOLD"?"Stock, price, freight, or delivery quote is incomplete.":"Stock and freight available; processing, fees, returns, product rights, and safety still require review.",approved:false,published:false,ordered:false});
+  return respondWithReceipt({sku,variantOptions:options,variant:{id:exact.vid,name:exact.variantNameEn||exact.variantSku||exact.vid},state,stock,productCost:validPrice?cost:null,shippingCost:validFreight?freight:null,baseLandedCost:landed,transitDays:aging,carrier:shipping?.logisticName||null,origin:route.originCountryCode,priceExamples:blockUnverifiedRetailPricing().examplePrices,pricingGate:blockUnverifiedRetailPricing(),reason:state==="HOLD"?"Stock, price, freight, or delivery quote is incomplete.":"Stock and freight available; processing, fees, returns, product rights, and safety still require review.",approved:false,published:false,ordered:false});
  }catch{return respondWithReceipt({sku,state:"HOLD",error:"CJ qualification could not complete. Try the manual route check; do not assume this item is sellable."},502);}
 }
