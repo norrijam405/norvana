@@ -5,6 +5,7 @@ import { NextRequest,NextResponse } from "next/server";
 import { requireCurrentRecoveryAdmin } from "@/lib/admin-guard";
 import { blockUnverifiedRetailPricing } from "@/lib/watchtower/cost-floor-gate";
 import { verifyCjReceiptReadback } from "@/lib/watchtower/cj-receipt-integrity";
+import { decideCjRetryAdmission } from "@/lib/watchtower/cj-retry-policy";
 import { loadCjProductBySku,quoteCjVariantToUs,parseAging } from "@/lib/cj/api";
 async function respondWithReceipt(payload:Record<string,unknown>,status=200){
  let receiptId:number|null=null;
@@ -24,11 +25,19 @@ async function respondWithReceipt(payload:Record<string,unknown>,status=200){
    }
   }
  }catch(error){console.error("CJ observation receipt write/readback failed:",error);receiptId=null;}
- if(receiptId===null)return NextResponse.json({state:"BLOCKED",code:"CJ_RECEIPT_PERSISTENCE_FAILED",error:"CJ check completed but its audit receipt could not be saved and read back consistently. Treat the result as unverified; no approval or publication is permitted.",receiptPersisted:false},{status:503,headers:{"cache-control":"no-store"}});
- return NextResponse.json({...payload,receiptId,receiptPersisted:true,receiptVerification:"SERVER_READBACK_MATCHED_NOT_INDEPENDENTLY_VERIFIED"},{status,headers:{"cache-control":"no-store"}});
+ if(receiptId===null)return NextResponse.json({state:"BLOCKED",code:"CJ_RECEIPT_PERSISTENCE_FAILED",error:"CJ check completed but its audit receipt could not be saved and read back consistently. Treat the result as unverified; no approval or publication is permitted.",receiptPersisted:false,retrySafe:false},{status:503,headers:{"cache-control":"no-store"}});
+ return NextResponse.json({...payload,receiptId,receiptPersisted:true,retrySafe:false,receiptVerification:"SERVER_READBACK_MATCHED_NOT_INDEPENDENTLY_VERIFIED"},{status,headers:{"cache-control":"no-store"}});
 }
 export async function POST(req:NextRequest){
  const gate=await requireCurrentRecoveryAdmin(req);if(gate)return gate;
+ // No persistent unique request key exists in action_receipts yet. Never claim
+ // an Idempotency-Key is honored, and never call CJ for such a request.
+ const retry = decideCjRetryAdmission(req.headers.get("idempotency-key"));
+ if (!retry.permit) return NextResponse.json({
+   state:"BLOCKED",code:retry.code,retrySafe:false,receiptPersisted:false,
+   error:"Idempotent CJ checks are not configured. No supplier call or database write was attempted.",
+ },{status:retry.httpStatus,headers:{"cache-control":"no-store"}});
+
  let sku="";let vid="";try{const body=await req.json();sku=String(body.sku||"").trim();vid=String(body.vid||"").trim();}catch{return NextResponse.json({error:"Invalid request."},{status:400});}
  if(!/^[\w. -]{5,100}$/.test(sku))return NextResponse.json({error:"Invalid product SKU."},{status:400});
  if(vid && !/^[a-zA-Z0-9_-]{5,100}$/.test(vid))return NextResponse.json({error:"Invalid CJ variant ID."},{status:400});
