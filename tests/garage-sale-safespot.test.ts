@@ -1,3 +1,4 @@
+import { CJ_REPLAY_CAPABILITY, decideCjRetryAdmission } from "../src/lib/watchtower/cj-retry-policy.ts";
 import { verifyCjReceiptReadback } from "../src/lib/watchtower/cj-receipt-integrity.ts";
 import { blockUnverifiedRetailPricing } from "../src/lib/watchtower/cost-floor-gate.ts";
 import { GARAGE_SALE_JOURNEYS, getGarageSaleJourney, isGarageSaleJourney } from "../src/lib/garage-sale/experience.ts";
@@ -530,4 +531,26 @@ test("CJ receipt readback fails closed for missing, malformed, replayed or unrel
   assert.equal(verifyCjReceiptReadback(null,100,payload).ok,false);
   assert.equal(verifyCjReceiptReadback({...row,details:null},100,payload).ok,false);
   assert.equal(verifyCjReceiptReadback({...row,subjectId:"OTHER"},100,payload).ok,false);
+});
+
+test("CJ replay admission refuses every unsupported Idempotency-Key before a supplier call", () => {
+  for (const key of ["", "abc", "request-123", "a".repeat(500), "../../collision"]) {
+    const result = decideCjRetryAdmission(key);
+    assert.equal(result.permit, false);
+    if (!result.permit) assert.equal(result.httpStatus, 409);
+    assert.equal(result.code, "CJ_IDEMPOTENCY_NOT_CONFIGURED");
+    assert.equal(result.retrySafe, false);
+  }
+});
+
+test("legacy CJ observation can run but never falsely claims deduplication", () => {
+  const result = decideCjRetryAdmission(null);
+  assert.equal(result.permit, true);
+  assert.equal(result.retrySafe, false);
+  assert.equal(result.code, "CJ_OBSERVATION_WITHOUT_REPLAY_GUARANTEE");
+  assert.equal(CJ_REPLAY_CAPABILITY.persistedRequestIdentity, false);
+  assert.equal(CJ_REPLAY_CAPABILITY.atomicUniqueness, false);
+  assert.equal(CJ_REPLAY_CAPABILITY.automaticRetryAllowed, false);
+  assert.ok(CJ_REPLAY_CAPABILITY.activationRequires.includes("ATOMIC_UNIQUE_REQUEST_KEY"));
+  assert.ok(CJ_REPLAY_CAPABILITY.activationRequires.includes("CONCURRENT_REPLAY_TESTS"));
 });
