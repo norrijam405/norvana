@@ -10,6 +10,7 @@ import { useCart } from "./cart-context";
 const links = [
   { href: "/", label: "Home" },
   { href: "/market", label: "Market Era" },
+  { href: "/garage-sale", label: "Garage Sale" },
   { href: "/shop", label: "Goods Era" },
   { href: "/partners", label: "Finds Era" },
   { href: "/era-drops", label: "Era Drop" },
@@ -33,7 +34,7 @@ export function Navbar() {
           <span className="font-display text-base font-black tracking-[-.02em] sm:text-lg">ACRE ERA</span>
         </Link>
 
-        <div className="hidden items-center gap-7 md:flex">
+        <div className="hidden items-center gap-4 md:flex">
           {links.map((link) => {
             const active =
               link.href === "/"
