@@ -6,6 +6,7 @@ import { requireCurrentRecoveryAdmin } from "@/lib/admin-guard";
 import { blockUnverifiedRetailPricing } from "@/lib/watchtower/cost-floor-gate";
 import { verifyCjReceiptReadback } from "@/lib/watchtower/cj-receipt-integrity";
 import { decideCjRetryAdmission } from "@/lib/watchtower/cj-retry-policy";
+import { evaluateCjQuoteQuality } from "@/lib/watchtower/cj-quote-quality";
 import { loadCjProductBySku,quoteCjVariantToUs,parseAging } from "@/lib/cj/api";
 async function respondWithReceipt(payload:Record<string,unknown>,status=200){
  let receiptId:number|null=null;
@@ -58,15 +59,14 @@ export async function POST(req:NextRequest){
   const options=found.variants.slice(0,30).map(v=>({vid:v.vid,name:v.variantNameEn||v.variantSku||v.vid}));
   if(!exact)return respondWithReceipt({state:"HOLD",reason:vid?"Selected variant does not belong to this CJ product.":"CJ product found. Select a specific variant below to calculate shipping.",sku,variantOptions:options});
   const route=await quoteCjVariantToUs(exact.vid);
-  const stock=route.inventory.reduce((sum,x)=>sum+Math.max(0,Number(x.totalInventoryNum||0)),0);
-  const shipping=route.methods[0];
-  const cost=Number(exact.variantSellPrice);
-  const freight=Number(shipping?.logisticPrice);
-  const aging=parseAging(shipping?.logisticAging);
-  const validPrice=exact.variantSellPrice!==null&&exact.variantSellPrice!==undefined&&Number.isFinite(cost)&&cost>0;
-  const validFreight=!!shipping&&Number.isFinite(freight)&&freight>=0;
-  const landed=validPrice&&validFreight?cost+freight:null;
-  const state=stock>0&&landed!==null&&aging.max!==null&&aging.max<=21?"NEEDS_PROCESSING_AND_APPROVAL":"HOLD";
-  return respondWithReceipt({sku,variantOptions:options,variant:{id:exact.vid,name:exact.variantNameEn||exact.variantSku||exact.vid},state,stock,productCost:validPrice?cost:null,shippingCost:validFreight?freight:null,baseLandedCost:landed,transitDays:aging,carrier:shipping?.logisticName||null,origin:route.originCountryCode,priceExamples:blockUnverifiedRetailPricing().examplePrices,pricingGate:blockUnverifiedRetailPricing(),reason:state==="HOLD"?"Stock, price, freight, or delivery quote is incomplete.":"Stock and freight available; processing, fees, returns, product rights, and safety still require review.",approved:false,published:false,ordered:false});
+  const shipping=Array.isArray(route.methods)?route.methods[0]:undefined;
+  const quote=evaluateCjQuoteQuality({
+    variantPrice:exact.variantSellPrice,
+    methodFreight:shipping?.logisticPrice,
+    hasShippingMethod:!!shipping,
+    inventoryUnits:Array.isArray(route.inventory)?route.inventory.map(x=>x.totalInventoryNum):null,
+    transit:parseAging(shipping?.logisticAging),
+  });
+  return respondWithReceipt({sku,variantOptions:options,variant:{id:exact.vid,name:exact.variantNameEn||exact.variantSku||exact.vid},state:quote.status,stock:quote.stock,productCost:quote.productCost,shippingCost:quote.shippingCost,baseLandedCost:quote.baseLandedCost,transitDays:quote.transitDays,carrier:shipping?.logisticName||null,origin:route.originCountryCode,priceExamples:blockUnverifiedRetailPricing().examplePrices,pricingGate:blockUnverifiedRetailPricing(),reason:quote.reason,approved:false,published:false,ordered:false});
  }catch{return respondWithReceipt({sku,state:"HOLD",error:"CJ qualification could not complete. Try the manual route check; do not assume this item is sellable."},502);}
 }
