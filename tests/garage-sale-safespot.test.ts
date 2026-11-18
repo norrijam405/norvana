@@ -1,3 +1,4 @@
+import { evaluateCjQuoteQuality } from "../src/lib/watchtower/cj-quote-quality.ts";
 import { CJ_REPLAY_CAPABILITY, decideCjRetryAdmission } from "../src/lib/watchtower/cj-retry-policy.ts";
 import { verifyCjReceiptReadback } from "../src/lib/watchtower/cj-receipt-integrity.ts";
 import { blockUnverifiedRetailPricing } from "../src/lib/watchtower/cost-floor-gate.ts";
@@ -553,4 +554,37 @@ test("legacy CJ observation can run but never falsely claims deduplication", () 
   assert.equal(CJ_REPLAY_CAPABILITY.automaticRetryAllowed, false);
   assert.ok(CJ_REPLAY_CAPABILITY.activationRequires.includes("ATOMIC_UNIQUE_REQUEST_KEY"));
   assert.ok(CJ_REPLAY_CAPABILITY.activationRequires.includes("CONCURRENT_REPLAY_TESTS"));
+});
+
+test("CJ stock/freight observation requires strictly valid supplier quantities", () => {
+  const good = {variantPrice:"8.25",methodFreight:"2.50",hasShippingMethod:true,inventoryUnits:[5,"7"],transit:{min:4,max:12}};
+  const accepted=evaluateCjQuoteQuality(good);
+  assert.equal(accepted.status,"NEEDS_PROCESSING_AND_APPROVAL");
+  assert.equal(accepted.stock,12);
+  assert.equal(accepted.baseLandedCost,10.75);
+  for (const inventoryUnits of [[],null,[-1],[1.2],["not available"],["1e309"],[Infinity],Array(201).fill(1)]) {
+    const result=evaluateCjQuoteQuality({...good,inventoryUnits});
+    assert.equal(result.status,"HOLD",JSON.stringify(inventoryUnits)?.slice(0,80));
+    assert.equal(result.stock,null);
+  }
+});
+
+test("CJ quote quality rejects missing freight, invalid money, inverted or long transit", () => {
+  const good = {variantPrice:"8.25",methodFreight:"2.50",hasShippingMethod:true,inventoryUnits:[5],transit:{min:4,max:12}};
+  for (const variant of [
+    {...good,variantPrice:null},
+    {...good,variantPrice:0},
+    {...good,variantPrice:"Infinity"},
+    {...good,methodFreight:null},
+    {...good,methodFreight:-2},
+    {...good,hasShippingMethod:false},
+    {...good,transit:{min:20,max:3}},
+    {...good,transit:{min:4,max:22}},
+    {...good,transit:{min:null,max:null}},
+  ]) {
+    const result=evaluateCjQuoteQuality(variant);
+    assert.equal(result.status,"HOLD");
+    assert.ok(result.reason.includes("incomplete or malformed"));
+  }
+  assert.equal(evaluateCjQuoteQuality(good).status,"NEEDS_PROCESSING_AND_APPROVAL");
 });
