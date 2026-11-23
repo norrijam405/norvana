@@ -13,7 +13,7 @@ const PRUNE_INTERVAL_MS = 30_000;
 const REPLAY_FILE_PATTERN = /^nonce-([a-f0-9]{64})\.json$/;
 const REPLAY_STORE_SCHEMA = "acre-era.house-handshake-nonce.v1";
 
-type Environment = NodeJS.ProcessEnv;
+type Environment = Record<string, string | undefined>;
 type ReplayProtection = "PROCESS_LOCAL" | "DURABLE";
 type ReplayDecision = "STORED" | "REPLAY" | "FULL";
 type HandlerOptions = { env?: Environment; now?: () => number };
