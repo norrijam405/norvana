@@ -105,7 +105,7 @@ test("wrong audience, timestamp, signature, secret reuse, method, and content ty
   });
   assert.equal((await valid(signedRequest(SECRET, "12".repeat(16), Math.floor(NOW / 1000) - 91))).status, 400);
   assert.equal((await valid(signedRequest(SECRET, "23".repeat(16), Math.floor(NOW / 1000), { recipient: "wrong" }))).status, 400);
-  const tampered = await signedRequest(SECRET, "34".repeat(16);
+  const tampered = await signedRequest(SECRET, "34".repeat(16));
   const body = await tampered.json() as Record<string, unknown>;
   body.signature = "0".repeat(64);
   assert.equal((await valid(new Request(tampered.url, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) }))).status, 401);
