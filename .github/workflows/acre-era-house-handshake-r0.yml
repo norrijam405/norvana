@@ -1,0 +1,31 @@
+name: Acre Era House Handshake R0
+
+on:
+  push:
+    branches:
+      - "feature/**"
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  house-handshake:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install dependencies
+        run: npm install --no-package-lock
+      - name: House v1 protocol and replay tests
+        run: node --experimental-strip-types --test tests/house-app-handshake.test.ts
+      - name: Typecheck
+        run: npm run typecheck
+      - name: Lint
+        run: npm run lint
