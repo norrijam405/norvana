@@ -35,7 +35,8 @@ test("restricted categories are held even when stock and links are present", () 
 test("unsafe tracking URLs are not eligible", () => {
   const csv = header + '\n123,77,Good Home,Oak Basket,29.99,USD,http://awin.example/track,https://cdn.example/item.jpg,1,1,Home Decor,,,';
   const result = previewAwinProductFeed(csv);
-  assert.ok(result.candidates[0].reviewReasons.includes("Missing or invalid HTTPS Awin tracking link"));
+  assert.equal(result.candidateCount, 0);
+  assert.equal(result.rejectedCount, 1);
 });
 test("handles BOM, quoted commas, and duplicate product identity", () => {
   const row = '123,77,Good Home,"Basket, Large",29.99,USD,https://awin.example/track,https://cdn.example/item.jpg,1,1,Home Decor,,,';
