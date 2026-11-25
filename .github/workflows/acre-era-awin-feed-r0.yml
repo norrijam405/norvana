@@ -1,0 +1,40 @@
+name: Acre Era Awin Feed Intake R0
+on:
+  pull_request:
+    branches:
+      - feature/2026-11-11-digital-garage-sale-safespot-fixture-r0
+    paths:
+      - "src/lib/awin/**"
+      - "src/app/api/admin/awin/**"
+      - "src/components/admin/awin-feed-preview.tsx"
+      - "src/app/admin/suppliers/page.tsx"
+      - "tests/awin-product-feed-r0.test.mjs"
+      - "package.json"
+      - ".github/workflows/acre-era-awin-feed-r0.yml"
+  push:
+    branches:
+      - feature/acre-era-awin-feed-intake-r0
+    paths:
+      - "src/lib/awin/**"
+      - "src/app/api/admin/awin/**"
+      - "src/components/admin/awin-feed-preview.tsx"
+      - "src/app/admin/suppliers/page.tsx"
+      - "tests/awin-product-feed-r0.test.mjs"
+      - "package.json"
+      - ".github/workflows/acre-era-awin-feed-r0.yml"
+permissions:
+  contents: read
+jobs:
+  awin-feed-preview:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: "22"
+          cache: "npm"
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - run: npm run test:awin-feed
+      - run: npm run typecheck
+      - run: npm run build
