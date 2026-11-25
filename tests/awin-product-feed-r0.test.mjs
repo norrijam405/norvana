@@ -19,7 +19,7 @@ test("non-USD feeds are not eligible for US-first review", () => {
   const csv = header + '\n123,77,Good Home,Oak Basket,29.99,GBP,https://awin.example/track,https://cdn.example/basket.jpg,1,1,Home Decor,,,';
   assert.ok(resultNotEligible(previewAwinProductFeed(csv)));
 });
-function resultNotEligible(result: ReturnType<typeof previewAwinProductFeed>) { return result.candidates[0].eligibleForReview === false && result.candidates[0].reviewReasons.includes("Only USD product feeds are eligible for this US-first review"); }
+function resultNotEligible(result) { return result.candidates[0].eligibleForReview === false && result.candidates[0].reviewReasons.includes("Only USD product feeds are eligible for this US-first review"); }
 test("restricted categories are held even when stock and links are present", () => {
   const csv = header + '\n123,77,Good Home,Herbal Supplement,19.99,USD,https://awin.example/track,https://cdn.example/item.jpg,1,1,Supplements,,,';
   const result = previewAwinProductFeed(csv);
