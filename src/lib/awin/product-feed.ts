@@ -79,6 +79,7 @@ export function previewAwinProductFeed(input: string, limit = 100): AwinFeedPrev
     if (!Number.isFinite(price) || price <= 0) reasons.push("Missing or invalid product price");
     if (currency !== "USD") reasons.push("Only USD product feeds are eligible for this US-first review");
     if (!productUrl) reasons.push("Missing or invalid HTTPS Awin tracking link");
+    if (!imageUrl) reasons.push("Missing valid HTTPS product image; image rights also require review");
     if (availability !== "IN_STOCK") reasons.push(availability === "OUT_OF_STOCK" ? "Advertiser reports out of stock" : "Stock is not explicitly verified");
     if (saleRaw && no(saleRaw)) reasons.push("Advertiser marks product as not for sale");
     if (prohibited.test(name + " " + category + " " + description)) reasons.push("Product falls into a restricted or excluded category");
