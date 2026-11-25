@@ -49,8 +49,9 @@ export function previewAwinProductFeed(input: string, limit = 100): AwinFeedPrev
     for (const name of names) { const p = index.get(name); if (p !== undefined) return (row[p] || "").trim(); }
     return "";
   };
-  const required = ["product_name", "price", "currency", "aw_deep_link"];
+  const required = ["product_name", "currency", "aw_deep_link"];
   const missing = required.filter((name) => !index.has(name));
+  if (!index.has("price") && !index.has("search_price")) missing.push("price/search_price");
   if (missing.length) throw new Error("Awin feed is missing required columns: " + missing.join(", ") + ".");
   if (!index.has("aw_product_id") && !index.has("product_id")) throw new Error("Awin feed must include aw_product_id or product_id.");
   const candidates: AwinFeedCandidate[] = []; let rejectedCount = 0; const seen = new Set<string>();
@@ -61,7 +62,7 @@ export function previewAwinProductFeed(input: string, limit = 100): AwinFeedPrev
     const merchantName = value(row, "merchant_name");
     const merchantId = value(row, "merchant_id");
     const currency = value(row, "currency").toUpperCase();
-    const priceRaw = value(row, "price");
+    const priceRaw = value(row, "price", "search_price");
     const price = /^\d+(?:\.\d{1,2})?$/.test(priceRaw) ? Number(priceRaw) : NaN;
     const productUrl = httpsUrl(value(row, "aw_deep_link"));
     const imageUrl = httpsUrl(value(row, "aw_image_url", "image_url", "large_image"));
