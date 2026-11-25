@@ -37,4 +37,7 @@ jobs:
       - run: npm ci --ignore-scripts --no-audit --no-fund
       - run: npm run test:awin-feed
       - run: npm run typecheck
-      - run: npm run build
+      - name: Build with isolated loopback database placeholder
+        run: npm run build
+        env:
+          DATABASE_URL: postgresql://preview:preview@127.0.0.1:5432/preview
