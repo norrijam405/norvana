@@ -10,6 +10,13 @@ test("accepts identified USD in-stock affiliate product for human review", () =>
   assert.equal(result.candidates[0].description, "Handwoven, natural finish");
   assert.equal(result.candidates[0].availability, "IN_STOCK");
 });
+test("accepts Awin publisher search_price column alias", () => {
+  const publisherHeader = header.replace(",price,", ",search_price,");
+  const csv = publisherHeader + '\n123,77,Good Home,Oak Basket,29.99,USD,https://awin.example/track,https://cdn.example/basket.jpg,1,1,Home Decor,,,';
+  const result = previewAwinProductFeed(csv);
+  assert.equal(result.candidates[0].price, 29.99);
+  assert.equal(result.candidates[0].eligibleForReview, true);
+});
 test("missing stock evidence remains unknown", () => {
   const csv = header + '\n123,77,Good Home,Oak Basket,29.99,USD,https://awin.example/track,https://cdn.example/basket.jpg,,,,Home Decor,,,';
   const result = previewAwinProductFeed(csv);
