@@ -3,7 +3,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "prebuild": "npm run test:garage-sale",
+    "prebuild": "npm run test:garage-sale && npm run test:awin-feed",
     "build": "next build",
     "start": "next start",
     "lint": "eslint .",
@@ -11,6 +11,7 @@
     "admin:credentials": "node scripts/hash-admin-password.mjs",
     "test:watchtower": "node --test --experimental-strip-types tests/watchtower-policy.test.ts",
     "test:garage-sale": "node --test --experimental-strip-types tests/garage-sale-safespot.test.ts",
+    "test:awin-feed": "node --test --experimental-strip-types tests/awin-product-feed-r0.test.mjs",
     "test:voice": "node --test --experimental-strip-types tests/customer-voice.test.ts",
     "test:acre-era": "node --test --experimental-strip-types tests/acre-era-marketplace.test.ts",
     "test:authorized-commerce": "node --test --experimental-strip-types tests/authorized-commerce-watchtower-r2.test.ts",

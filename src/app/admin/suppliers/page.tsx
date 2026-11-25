@@ -13,6 +13,7 @@ import { SUPPLIER_ACCESS_BOARD } from "@/lib/watchtower/supplier-access";
 import { CjRouteCheckPanel } from "@/components/admin/cj-route-check-panel";
 import { CjConnectionHealth } from "@/components/admin/cj-connection-health";
 import { CjDiscoveryScout } from "@/components/admin/cj-discovery-scout";
+import { AwinFeedPreview } from "@/components/admin/awin-feed-preview";
 
 export const dynamic = "force-dynamic";
 
@@ -63,6 +64,7 @@ export default async function SuppliersPage() {
 
         <nav aria-label="Supplier quick links" className="mt-5 flex flex-wrap gap-2">
           <a href="#cj-scout" className="rounded-xl bg-indigo-500 px-4 py-3 text-sm font-semibold text-white">Find products · CJ Scout</a>
+          <a href="#awin-feed-intake" className="rounded-xl border border-emerald-300/20 px-4 py-3 text-sm font-semibold text-emerald-100">Import affiliate inventory · Awin</a>
           <a href="#cj-route-check" className="rounded-xl border border-white/15 px-4 py-3 text-sm font-semibold text-white/80">Check routes</a>
           <a href="#supplier-roster" className="rounded-xl border border-white/15 px-4 py-3 text-sm font-semibold text-white/80">Supplier roster</a>
         </nav>
@@ -146,6 +148,7 @@ export default async function SuppliersPage() {
 
         <CjConnectionHealth />
         <CjDiscoveryScout />
+        <AwinFeedPreview />
         <div id="cj-route-check"><CjRouteCheckPanel /></div>
 
         <section id="supplier-roster" className="mt-6 grid gap-5 xl:grid-cols-[1.1fr_.9fr]">
