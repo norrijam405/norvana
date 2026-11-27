@@ -4,6 +4,7 @@ type Candidate = { productId: string; name: string; merchantName: string; price:
 type Preview = { totalRows: number; candidateCount: number; rejectedCount: number; candidates: Candidate[]; disclaimer: string; imported: false; staged: false; published: false; };
 export function AwinFeedPreview() {
   const [busy, setBusy] = useState(false); const [message, setMessage] = useState(""); const [preview, setPreview] = useState<Preview | null>(null);
+  const [advertiserId, setAdvertiserId] = useState(""); const [advertiserName, setAdvertiserName] = useState("");
   async function handleFile(file?: File) {
     if (!file) return; setPreview(null); setMessage("");
     if (!file.name.toLowerCase().endsWith(".csv")) { setMessage("Choose the CSV file downloaded from Awin. Do not paste a feed URL or API key."); return; }
@@ -11,7 +12,7 @@ export function AwinFeedPreview() {
     setBusy(true);
     try {
       const csvText = await file.text();
-      const response = await fetch("/api/admin/awin/preview", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ csvText }) });
+      const response = await fetch("/api/admin/awin/preview", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ csvText, advertiserId, advertiserName }) });
       const body = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(body.error || "Awin feed preview failed.");
       setPreview(body as Preview);
@@ -22,11 +23,15 @@ export function AwinFeedPreview() {
     <div className="flex flex-wrap items-start justify-between gap-4"><div>
       <p className="text-xs font-semibold uppercase tracking-[0.18em] text-emerald-200">Affiliate inventory · Awin</p>
       <h2 className="mt-2 font-display text-2xl font-black">Bring real products into Finds</h2>
-      <p className="mt-3 max-w-3xl text-sm leading-6 text-white/55">Upload a filtered Awin product-feed CSV. We inspect merchant, product identity, price, USD currency, tracking links, and stock flags before anything enters the catalog.</p>
-    </div><label className="cursor-pointer rounded-xl bg-emerald-700 px-5 py-3 text-sm font-bold text-white hover:bg-emerald-600">
+      <p className="mt-3 max-w-3xl text-sm leading-6 text-white/55">Upload one advertiser's Awin product-feed CSV. Awin's standard product rows do not guarantee advertiser identity columns, so enter the advertiser shown in Awin when those fields are absent.</p>
+    </div></div>
+    <div className="mt-5 grid gap-3 md:grid-cols-2">
+      <label className="text-xs text-white/55">Awin advertiser ID <input value={advertiserId} onChange={(event) => setAdvertiserId(event.target.value)} maxLength={80} placeholder="Advertiser ID from Awin" className="mt-2 w-full rounded-xl border border-white/15 bg-black/30 px-3 py-3 text-sm text-white outline-none focus:border-emerald-300/50" /></label>
+      <label className="text-xs text-white/55">Advertiser name <input value={advertiserName} onChange={(event) => setAdvertiserName(event.target.value)} maxLength={160} placeholder="Advertiser name from Awin" className="mt-2 w-full rounded-xl border border-white/15 bg-black/30 px-3 py-3 text-sm text-white outline-none focus:border-emerald-300/50" /></label>
+    </div>
+    <div className="mt-4 flex flex-wrap items-center gap-3"><label className="cursor-pointer rounded-xl bg-emerald-700 px-5 py-3 text-sm font-bold text-white hover:bg-emerald-600">
       {busy ? "Reading feed…" : "Upload Awin CSV"}<input type="file" accept=".csv,text/csv" className="sr-only" disabled={busy} onChange={(event) => void handleFile(event.target.files?.[0])} />
-    </label></div>
-    <p className="mt-3 text-xs text-white/40">Awin path: Toolbox → Create-a-Feed → choose approved advertisers and relevant categories → download CSV. Upload the file itself, never the feed download URL or API key.</p>
+    </label><p className="text-xs text-white/40">Awin: Toolbox → Create-a-Feed → choose an approved advertiser and relevant categories → download CSV. Never paste a feed URL or API key.</p></div>
     {message ? <p role="alert" className="mt-4 text-sm text-rose-200">{message}</p> : null}
     {preview ? <div className="mt-5 space-y-3">
       <div className="grid gap-3 sm:grid-cols-3">

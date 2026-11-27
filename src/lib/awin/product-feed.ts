@@ -6,6 +6,7 @@ export type AwinFeedCandidate = {
   eligibleForReview: boolean; reviewReasons: string[];
 };
 export type AwinFeedPreview = { totalRows: number; candidateCount: number; rejectedCount: number; candidates: AwinFeedCandidate[]; disclaimer: string; };
+export type AwinFeedOptions = { advertiserId?: string; advertiserName?: string };
 function parseCsv(text: string, delimiter: string): string[][] {
   const rows: string[][] = []; let row: string[] = []; let field = ""; let quoted = false;
   for (let i = 0; i < text.length; i += 1) {
@@ -33,7 +34,7 @@ function httpsUrl(value: string): string | null {
 const yes = (v: string) => /^(1|true|yes|y|in stock|available)$/i.test(v.trim());
 const no = (v: string) => /^(0|false|no|n|out of stock|unavailable)$/i.test(v.trim());
 const prohibited = /\b(adult|alcohol|beer|wine|liquor|tobacco|vape|nicotine|cbd|thc|cannabis|weapon|firearm|knife|supplement|steroid|medicine|prescription|drug)\b/i;
-export function previewAwinProductFeed(input: string, limit = 100): AwinFeedPreview {
+export function previewAwinProductFeed(input: string, limit = 100, options: AwinFeedOptions = {}): AwinFeedPreview {
   if (typeof input !== "string" || input.trim().length === 0) throw new Error("Upload a non-empty Awin product feed CSV.");
   if (Buffer.byteLength(input, "utf8") > 2_000_000) throw new Error("Feed is too large. Upload a filtered CSV under 2 MB.");
   const clean = input.replace(/^\uFEFF/, "");
@@ -44,39 +45,43 @@ export function previewAwinProductFeed(input: string, limit = 100): AwinFeedPrev
   if (rows.length < 2) throw new Error("The feed needs a header row and at least one product row.");
   if (rows.length > 2_001) throw new Error("Feed contains more than 2,000 rows. Filter it in Awin before uploading.");
   const headers = rows[0].map((v) => v.trim().toLowerCase());
+  if (new Set(headers).size !== headers.length) throw new Error("Feed contains duplicate column headers. Re-export it with unique headers.");
   const index = new Map(headers.map((h, i) => [h, i]));
   const value = (row: string[], ...names: string[]) => {
     for (const name of names) { const p = index.get(name); if (p !== undefined) return (row[p] || "").trim(); }
     return "";
   };
-  const required = ["product_name", "currency", "aw_deep_link"];
+  const required = ["product_name", "currency"];
   const missing = required.filter((name) => !index.has(name));
-  if (!index.has("price") && !index.has("search_price")) missing.push("price/search_price");
+  if (!index.has("price") && !index.has("search_price")) missing.push("price");
   if (missing.length) throw new Error("Awin feed is missing required columns: " + missing.join(", ") + ".");
-  if (!index.has("aw_product_id") && !index.has("product_id")) throw new Error("Awin feed must include aw_product_id or product_id.");
+  if (!index.has("product_id") && !index.has("aw_product_id")) throw new Error("Awin feed must include product_id.");
+  if (!index.has("deep_link") && !index.has("aw_deep_link")) throw new Error("Awin feed must include deep_link.");
+  if (!index.has("image_url") && !index.has("aw_image_url") && !index.has("large_image")) throw new Error("Awin feed must include image_url or large_image.");
   const candidates: AwinFeedCandidate[] = []; let rejectedCount = 0; const seen = new Set<string>();
   const dataRows = rows.slice(1);
   for (const row of dataRows) {
-    const productId = value(row, "aw_product_id", "product_id");
+    const productId = value(row, "product_id", "aw_product_id");
     const name = value(row, "product_name");
-    const merchantName = value(row, "merchant_name");
-    const merchantId = value(row, "merchant_id");
+    const merchantName = value(row, "merchant_name", "advertiser_name") || (options.advertiserName || "").trim();
+    const merchantId = value(row, "merchant_id", "advertiser_id") || (options.advertiserId || "").trim();
     const currency = value(row, "currency").toUpperCase();
     const priceRaw = value(row, "price", "search_price");
     const price = /^\d+(?:\.\d{1,2})?$/.test(priceRaw) ? Number(priceRaw) : NaN;
-    const productUrl = httpsUrl(value(row, "aw_deep_link"));
-    const imageUrl = httpsUrl(value(row, "aw_image_url", "image_url", "large_image"));
-    const stockRaw = value(row, "in_stock");
-    const quantityRaw = value(row, "stock_quantity", "number_available");
+    const productUrl = httpsUrl(value(row, "deep_link", "aw_deep_link"));
+    const imageUrl = httpsUrl(value(row, "image_url", "aw_image_url", "large_image"));
+    const stockRaw = value(row, "in_stock", "instock");
+    const stockStatus = value(row, "stock_status");
+    const quantityRaw = value(row, "stock_quantity", "number_available", "stockquant");
     const quantity = /^\d+$/.test(quantityRaw) ? Number(quantityRaw) : null;
-    const saleRaw = value(row, "is_for_sale");
+    const saleRaw = value(row, "is_for_sale", "forsale");
     const availability: AwinFeedCandidate["availability"] =
-      no(stockRaw) || no(saleRaw) || quantity === 0 ? "OUT_OF_STOCK" :
-      yes(stockRaw) || (quantity !== null && quantity > 0) ? "IN_STOCK" : "UNKNOWN";
-    const category = value(row, "category_name", "merchant_category", "product_type");
+      no(stockRaw) || no(stockStatus) || no(saleRaw) || quantity === 0 ? "OUT_OF_STOCK" :
+      yes(stockRaw) || yes(stockStatus) || (quantity !== null && quantity > 0) ? "IN_STOCK" : "UNKNOWN";
+    const category = value(row, "merchant_category", "category_name", "product_type");
     const description = value(row, "description", "product_short_description");
     const reasons: string[] = [];
-    if (!productId || !name || !merchantName || !merchantId) reasons.push("Missing product or advertiser identity");
+    if (!productId || !name || !merchantName || !merchantId) reasons.push("Missing product or advertiser identity; upload one advertiser feed and provide its ID and name");
     if (!Number.isFinite(price) || price <= 0) reasons.push("Missing or invalid product price");
     if (currency !== "USD") reasons.push("Only USD product feeds are eligible for this US-first review");
     if (!productUrl) reasons.push("Missing or invalid HTTPS Awin tracking link");
