@@ -7,6 +7,7 @@ on:
       - feature/acre-era-awin-real-feed-compat-r1
     paths:
       - "src/lib/awin/**"
+      - "src/lib/watchtower/supplier-access.ts"
       - "src/app/api/admin/awin/**"
       - "src/components/admin/awin-feed-preview.tsx"
       - "src/app/admin/suppliers/page.tsx"
