@@ -20,6 +20,24 @@ export type SupplierAccessEntry = {
 
 export const SUPPLIER_ACCESS_BOARD: SupplierAccessEntry[] = [
   {
+    slug: "awin-affiliate",
+    name: "Awin Affiliate Network",
+    purpose: "Affiliate product discovery and trackable product referrals from approved advertisers; Acre Era does not own stock or fulfill these orders.",
+    website: "https://www.awin.com/us",
+    setupUrl: "https://help.awin.com/developers/docs/product-feed-publisher-guide-intro",
+    accessKind: "PLATFORM_ACCOUNT",
+    costSignal: "UNKNOWN",
+    credentialLabel: "Approved Awin publisher account and product-feed access",
+    whatYouNeed: [
+      "Join and receive approval for relevant advertiser programmes",
+      "Use Toolbox → Create-a-Feed to download one advertiser feed at a time",
+      "Confirm commission, attribution window, promotional rules, and image rights",
+      "Upload the CSV and identify the advertiser for human review",
+    ],
+    recommendation: "DO_NOW",
+    note: "Affiliate referrals are not owned inventory. The advertiser handles checkout and fulfillment; Acre Era earns commission only under the approved programme terms.",
+  },
+  {
     slug: "cj-dropshipping",
     name: "CJ Dropshipping",
     purpose: "Broad dropshipping catalog, product data, freight quotes, orders, warehousing, and tracking.",
@@ -34,8 +52,8 @@ export const SUPPLIER_ACCESS_BOARD: SupplierAccessEntry[] = [
       "Generate the API key",
       "Keep order/payment actions locked until test orders pass",
     ],
-    recommendation: "DO_NOW",
-    note: "CJ documents its developer API as free and exposes product, logistics, warehouse, order, payment, webhook, and shop interfaces.",
+    recommendation: "DO_LATER",
+    note: "Keep CJ optional until exact variants have live stock, written U.S. shipping/processing quotes, delivery estimates, and acceptable landed margin. API connectivity alone is not inventory proof.",
   },
   {
     slug: "printful",
@@ -52,8 +70,8 @@ export const SUPPLIER_ACCESS_BOARD: SupplierAccessEntry[] = [
       "Create a private token for our own store",
       "Start with read/order test scopes before live fulfillment",
     ],
-    recommendation: "DO_NOW",
-    note: "Private tokens are the documented path for a single merchant account. Scope only what Watchtower actually needs.",
+    recommendation: "DO_LATER",
+    note: "Useful print-on-demand backup, but unit production and shipping costs must be priced and tested before this becomes a launch priority.",
   },
   {
     slug: "shopify-partner-store",
