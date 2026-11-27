@@ -3,6 +3,8 @@ on:
   pull_request:
     branches:
       - feature/2026-11-11-digital-garage-sale-safespot-fixture-r0
+      - feature/acre-era-awin-feed-intake-r0
+      - feature/acre-era-awin-real-feed-compat-r1
     paths:
       - "src/lib/awin/**"
       - "src/app/api/admin/awin/**"
